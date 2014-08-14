@@ -1,7 +1,7 @@
 //By Matthieu Chartier
 
 #include "mif.h"
-#include "./forcefield_files/getAtomId_FAINT.h"
+// #include "./forcefield_files/getAtomId_FAINT.h"
 
 //-----------------------------START OF MAIN-----------------------------
 /***********************************************************************/
@@ -17,14 +17,10 @@ int main(int argc, char **argv)
 
   if(readCmdLine(argc, argv)==24){ return(0); }
 
-  NEW(atPair,atPairStruc);
-  NEW(atomSingle,atomSingleStruc);
-  NEW(atSingle,atSingleStruc);
-
-  storeAtomSingle_FAINT(atomSingle);
-  storeAtSingle_FAINT(atSingle);
-  storeAtPair_FAINT(atPair);
-  getProbes_FAINT();
+  getAtomRef();
+  getEpsilons();
+  getAtomTypes();
+  getProbes();
 
   //Get prefix
   if(tag.compare("")==0){
@@ -206,7 +202,7 @@ void Protein::readPDB(string filename){
 
     if(line.compare(0,3,"END") == 0){ break; }
 
-    //Store ligand if necessary using resnumc
+    //Store ligand coords if necessary using resnumc
     if(line.compare(0,6,"HETATM") == 0 && resnumc.compare("")!=0){
       thisresnumc = line.substr(17,3) + line.substr(22,4) + line.substr(21,1);
       stripSpace(thisresnumc);
@@ -240,12 +236,12 @@ void Protein::readPDB(string filename){
       stripSpace(fields[3]);
       stripSpace(fields[4]);
       stripSpace(fields[6]);
+
       atomnb=atoi(fields[1].c_str());
       resnb=atoi(fields[6].c_str());
       x=atof(fields[8].c_str());
       y=atof(fields[9].c_str());
       z=atof(fields[10].c_str());
-      // cout<<line<<endl;
 
       found = fields[2].find("H");
 
@@ -281,12 +277,13 @@ void Protein::readPDB(string filename){
         atm.h=0;
       }
 
-      if(getAtomId_FAINT(fields[4],fields[2])!=-1){
-        atm.atomId=getAtomId_FAINT(fields[4],fields[2]);
-      }else{
-        atm.atomId=99999;
-      }
+      // if(getAtomId_FAINT(fields[4],fields[2])!=-1){
+      //   atm.atomId=getAtomId_FAINT(fields[4],fields[2]);
+      // }else{
+      //   atm.atomId=99999;
+      // }
 
+      if(atomTypes.find(atm.resn+"_"+atm.atomn)== atomTypes.end()){ atm.mif=0; }
       if(fields[5].compare(chain)!=0 && chain.compare("none")!=0){ atm.mif=0; }
       if(line.compare(0,6,"HETATM") == 0){ atm.mif=0; }
 
@@ -304,7 +301,7 @@ void Protein::createProteinObject(){
   string tatomn2;
 
   for(i=0; i<PROTEIN.size(); i++){
-    if(PROTEIN[i].atomId!=99999 && PROTEIN[i].mif==1){
+    if(PROTEIN[i].mif==1){
       ring=0;
       found=0;
       needRef=1;
@@ -973,48 +970,40 @@ void get_enrg(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
   cout<<endl<< "Searching for potential interactions at each grid intersection"<< endl;
   int cvrtx=0;
 
-  //OLD #pragma omp parallel for shared(prot) schedule(static) num_threads(4)
-  #pragma omp parallel for schedule(dynamic) num_threads(8)
   for(int i=0; i<vrtxList.size(); i++){
-    try{
-      vertex& m=grid.at(vrtxList.at(i));
-      cvrtx++;
-      
-      int flag=0;
-      if(m.grid[0]!=1 && m.grid[1]!=1 && m.grid[2]!=1 && m.grid[3]==1){
-        continue;
-      }
+    vertex& m=grid.at(vrtxList.at(i));
+    cvrtx++;
     
-      if(printDetails==1){ cout<<endl<<"Vertex id: "<< m.id <<" "<<m.x<<" "<<m.y<<" "<<m.z<<endl; }
+    int flag=0;
+    if(m.grid[0]!=1 && m.grid[1]!=1 && m.grid[2]!=1 && m.grid[3]==1) continue;
+  
+    if(printDetails==1){ cout<<endl<<"Vertex id: "<< m.id <<" "<<m.x<<" "<<m.y<<" "<<m.z<<endl; }
 
-      for(int probe=0; probe<nbOfProbes; probe++){ //Iterate each probe
-        float enrg_sum=0.00;
-        int countAtms=0;
+    for(int probe=0; probe<nbOfProbes; probe++){ //Iterate each probe
+      float enrg_sum=0.00;
+      int countAtms=0;
 
-        if(printDetails==1){ cout<<endl<<"### PROBE "<<probe<<" ###"<<endl; }
+      if(printDetails==1){ cout<<endl<<"### PROBE "<<probe<<" ###"<<endl; }
 
-        for(int j=0; j<prot.size(); j++){ //Iterate each atom for this probe at this grid intersection
-          enrg_sum+=calcNrg_FAINT(m,prot.at(j),probe,countAtms);
-          printDetails=0;
-        }
-        if(countAtms>0){
-          if(enrg_sum<epsilons[probe] || (fabs(enrg_sum-epsilons[probe]))<0.0001){
-            m.ints[probe]=1;
-            flag=1;
-          }
+      for(int j=0; j<prot.size(); j++){ //Iterate each atom for this probe at this grid intersection
+        enrg_sum+=calcNrg(m,prot.at(j),probe,countAtms);
+        printDetails=0;
+      }
+      if(countAtms>0){
+        if(enrg_sum<nrgT[probes[probe]] || (fabs(enrg_sum-nrgT[probes[probe]]))<0.0001){
+          m.ints[probe]=1;
+          flag=1;
         }
       }
-      if(flag==1){
-        for(int gi=0; gi<4; gi++){
-          if(m.grid[gi]==1){
-            ss[gi]++;
-          }
+    }
+
+    //Increment search space
+    if(flag==1){
+      for(int gi=0; gi<4; gi++){
+        if(m.grid[gi]==1){
+          ss[gi]++;
         }
       }
-    }catch (const out_of_range& oor) {
-      //cerr << "Out of Range error: " << oor.what() << '\n';
-    }catch(exception& e){
-      cout <<"error"<<endl;
     }
   }
   cout<<"count vrtx in get_enrg: "<<cvrtx<<endl;
@@ -1295,7 +1284,7 @@ void Grid::writeMif(vector<atom>& prot){
   fprintf(fpNew,"#chain %s\n",chain.c_str());
   fprintf(fpNew,"#nbOfProbes %2d\n",nbOfProbes);
   for(i=0; i<nbOfProbes; i++){
-    fprintf(fpNew,"#probe[%d] %4d -> %3s %3s %5s\n",i,probesList[i],atomSingle->res[probesList[i]].c_str(),atomSingle->atom[probesList[i]].c_str(),atSingle->name[atomSingle->atId[probesList[i]]].c_str());
+    fprintf(fpNew,"#probe[%d] %4s\n",i,probes[i].c_str());
   }
   fprintf(fpNew,"#stepsize %4.2f\n",stepsize);
   fprintf(fpNew,"#atom_probe_distance_threshold %7.4f\n",atmPbMaxDist);
@@ -1361,126 +1350,93 @@ void stripSpace(string &str) {
   }
 }
 
-void storeAtomSingle_FAINT(atomSingleStruc* atomSingle){
-  string file= basePath + "/forcefield_files/atomSingle.isomif";
-  ifstream infile(file.c_str());
+void getAtomRef(){
+  string fn=basePath + "/forcefield_files/atoms";
+  ifstream infile(fn.c_str());
   string line;
-  string res, atom;
-  int atomId,atId;
+  string res;
+  string atom;
+  string type;
 
   while(getline(infile,line)){
-    if(line.compare(0,1,"#")!=0){ nbOfAtoms++; }
-  }
-
-  infile.clear();
-  infile.seekg(0, ios::beg);
-  atomSingle->count=nbOfAtoms;
-  atomSingle->atId=new int[nbOfAtoms];
-  atomSingle->res=new string[nbOfAtoms];
-  atomSingle->atom=new string[nbOfAtoms];
-  //cout<< "Getting AtomSingle"<<endl;
-  while(getline(infile,line)){
-    if(line.compare(0,1,"#")!=0){
-      std::stringstream test(line);
-      test >> atomId >> res >> atom >> atId;
-      atomSingle->atId[atomId]=atId;
-      atomSingle->res[atomId]=res;
-      atomSingle->atom[atomId]=atom;
-      if(printDetails==1){ cout<< atomId<< " "<< res<< " "<< atom<< " "<< atId<< endl; }
-    }
+    stringstream test(line);
+    test >> res >> atom >> type;
+    atomTypes[res + "_" + atom]=type;
   }
 }
 
-void storeAtSingle_FAINT(atSingleStruc* atSingle){
-  string file= basePath + "/forcefield_files/atSingle.isomif";
-  ifstream infile(file.c_str());
-  string line, name, pseudo;
-  int HbD, HbA, aromatic, charged, atId, HydroPhb;
+void getEpsilons(){
+  string fn=basePath + "/forcefield_files/epsilons";
+  ifstream infile(fn.c_str());
+  string s;
+  int row=0;
+  vector<string> coln;
 
-  while(getline(infile,line)){
-    if(line.compare(0,1,"#")!=0){ nbOfAts++; }
-  }
-
-  atSingle->name=new string[nbOfAts];
-  atSingle->HbD_FAINT=new int[nbOfAts];
-  atSingle->HbA_FAINT=new int[nbOfAts];
-  atSingle->aromatic_FAINT=new int[nbOfAts];
-  atSingle->charged_FAINT=new int[nbOfAts];
-  atSingle->hydrophobic_FAINT=new int[nbOfAts];
-
-  infile.clear();
-  infile.seekg(0, ios::beg);
-  //printf("%42s %5s %5s %5s %5s\n","Probe Name","HbD","HbA","Arom","Chrgd");
-  while(getline(infile,line)){
-    if(line.compare(0,1,"#")!=0){
-      std::stringstream test(line);
-      test >> atId >> name >> pseudo >> HbD >> HbA >> aromatic >> charged >> HydroPhb;
-      atSingle->name[atId]=name + " " + pseudo;
-      atSingle->HbD_FAINT[atId]=HbD;
-      atSingle->HbA_FAINT[atId]=HbA;
-      atSingle->aromatic_FAINT[atId]=aromatic;
-      atSingle->charged_FAINT[atId]=charged;
-      atSingle->hydrophobic_FAINT[atId]=HydroPhb;
-      if(printDetails==1){ 
-        cout<< atId<< " "<< name<< " "<< pseudo << " "<< HbD<< " "<< HbA<< " "<< aromatic<< " "<< charged<<" "<<HydroPhb<< endl;
+  while(getline(infile,s)){
+    istringstream iss(s);
+    vector<string> tokens;
+    copy(istream_iterator<string>(iss), istream_iterator<string>(), back_inserter<vector<string> >(tokens));
+    if(row==0){
+      for(int i=0; i<tokens.size(); i++){
+        coln.push_back(tokens[i]);
+      }
+    }else{
+      string rown=tokens[0];
+      for(int i=1; i<tokens.size(); i++){
+        eps[coln[i-1]+"_"+rown]=atoi(tokens[i].c_str());
+        eps[rown+"_"+coln[i-1]]=atoi(tokens[i].c_str());
       }
     }
+
+    row++;
   }
 }
 
-void storeAtPair_FAINT(atPairStruc* atPair){
-  string line;
-  int id1,id2;
-  float epsilonFAINT;
+void getAtomTypes(){
+  string fn=basePath + "/forcefield_files/atomTypes";
+  ifstream infile(fn.c_str());
+  string s;
+  int row=0;
 
-  atPair->epsilon_FAINT=new float[nbOfAts*nbOfAts];
-  string atPairFile= basePath + "/forcefield_files/atPair.isomif";
-  ifstream infile(atPairFile.c_str());
-  while(getline(infile,line)){
-    std::stringstream test(line);
-    test >> id1 >> id2 >> epsilonFAINT;
-    atPair->epsilon_FAINT[(id1*nbOfAts)+id2]=epsilonFAINT;
-    atPair->epsilon_FAINT[(id2*nbOfAts)+id1]=epsilonFAINT;
-    if(printDetails==1){ cout<< id1 << " "<< id2 << " "<< atPair->epsilon_FAINT[(id1*nbOfAts)+id2]<< endl; }
+  while(getline(infile,s)){
+    // cout<<s<<endl;
+    istringstream iss(s);
+    vector<string> tokens;
+    copy(istream_iterator<string>(iss), istream_iterator<string>(), back_inserter<vector<string> >(tokens));
+    row++;
+    if(row==1) continue;
+    don[tokens[2]]=atoi(tokens[3].c_str());
+    acc[tokens[2]]=atoi(tokens[4].c_str());
+    arm[tokens[2]]=atoi(tokens[5].c_str());
+    chr[tokens[2]]=atoi(tokens[6].c_str());
+    hyd[tokens[2]]=atoi(tokens[7].c_str());
+    // cout<<tokens[2]<<" "<<don[tokens[2]]<<" "<<acc[tokens[2]]<<" "<<arm[tokens[2]]<<" "<<chr[tokens[2]]<<" "<<hyd[tokens[2]]<<endl;
+
   }
 }
 
-int getProbes_FAINT(){
-  string file= basePath + "/forcefield_files/probes.isomif";
-  ifstream infile(file.c_str());
+void getProbes(){
+  string fn=basePath + "/forcefield_files/probes";
+  ifstream infile(fn.c_str());
   string line;
-  int count=0;
-  int id;
-  float distTmin;
-  float distTmax;
-  float epsilon;
+  string pbn;
+  float min;
+  float max;
+  float thresh;
+
   while(getline(infile,line)){
+    stringstream test(line);
+    test >> pbn >> min >> max >> thresh;
+    minD[pbn]=min;
+    maxD[pbn]=max;
+    nrgT[pbn]=thresh;
+    // cout<< pbn <<" "<<minD[pbn]<<" "<<maxD[pbn]<<" "<<nrgT[pbn]<<endl;
+    probes.push_back(pbn);
     nbOfProbes++;
   }
-  infile.clear();
-  infile.seekg(0, ios::beg);
-  probesList = new int[nbOfProbes];
-  pbDistTmin = new float[nbOfProbes];
-  pbDistTmax = new float[nbOfProbes];
-  epsilons = new float[nbOfProbes];
-
-  if(printDetails==1){ cout<< endl<< "Getting probes"<< endl; }
-  while(getline(infile,line)){
-    std::stringstream test(line);
-    test >> id >> distTmin >> distTmax >> epsilon;
-    probesList[count]=id;
-    pbDistTmin[count]=distTmin;
-    pbDistTmax[count]=distTmax;
-    epsilons[count]=epsilon;
-    // cout<<count<<" "<<epsilon<<endl;
-    if(printDetails==1){ cout<< id<< " " <<atomSingle->atId[id]<< " "<< atomSingle->atom[id]<< " "<< atomSingle->res[id]<< endl; }
-    count++;
-  }
-  if(printDetails==1){ cout << "Nb of probes: " << nbOfProbes << endl; }
-  return(nbOfProbes);
 }
 
-double calcNrg_FAINT(vertex& vrtx, atom& atm, int pbId, int& count_atoms){
+double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms){
   float dist,alpha,epsilon,angle;
   int atomAtId,pbAtId;
   double energy;
@@ -1491,36 +1447,18 @@ double calcNrg_FAINT(vertex& vrtx, atom& atm, int pbId, int& count_atoms){
   int tVrtxId=-1;
   float rDist,rpDist;
 
-  if(atm.atomn.compare("N")==0 && pbId==3 && 0){
-    printDetails=1;
-  }else{
-    printDetails=0;
-  }
-
-  if(atm.resnb==518 && atm.atomn.compare("CZ")==0 && pbId==5){
-    printDetails=1;
-  }
-
   //Get distance between probe and atom
   dist=dist_3d(atm.x,atm.y,atm.z,vrtx.x,vrtx.y,vrtx.z);
-  if(dist > pbDistTmax[pbId] || dist < pbDistTmin[pbId] || dist > atmPbMaxDist){
-    if(printDetails==1){
-      // cout<<"Dist "<<dist<<" - Atom too far or too close to probe."<<endl;
-    }
+  if(dist > maxD[probes[pbId]] || dist < minD[probes[pbId]] || dist > atmPbMaxDist){
     return(energy);
   }else{
 
-    atomAtId=atomSingle->atId[atm.atomId];
-    pbAtId=atomSingle->atId[probesList[pbId]];
-    epsilon=atPair->epsilon_FAINT[(atomAtId*nbOfAts)+pbAtId];
-
-    if(printDetails==1){
-      cout<< endl <<atm.resn<< " "<<atm.resnb<< " "<< atm.atomn<<" "<< atomAtId<< " "<< atSingle->name[atomAtId]<< " x "<< atm.x<<" y "<<atm.y<<" z "<< atm.z<<" xr" << atm.xr<<" yr "<<atm.yr<<" xr "<< atm.zr<<endl;
-      cout<< "Probe "<< pbId<<" "<< atSingle->name[pbAtId] <<" "<< pbAtId <<" id: "<<vrtx.id<<" "<< vrtx.x<<" "<<vrtx.y<<" "<<vrtx.z<<endl;
-    }
+    string at=atomTypes[atm.resn+"_"+atm.atomn];
+    string pat=probes[pbId];
+    epsilon=eps[at+"_"+pat];
 
     //Hbond Donnor/Acceptor
-    if((atSingle->HbD_FAINT[atomAtId]==1 && atSingle->HbA_FAINT[pbAtId]==1) || (atSingle->HbA_FAINT[atomAtId]==1 && atSingle->HbD_FAINT[pbAtId]==1)){
+    if((acc[at]==1 && don[pat]==1) || (acc[pat]==1 && don[at]==1)){
       alpha=1.0;
 
       rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
@@ -1571,7 +1509,7 @@ double calcNrg_FAINT(vertex& vrtx, atom& atm, int pbId, int& count_atoms){
         if(printDetails==1){ cout<<"Angle over threshold"<<endl; }
         return(energy);
       }
-    }else if(atSingle->aromatic_FAINT[atomAtId]==1 && atSingle->aromatic_FAINT[pbAtId]==1){ //aromatic interaction
+    }else if(arm[at]==1 && arm[pat]==1){ //aromatic interaction
       alpha=0.75;
       rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
       rpDist=dist_3d(vrtx.x,vrtx.y,vrtx.z,atm.xr,atm.yr,atm.zr);
@@ -1593,10 +1531,10 @@ double calcNrg_FAINT(vertex& vrtx, atom& atm, int pbId, int& count_atoms){
         if(printDetails==1){ cout <<"angle < 60 or > 80"<<endl; }
       }
 
-    }else if(atSingle->charged_FAINT[atomAtId]==1 && atSingle->charged_FAINT[pbAtId]==1){ //charged interaction
+    }else if(chr[at]==1 && chr[pat]==1){ //charged interaction
       if(printDetails==1){ cout << "charged couple"<< endl; }
       alpha=0.75;
-    }else if(atSingle->hydrophobic_FAINT[pbAtId]==1){//if its a hydrophoic probe
+    }else if(hyd[pat]==1){//if its a hydrophoic probe
       if(printDetails==1){ cout << "Hydrophobic probe"<< endl; }
       alpha=0.75;
     }
