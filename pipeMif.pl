@@ -93,6 +93,31 @@ sub runCmds{
       $fork->finish; # do the exit in the child process.
     }
     $fork->wait_all_children; # Wait for all forks to exit.
+  }elsif($cmdMode eq "mammouth"){
+    my $filenb=0;
+    my $count=0;
+    open OUT, ">".$jobsDir.$filenb.".pbs" or die "cant open".$jobsDir.$filenb.".pbs";
+    print OUT "#!/bin/sh\n#PBS -l nodes=1:ppn=1\n#PBS -N ".$tag.$filenb."\n";
+    for(my $i=0; $i<@cmds; $i++){
+      if($count==$batch){
+        $count=0;
+        close OUT;
+        $filenb++;
+        open OUT, ">".$jobsDir.$filenb.".pbs" or die "cant open".$jobsDir.$filenb.".pbs";
+        print OUT "#!/bin/sh\n#PBS -l nodes=1:ppn=1\n#PBS -N ".$tag.$filenb."\n";
+      }
+      print OUT "$cmds[$i]";
+      $count++;
+      print OUT "\n" unless($count==$batch);
+    }
+    close OUT;
+
+    foreach my $file (glob $jobsDir."*"){
+      my $call="bqsub_accumulator -q qwork"."@"."mp2 -l walltime=120:00:00 ".$file;
+      system($call);
+    }
+    my $end_call="echo \"echo end\"  | bqsub_accumulator --submit -q qfbb"."@"."mp2 -l walltime=120:00:00";
+    system($end_call);
   }
 }
 
