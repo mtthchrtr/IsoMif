@@ -1,5 +1,3 @@
-//By Matthieu Chartier
-
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -14,6 +12,8 @@
 #include <math.h> 
 #include <cmath>
 #include <stdexcept>
+#include <algorithm>
+#include <iterator>
 
 using namespace std;
 
@@ -106,6 +106,17 @@ int nbOfAtoms=0;
 int nbOfProbes=0;
 int ss[4];
 float* epsilons;
+map<string,string> atomTypes;
+map<string,int> eps;
+map<string,int> hyd;
+map<string,int> arm;
+map<string,int> don;
+map<string,int> acc;
+map<string,int> chr;
+map<string,float> minD;
+map<string,float> maxD;
+map<string,float> nrgT;
+vector<string> probes;
 
 class  Protein{
   public:
@@ -147,8 +158,8 @@ float dist_3d(float, float, float, float, float, float);
 void get_enrg(map<int,vertex>&, vector<atom>&,vector<int>&);
 int is_coord_in_cube(float,float,float,float,float,float,float);
 void stripSpace(string &);
-int getProbes_FAINT();
-void storeAtPair_FAINT(atPairStruc*);
-void storeAtomSingle_FAINT(atomSingleStruc*);
-void storeAtSingle_FAINT(atSingleStruc*);
-double calcNrg_FAINT(vertex&, atom&, int, int&);
+double calcNrg(vertex&, atom&, int, int&);
+void getAtomRef();
+void getEpsilons();
+void getAtomTypes();
+void getProbes();

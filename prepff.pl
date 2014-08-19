@@ -72,6 +72,18 @@ while(my $line=<IN>){
 close IN;
 close OUT;
 
+open IN, "<".$rootPath."forcefield_files/ref/atomSingle.isomif" or die "cant open file ./atSingleInfo";
+open OUT, ">".$rootPath."forcefield_files/atoms";
+# printf OUT "%10s %10s %10s %10s %10s\n","res","atom","atomType","hBondAngle","armAngle";
+while(my $line=<IN>){
+	next if($line=~/^$/);
+	my @info=split(/\s+/,$line);
+	printf OUT "%10s %10s %10s\n",$info[1],$info[2],$at[$info[3]][1];
+
+}
+close OUT;
+close IN;
+
 #Set atPairs to 0
 my @atPairs=();
 for(my $i=0; $i<@at; $i++){

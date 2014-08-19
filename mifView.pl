@@ -90,7 +90,7 @@ while(my $line=<IN>){
   chomp($line);
   print NPML $line."\\\n";
 }
-print NPML "TER \\\n\"\"\",\"".$mifName."\")\nhide lines\nshow cartoon\nremove (resn HOH)\nshow sticks, HET & ".$mifName."\nset connect_mode,1\n";
+print NPML "TER \\\n\"\"\",\"".$mifName."\")\nshow cartoon\nremove (resn HOH)\nshow sticks, HET & ".$mifName."\nset connect_mode,1\n";
 close IN;
 
 # open OUT, ">".$mifViewFolder."/".$mifName.".pdb" or die "Cant open mifView file";
