@@ -797,6 +797,7 @@ void clearStep(int cg){
     newClique.cg=cg;
     newClique.nbNodes=0;
     newClique.tani=0.0;
+    newClique.taniX=0.0;
     newClique.mat_r=gsl_matrix_alloc(3,3);
     for(int i=0; i<3; i++) {
       newClique.cen_a[i]=0.0;
