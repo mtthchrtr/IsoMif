@@ -49,6 +49,7 @@ struct vertexes{
   // int** pb_bool;
   int* ints;
   int grid[4];
+  map<string,float> env;
   int id;
 };
 
@@ -117,6 +118,7 @@ map<string,float> minD;
 map<string,float> maxD;
 map<string,float> nrgT;
 vector<string> probes;
+vector<string> aa;
 
 class  Protein{
   public:
@@ -163,3 +165,4 @@ void getAtomRef();
 void getEpsilons();
 void getAtomTypes();
 void getProbes();
+void getaa();

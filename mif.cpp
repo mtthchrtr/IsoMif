@@ -21,6 +21,7 @@ int main(int argc, char **argv)
   getEpsilons();
   getAtomTypes();
   getProbes();
+  getaa();
 
   //Get prefix
   if(tag.compare("")==0){
@@ -869,6 +870,10 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
 
               //cout<<"exist "<< vrtx.x << " "<<vrtx.y<<" "<<vrtx.z<<" "<<endl;
 
+              for(int i=0; i<aa.size(); i++){
+                vrtx.env[aa[i]]=1000.0;
+              }
+
               //Print grid in appropriate file
               if(inGridRes(vrtx,2.0)==1){
                 vrtx.grid[0]=1;
@@ -1306,6 +1311,13 @@ void Grid::writeMif(vector<atom>& prot){
     for(i=0; i<4; i++){
       fprintf(fpNew, " %1d",it->second.grid[i]);
     }
+    for(i=0; i<aa.size(); i++){
+      if(it->second.env[aa[i]]>8.0){
+        fprintf(fpNew, " %d",0);
+      }else{
+        fprintf(fpNew, " %d",(int)round(it->second.env[aa[i]]));
+      }
+    }
     fprintf(fpNew, "\n");
     cvrtx++;
   }
@@ -1436,6 +1448,19 @@ void getProbes(){
   }
 }
 
+void getaa(){
+  string fn=basePath + "/forcefield_files/aa";
+  ifstream infile(fn.c_str());
+  string line;
+  string taa;
+
+  while(getline(infile,line)){
+    stringstream test(line);
+    test >> taa;
+    aa.push_back(taa);
+  }
+}
+
 double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms){
   float dist,alpha,epsilon,angle;
   int atomAtId,pbAtId;
@@ -1449,6 +1474,11 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms){
 
   //Get distance between probe and atom
   dist=dist_3d(atm.x,atm.y,atm.z,vrtx.x,vrtx.y,vrtx.z);
+
+  if(pbId==0){
+    if(dist<vrtx.env[atm.resn]) vrtx.env[atm.resn]=dist;
+  }
+
   if(dist > maxD[probes[pbId]] || dist < minD[probes[pbId]] || dist > atmPbMaxDist){
     return(energy);
   }else{
