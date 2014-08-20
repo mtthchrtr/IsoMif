@@ -126,7 +126,7 @@ sub storeCases{
   while(my $line=<IN>){
     if($line!~/^$/){
       chomp($line);
-      push @cases, $mifPath." ".$line;
+      push @cases, $mifPath." ".$line." > /dev/null 2>&1";
     }
   }
   close IN;
