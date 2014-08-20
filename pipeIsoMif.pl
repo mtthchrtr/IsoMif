@@ -126,7 +126,7 @@ sub storeCases{
   while(my $line=<IN>){
     if($line!~/^$/){
       chomp($line);
-      push @cases, $mifPath." ".$line." > /dev/null 2>&1";
+      push @cases, $mifPath." ".$line;
     }
   }
   close IN;
@@ -141,7 +141,7 @@ sub recur{
       if($p==$#mifParam){
         if($level==@mifParam){
           foreach my $c (@cases){
-            push @cmds, $c.$cmd;
+            push @cmds, $c.$cmd." > /dev/null 2>&1";
           }
         }
       }else{
