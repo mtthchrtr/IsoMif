@@ -33,6 +33,7 @@ struct vertex {
   int pb[6];
   int m[6];
   int id;
+  vector<int> env;
 };
 
 //Atom struc
@@ -69,8 +70,10 @@ struct CliqueStruct{
   vector<vertex> vb;
   int nbNodes;
   float tani;
+  float taniX;
   float rmsd;
-  float vsim;
+  float probeVsim;
+  float envSim;
   gsl_matrix *mat_r;
   float cen_a[3];
   float cen_b[3];
@@ -86,7 +89,7 @@ float topT=-1.0;
 float topN=-1;
 int bkAll = 0;
 int nCliques=0;
-int maxCliques=2000;
+int maxCliques=10000;
 vector<Clique> cliques;
 
 char outH[4000];

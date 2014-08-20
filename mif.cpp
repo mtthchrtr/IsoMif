@@ -1312,7 +1312,7 @@ void Grid::writeMif(vector<atom>& prot){
       fprintf(fpNew, " %1d",it->second.grid[i]);
     }
     for(i=0; i<aa.size(); i++){
-      if(it->second.env[aa[i]]>8.0){
+      if(it->second.env[aa[i]]>5.0){
         fprintf(fpNew, " %d",0);
       }else{
         fprintf(fpNew, " %d",(int)round(it->second.env[aa[i]]));

@@ -190,6 +190,7 @@ int main(int argc, char *argv[]){
       if(steps[cs]!=steps[cs-1]){
         cout<<"Resetting top clique score"<<endl;
         topT=-1.0;
+        topN=-1;
       }
       cg=steps[cs];
 
@@ -281,7 +282,7 @@ int main(int argc, char *argv[]){
       //Print nodes in the output file
       clearStep(cg);
 
-      cout<<"top clique of "<<cg<<" "<<topCliques[cg]<<" size "<<cliques[topCliques[cg]].nbNodes<<endl;
+      cout<<"top clique of "<<cg<<" "<<topCliques[cg]<<" size "<<cliques[topCliques[cg]].nbNodes<<" envSim "<<cliques[topCliques[cg]].envSim<<endl;
 
       //Delete graph and adjacency matrix
       delete[] conn;
@@ -580,22 +581,29 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   vector<nodes>::iterator it;
   vector<float> la;
   vector<float> lb;
-
-  float tani;
-  if(cg==-1){
-    tani=(float)n/((float)caSize1+(float)caSize2-(float)n);
-  }else{
-    tani=(float)n/((float)ss1[cg]+(float)ss2[cg]-(float)n);
-  }
+  // int envSim=0;
 
   nCliques++;
 
-  if(n>topN){
+  // for(int i=0; i<n; i++){
+  //   graph.at(list[i]);
+  //   for(int i=0; i<20; ++i){
+  //     if(graph.at(list[i]).a->env[i]!=0 && graph.at(list[i]).b->env[i]!=0){
+  //       envSim+=(8-(abs(graph.at(list[i]).a->env[i]-graph.at(list[i]).b->env[i])));
+  //     }
+  //   }
+  // }
+  // cout<<"envSim "<<envSim<<endl;
+
+  // if(topN==-1){
+  //   topN=envSim;
+  // }else if(envSim>topN){
 
     Clique newClique;
     newClique.cg=cg;
     newClique.nbNodes=n;
-    newClique.tani=tani;
+    newClique.envSim=0.0;
+    newClique.taniX=0.0;
     for(int i=0; i<n; i++){ newClique.nodes.push_back(graph.at(list[i])); }
     cliques.push_back(newClique);
 
@@ -630,6 +638,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
 
     //Calculating RMSD and vector similarity
     float rmsd=0.0;
+
     for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
       float ncoor[3];
       for(int i=0; i<3; i++){
@@ -648,22 +657,51 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
         }
       }
       if(cg==-1){
-        cliques.back().vsim+=1.0;
+        cliques.back().probeVsim+=1.0;
       }else{
         for(int i=0; i<nb_of_probes; ++i){
           if((*it).a->pb[i]==1 && (*it).b->pb[i]==1){
-            cliques.back().vsim+=1.0;
+            cliques.back().probeVsim+=1.0;
           }
+        }
+
+        float env=0.0;
+        float envSum=0.0;
+        int envC=0;
+        cliques.back().envSim+=1.0;
+        for(int i=0; i<20; ++i){
+          if((*it).a->env[i]!=0 && (*it).b->env[i]!=0){
+            float diff=abs((*it).a->env[i]-(*it).b->env[i])/(float)3;
+            cliques.back().envSim+=1.0;
+            envSum+=diff;
+            envC++;
+            // cout<<" "<<(*it).a->env[i]<<" "<<(*it).b->env[i]<<" diff: "<<diff<<" |";
+          }
+        }
+        if(envC>0){
+          env=envSum/(float)envC;
+          // cout<< " env "<<env<<endl;
+          cliques.back().envSim+=env;
         }
       }
     }
+    cliques.back().probeVsim=cliques.back().probeVsim/(float)cliques.back().nbNodes;
 
-    cliques.back().vsim=cliques.back().vsim/(float)cliques.back().nbNodes;
+    if(cg==-1){
+      cliques.back().tani=(float)n/((float)caSize1+(float)caSize2-(float)n);
+    }else{
+      cliques.back().tani=(float)n/((float)ss1[cg]+(float)ss2[cg]-(float)n);
+    }
+
+    if(cg==-1){
+      cliques.back().taniX=(float)n/((float)caSize1+(float)caSize2-(float)n);
+    }else{
+      cliques.back().taniX=cliques.back().envSim/((float)ss1[cg]+(float)ss2[cg]-(float)n);
+    }
 
     rmsd=sqrt(rmsd/(float)cliques.back().nbNodes);
     cliques.back().rmsd=rmsd;
 
-    cout<<"NEW TOP CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" vsim "<<cliques.back().vsim<<endl;
     // cout<<"ROTATION MAT:";
     for(int i=0; i<3; i++){
       for(int j=0; j<3; j++){
@@ -672,10 +710,19 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     }
     // cout<<endl<<"cen_a: "<<cliques.back().cen_a[0]<<" "<<cliques.back().cen_a[1]<<" "<<cliques.back().cen_a[2];
     // cout<<endl<<"cen_b: "<<cliques.back().cen_b[0]<<" "<<cliques.back().cen_b[1]<<" "<<cliques.back().cen_b[2]<<endl;
-    topCliques[cg]=cliques.size()-1;
-    topT=tani;
-    topN=n;
-  }
+    
+    if(cliques.back().taniX>topT){
+      cout<<"TOP NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" TANIX "<<cliques.back().taniX<<" RMSD: "<<cliques.back().rmsd<<" probeVsim "<<cliques.back().probeVsim<<" envSim: "<<cliques.back().envSim<<endl;
+      // cout<<"TOP b4 "<<topN;
+      topT=cliques.back().taniX;
+      // cout<<" now "<<topN<<endl;
+      topCliques[cg]=cliques.size()-1;
+    }else{
+      // cout<<"NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" probeVsim "<<cliques.back().probeVsim<<" envSim: "<<cliques.back().envSim<<endl;
+    }
+    
+    // topN=cliques.back().envSim;
+  // }
   return;
 }
 /***********************************************************************/
@@ -689,7 +736,7 @@ void printNodes(){
   char suffix[50];
 
   if(wrfn==1){ //Add similarity score to filename
-    sprintf(suffix,"_%d_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].tani);
+    sprintf(suffix,"_%d_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].taniX);
     strcat(out_file,suffix);
   }
   strcat(out_file,".isomif");
@@ -787,7 +834,6 @@ double calcRot(vector<float> lista, vector<float> listb, float* cen_a, float* ce
 
     // cout<<i<<" cen_a "<<cen_a[i]<<" cen_b "<<cen_b[i]<<endl;
   }
-  cout<<endl;
 
   // Create Co-Variance Matrix
   float val=0.0;
@@ -994,6 +1040,7 @@ int createVrtxVec(char mifFile[], vector<vertex>& p, vector<atom>& a, int* ss, i
   string chain;
   string dump;
   int pb0,pb1,pb2,pb3,pb4,pb5,gr0,gr1,gr2,gr3;
+  int e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12,e13,e14,e15,e16,e17,e18,e19;
 
   ifstream infile(mifFile);
   while(getline(infile,line)){
@@ -1019,7 +1066,7 @@ int createVrtxVec(char mifFile[], vector<vertex>& p, vector<atom>& a, int* ss, i
       atmC++;
     }else if(line.compare(0,1,"#")!=0){
       stringstream test(line);
-      test >> x >> y >> z >> pb0 >> pb1 >> pb2 >> pb3 >> pb4 >> pb5 >> gr0 >> gr1 >> gr2 >> gr3;
+      test >> x >> y >> z >> pb0 >> pb1 >> pb2 >> pb3 >> pb4 >> pb5 >> gr0 >> gr1 >> gr2 >> gr3 >> e0 >> e1 >> e2 >> e3 >> e4 >> e5 >> e6 >> e7 >> e8 >> e9 >> e10 >> e11 >> e12 >> e13 >> e14 >> e15 >> e16 >> e17 >> e18 >> e19;
       nvrtx = new vertex;
       nvrtx->coor[0]=x;
       nvrtx->coor[1]=y;
@@ -1040,6 +1087,31 @@ int createVrtxVec(char mifFile[], vector<vertex>& p, vector<atom>& a, int* ss, i
       nvrtx->cg[2]=0;
       nvrtx->cg[3]=0;
       nvrtx->id=totalVrtx; //Unique id for both clefts
+      nvrtx->env.push_back(e0);
+      nvrtx->env.push_back(e1);
+      nvrtx->env.push_back(e2);
+      nvrtx->env.push_back(e3);
+      nvrtx->env.push_back(e4);
+      nvrtx->env.push_back(e5);
+      nvrtx->env.push_back(e6);
+      nvrtx->env.push_back(e7);
+      nvrtx->env.push_back(e8);
+      nvrtx->env.push_back(e9);
+      nvrtx->env.push_back(e10);
+      nvrtx->env.push_back(e11);
+      nvrtx->env.push_back(e12);
+      nvrtx->env.push_back(e13);
+      nvrtx->env.push_back(e14);
+      nvrtx->env.push_back(e15);
+      nvrtx->env.push_back(e16);
+      nvrtx->env.push_back(e17);
+      nvrtx->env.push_back(e18);
+      nvrtx->env.push_back(e19);
+      // cout<<line<<endl;
+      // for(int i=0; i<nvrtx->env.size(); i++){
+      //   cout<<" "<<nvrtx->env[i];
+      // }
+      // cout<<endl;
 
       //Calculate search space
       if(pb0==1 || pb1==1 || pb2==1 || pb3==1 || pb4==1 || pb5==1){
