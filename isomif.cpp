@@ -584,6 +584,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   // int envSim=0;
 
   nCliques++;
+  cout<<nCliques<<endl;
 
   // for(int i=0; i<n; i++){
   //   graph.at(list[i]);
@@ -638,7 +639,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
 
     //Calculating RMSD and vector similarity
     float rmsd=0.0;
-
+    float envNodes=0.0;
     for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
       float ncoor[3];
       for(int i=0; i<3; i++){
@@ -656,36 +657,32 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
           rmsd+=pow(ncoor[i]-(*it).b->coor[i],2);
         }
       }
-      if(cg==-1){
-        cliques.back().probeVsim+=1.0;
-      }else{
-        for(int i=0; i<nb_of_probes; ++i){
-          if((*it).a->pb[i]==1 && (*it).b->pb[i]==1){
-            cliques.back().probeVsim+=1.0;
-          }
-        }
-
-        float env=0.0;
-        float envSum=0.0;
-        int envC=0;
-        cliques.back().envSim+=1.0;
-        for(int i=0; i<20; ++i){
-          if((*it).a->env[i]!=0 && (*it).b->env[i]!=0){
-            float diff=abs((*it).a->env[i]-(*it).b->env[i])/(float)3;
-            cliques.back().envSim+=1.0;
-            envSum+=diff;
-            envC++;
-            // cout<<" "<<(*it).a->env[i]<<" "<<(*it).b->env[i]<<" diff: "<<diff<<" |";
-          }
-        }
-        if(envC>0){
-          env=envSum/(float)envC;
-          // cout<< " env "<<env<<endl;
-          cliques.back().envSim+=env;
-        }
-      }
+      // if(cg!=-1){
+      //   float env=0.0;
+      //   float envSum=0.0;
+      //   int envC=0;
+      //   cliques.back().envSim+=1.0;
+      //   for(int i=0; i<20; ++i){
+      //     if((*it).a->env[i]!=0 && (*it).b->env[i]!=0){
+      //       float diff=abs((*it).a->env[i]-(*it).b->env[i]);
+      //       // cliques.back().envSim+=1.0;
+      //       envSum+=pow(diff,2);
+      //       envC++;
+      //       cout<<" "<<diff<<" |";
+      //     }
+      //   }
+      //   if(envC>0){
+      //     env=sqrt(envSum/(float)envC);
+      //     envNodes+=1.0;
+      //     cout<< " env "<<env<<endl;
+      //     cliques.back().envSim+=env;
+      //   }
+      // }
     }
-    cliques.back().probeVsim=cliques.back().probeVsim/(float)cliques.back().nbNodes;
+    rmsd=sqrt(rmsd/(float)cliques.back().nbNodes);
+    cliques.back().rmsd=rmsd;
+
+    // cliques.back().envSim=sqrt(cliques.back().envSim/envNodes);
 
     if(cg==-1){
       cliques.back().tani=(float)n/((float)caSize1+(float)caSize2-(float)n);
@@ -693,32 +690,29 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
       cliques.back().tani=(float)n/((float)ss1[cg]+(float)ss2[cg]-(float)n);
     }
 
-    if(cg==-1){
-      cliques.back().taniX=(float)n/((float)caSize1+(float)caSize2-(float)n);
-    }else{
-      cliques.back().taniX=cliques.back().envSim/((float)ss1[cg]+(float)ss2[cg]-(float)n);
-    }
-
-    rmsd=sqrt(rmsd/(float)cliques.back().nbNodes);
-    cliques.back().rmsd=rmsd;
+    // if(cg==-1){
+    //   cliques.back().taniX=(float)n/((float)caSize1+(float)caSize2-(float)n);
+    // }else{
+    //   cliques.back().taniX=cliques.back().envSim/((float)ss1[cg]+(float)ss2[cg]-(float)n);
+    // }
 
     // cout<<"ROTATION MAT:";
-    for(int i=0; i<3; i++){
-      for(int j=0; j<3; j++){
+    // for(int i=0; i<3; i++){
+      // for(int j=0; j<3; j++){
         // cout<<" "<<gsl_matrix_get(cliques.back().mat_r,i,j);
-      }
-    }
+      // }
+    // }
     // cout<<endl<<"cen_a: "<<cliques.back().cen_a[0]<<" "<<cliques.back().cen_a[1]<<" "<<cliques.back().cen_a[2];
     // cout<<endl<<"cen_b: "<<cliques.back().cen_b[0]<<" "<<cliques.back().cen_b[1]<<" "<<cliques.back().cen_b[2]<<endl;
     
-    if(cliques.back().taniX>topT){
-      cout<<"TOP NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" TANIX "<<cliques.back().taniX<<" RMSD: "<<cliques.back().rmsd<<" probeVsim "<<cliques.back().probeVsim<<" envSim: "<<cliques.back().envSim<<endl;
+    if(cliques.back().tani>topT){
+      cout<<"TOP NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<endl;
       // cout<<"TOP b4 "<<topN;
-      topT=cliques.back().taniX;
+      topT=cliques.back().tani;
       // cout<<" now "<<topN<<endl;
       topCliques[cg]=cliques.size()-1;
     }else{
-      // cout<<"NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" probeVsim "<<cliques.back().probeVsim<<" envSim: "<<cliques.back().envSim<<endl;
+      // cout<<"NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" envSim: "<<cliques.back().envSim<<endl;
     }
     
     // topN=cliques.back().envSim;
@@ -736,7 +730,7 @@ void printNodes(){
   char suffix[50];
 
   if(wrfn==1){ //Add similarity score to filename
-    sprintf(suffix,"_%d_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].taniX);
+    sprintf(suffix,"_%d_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].tani);
     strcat(out_file,suffix);
   }
   strcat(out_file,".isomif");

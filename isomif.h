@@ -72,7 +72,6 @@ struct CliqueStruct{
   float tani;
   float taniX;
   float rmsd;
-  float probeVsim;
   float envSim;
   gsl_matrix *mat_r;
   float cen_a[3];
@@ -89,7 +88,7 @@ float topT=-1.0;
 float topN=-1;
 int bkAll = 0;
 int nCliques=0;
-int maxCliques=2000;
+int maxCliques=5;
 vector<Clique> cliques;
 
 char outH[4000];
