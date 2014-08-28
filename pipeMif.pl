@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use Parallel::ForkManager; #Call the package to use for forks.
+#use Parallel::ForkManager; #Call the package to use for forks.
 
 #by Matthieu Chartier 10 juin 2013
 #Description
@@ -55,6 +55,7 @@ sub runCmds{
   if($cmdMode eq "nrg"){
     my $filenb=0;
     my $count=0;
+    system("rm ".$jobsDir."/*");
     open OUT, ">".$jobsDir.$filenb.".pbs" or die "cant open".$jobsDir.$filenb.".pbs";
     print OUT "#!/bin/sh\n#PBS -l nodes=1:ppn=1\n#PBS -N ".$tag.$filenb."\n";
     for(my $i=0; $i<@cmds; $i++){
