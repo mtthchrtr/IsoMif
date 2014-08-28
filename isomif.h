@@ -88,7 +88,7 @@ float topT=-1.0;
 float topN=-1;
 int bkAll = 0;
 int nCliques=0;
-int maxCliques=5;
+int maxCliques=200;
 vector<Clique> cliques;
 
 char outH[4000];
