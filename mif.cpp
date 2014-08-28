@@ -969,52 +969,6 @@ float dist_3d(float x1, float y1, float z1, float x2, float y2, float z2){
   return(dist);
 }
 
-
-void get_enrg(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
-  int j;
-  cout<<endl<< "Searching for potential interactions at each grid intersection"<< endl;
-  int cvrtx=0;
-
-  for(int i=0; i<vrtxList.size(); i++){
-    vertex& m=grid.at(vrtxList.at(i));
-    cvrtx++;
-    
-    int flag=0;
-    if(m.grid[0]!=1 && m.grid[1]!=1 && m.grid[2]!=1 && m.grid[3]==1) continue;
-  
-    if(printDetails==1){ cout<<endl<<"Vertex id: "<< m.id <<" "<<m.x<<" "<<m.y<<" "<<m.z<<endl; }
-
-    for(int probe=0; probe<nbOfProbes; probe++){ //Iterate each probe
-      float enrg_sum=0.00;
-      int countAtms=0;
-
-      if(printDetails==1){ cout<<endl<<"### PROBE "<<probe<<" ###"<<endl; }
-
-      for(int j=0; j<prot.size(); j++){ //Iterate each atom for this probe at this grid intersection
-        enrg_sum+=calcNrg(m,prot.at(j),probe,countAtms);
-        printDetails=0;
-      }
-      if(countAtms>0){
-        if(enrg_sum<nrgT[probes[probe]] || (fabs(enrg_sum-nrgT[probes[probe]]))<0.0001){
-          m.ints[probe]=1;
-          flag=1;
-        }
-      }
-    }
-
-    //Increment search space
-    if(flag==1){
-      for(int gi=0; gi<4; gi++){
-        if(m.grid[gi]==1){
-          ss[gi]++;
-        }
-      }
-    }
-  }
-  cout<<"count vrtx in get_enrg: "<<cvrtx<<endl;
-  //cout<<"Calculated non-bonded energies at "<<countVrtx<<" grid intersections using "<< nbOfProbes <<" probe(s)."<<endl;
-}
-
 // int Grid::smooth(){
 //   float xi,yi,zi;
 //   float** tmp_sm;
@@ -1459,6 +1413,52 @@ void getaa(){
     test >> taa;
     aa.push_back(taa);
   }
+}
+
+
+void get_enrg(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
+  int j;
+  cout<<endl<< "Searching for potential interactions at each grid intersection"<< endl;
+  int cvrtx=0;
+
+  for(int i=0; i<vrtxList.size(); i++){
+    vertex& m=grid.at(vrtxList.at(i));
+    cvrtx++;
+    
+    int flag=0;
+    if(m.grid[0]!=1 && m.grid[1]!=1 && m.grid[2]!=1 && m.grid[3]==1) continue;
+  
+    if(printDetails==1){ cout<<endl<<"Vertex id: "<< m.id <<" "<<m.x<<" "<<m.y<<" "<<m.z<<endl; }
+
+    for(int probe=0; probe<nbOfProbes; probe++){ //Iterate each probe
+      float enrg_sum=0.00;
+      int countAtms=0;
+
+      if(printDetails==1){ cout<<endl<<"### PROBE "<<probe<<" ###"<<endl; }
+
+      for(int j=0; j<prot.size(); j++){ //Iterate each atom for this probe at this grid intersection
+        enrg_sum+=calcNrg(m,prot.at(j),probe,countAtms);
+        printDetails=0;
+      }
+      if(countAtms>0){
+        if(enrg_sum<nrgT[probes[probe]] || (fabs(enrg_sum-nrgT[probes[probe]]))<0.0001){
+          m.ints[probe]=1;
+          flag=1;
+        }
+      }
+    }
+
+    //Increment search space
+    if(flag==1){
+      for(int gi=0; gi<4; gi++){
+        if(m.grid[gi]==1){
+          ss[gi]++;
+        }
+      }
+    }
+  }
+  cout<<"count vrtx in get_enrg: "<<cvrtx<<endl;
+  //cout<<"Calculated non-bonded energies at "<<countVrtx<<" grid intersections using "<< nbOfProbes <<" probe(s)."<<endl;
 }
 
 double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms){
