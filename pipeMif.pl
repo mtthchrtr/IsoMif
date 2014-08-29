@@ -13,6 +13,8 @@ my $mifParamF="";
 my $mifJobsF="";
 my $cmdMode=0;
 my $tag="pipeMif";
+my $nbFiles=0;
+my $outDir="";
 my $jobsDir="";
 my $batch=30;
 my @mifParam=();
@@ -28,6 +30,8 @@ for(my $i=0; $i<=$#ARGV; $i++){
   if($ARGV[$i] eq "-c"){ $cmdMode=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-b"){ $batch=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-t"){ $tag=$tag.$ARGV[$i+1]; }
+  if($ARGV[$i] eq "-x"){ $nbFiles=$ARGV[$i+1]; }
+  if($ARGV[$i] eq "-o"){ $outDir=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-f"){ $jobsDir=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-h"){
     print "##################\nWelcome to pipeMif\n##################\n";
@@ -38,6 +42,8 @@ for(my $i=0; $i<=$#ARGV; $i++){
     print "-b         <Nb of cmds per job file>\n";
     print "-t         <tag of this job batch>\n";
     print "-f         <dir where to print the job files>\n";
+    print "-x         <nb of output files expected in jobsdir>\n";
+    print "-o         <dit of the output files>\n";
     print "-h         <print help menu>\n";
     exit;
   }
@@ -72,7 +78,7 @@ sub runCmds{
       print OUT "\n" unless($count==$batch);
     }
     close OUT;
-
+    print "need to execute ".$count." cmds\n";
     my @files=glob($jobsDir."/*");
     foreach my $file (@files){
       print "qsub $file\n";
@@ -142,7 +148,7 @@ sub recur{
       if($p==$#mifParam){
         if($level==@mifParam){
           foreach my $c (@cases){
-            push @cmds, $c.$cmd." > /dev/null 2>&1";
+            push @cmds, $c.$cmd." 2>&1 >/dev/null";
           }
         }
       }else{
@@ -171,6 +177,7 @@ sub areJobsDone{
   my $sys=$_[0];
   my $exitLoopR=0;
   my $exitLoopQ=0;
+  my $exitLoopC=0;
   my $getout=0;
   my $time=0;
   print "\n\nWaiting for jobs to terminate..";
@@ -179,27 +186,45 @@ sub areJobsDone{
     $time+=5;
     my $string;
     if($sys eq "nrg"){
-      $string="qstat | egrep '".$_[1]."'| egrep ' R ' | wc -l |";
-      open COM, $string or die "cant open qstat grep check";
-      while(my $line=<COM>){
-        print "Running: $line\n";
-        if($line=~/^0$/){
-          $exitLoopR=1;
-          last;
+      if($nbFiles!=0){
+        my @nbb=glob $outDir."*.mif";
+        print "need $nbFiles, got ".scalar @nbb."\n";
+        if(scalar @nbb == $nbFiles){
+          $getout=1;
         }
-      }
-      close COM;
-      $string="qstat | egrep '".$_[1]."'| egrep ' Q ' | wc -l |";
-      open COM, $string or die "cant open qstat grep check";
-      while(my $line=<COM>){
-        print "Queud: $line\n";
-        if($line=~/^0$/){
-          $exitLoopQ=1;
-          last;
+      }else{
+        $string="qstat | egrep '".$_[1]."'| egrep ' R ' | wc -l |";
+        open COM, $string or die "cant open qstat grep check";
+        while(my $line=<COM>){
+          print "Running: $line\n";
+          if($line=~/^0$/){
+            $exitLoopR=1;
+            last;
+          }
         }
+        close COM;
+        $string="qstat | egrep '".$_[1]."'| egrep ' Q ' | wc -l |";
+        open COM, $string or die "cant open qstat grep check";
+        while(my $line=<COM>){
+          print "Queud: $line\n";
+          if($line=~/^0$/){
+            $exitLoopQ=1;
+            last;
+          }
+        }
+        close COM;
+        $string="qstat | egrep '".$_[1]."'| egrep ' C ' | wc -l |";
+        open COM, $string or die "cant open qstat grep check";
+        while(my $line=<COM>){
+          print "Completed: $line\n";
+          if($line=~/^0$/){
+            $exitLoopC=1;
+            last;
+          }
+        }
+        close COM;
+        $getout=1 if($exitLoopR==1 && $exitLoopQ==1 && $exitLoopC==1); 
       }
-      close COM;
-      $getout=1 if($exitLoopR==1 && $exitLoopQ==1);
     }
 
     last if($getout==1);
