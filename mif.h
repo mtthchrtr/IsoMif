@@ -157,7 +157,7 @@ class  Grid{
 
 int readCmdLine(int, char**);
 float dist_3d(float, float, float, float, float, float);
-void get_enrg(map<int,vertex>&, vector<atom>&,vector<int>&);
+void getMif(map<int,vertex>&, vector<atom>&,vector<int>&);
 int is_coord_in_cube(float,float,float,float,float,float,float);
 void stripSpace(string &);
 double calcNrg(vertex&, atom&, int, int&);

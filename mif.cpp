@@ -43,7 +43,7 @@ int main(int argc, char **argv)
   cout<< "Grid has " <<grid.GRID.size()<< " vertexes."<<endl;
   cout<< "Vertex list size: "<< grid.vrtxIdList.size()<<endl;
 
-  get_enrg(grid.GRID,protein.PROTEINOBJ,grid.vrtxIdList);
+  getMif(grid.GRID,protein.PROTEINOBJ,grid.vrtxIdList);
   //if(stepsize < 2.0){ grid.smooth(); }
   grid.writeMif(protein.PROTEIN);
 
@@ -1353,7 +1353,6 @@ void getEpsilons(){
         eps[rown+"_"+coln[i-1]]=atoi(tokens[i].c_str());
       }
     }
-
     row++;
   }
 }
@@ -1416,7 +1415,7 @@ void getaa(){
 }
 
 
-void get_enrg(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
+void getMif(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
   int j;
   cout<<endl<< "Searching for potential interactions at each grid intersection"<< endl;
   int cvrtx=0;
@@ -1457,7 +1456,7 @@ void get_enrg(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
       }
     }
   }
-  cout<<"count vrtx in get_enrg: "<<cvrtx<<endl;
+  cout<<"count vrtx in getMif: "<<cvrtx<<endl;
   //cout<<"Calculated non-bonded energies at "<<countVrtx<<" grid intersections using "<< nbOfProbes <<" probe(s)."<<endl;
 }
 
