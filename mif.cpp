@@ -1370,11 +1370,11 @@ void getAtomTypes(){
     copy(istream_iterator<string>(iss), istream_iterator<string>(), back_inserter<vector<string> >(tokens));
     row++;
     if(row==1) continue;
-    don[tokens[2]]=atoi(tokens[3].c_str());
-    acc[tokens[2]]=atoi(tokens[4].c_str());
-    arm[tokens[2]]=atoi(tokens[5].c_str());
-    chr[tokens[2]]=atoi(tokens[6].c_str());
-    hyd[tokens[2]]=atoi(tokens[7].c_str());
+    don[tokens[2]]=atoi(tokens[2].c_str());
+    acc[tokens[2]]=atoi(tokens[3].c_str());
+    arm[tokens[2]]=atoi(tokens[4].c_str());
+    chr[tokens[2]]=atoi(tokens[5].c_str());
+    hyd[tokens[2]]=atoi(tokens[6].c_str());
     // cout<<tokens[2]<<" "<<don[tokens[2]]<<" "<<acc[tokens[2]]<<" "<<arm[tokens[2]]<<" "<<chr[tokens[2]]<<" "<<hyd[tokens[2]]<<endl;
 
   }
@@ -1427,20 +1427,19 @@ void getMif(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
     int flag=0;
     if(m.grid[0]!=1 && m.grid[1]!=1 && m.grid[2]!=1 && m.grid[3]==1) continue;
   
-    if(printDetails==1){ cout<<endl<<"Vertex id: "<< m.id <<" "<<m.x<<" "<<m.y<<" "<<m.z<<endl; }
+    // if(printDetails==1){ cout<<endl<<"Vertex id: "<< m.id <<" "<<m.x<<" "<<m.y<<" "<<m.z<<endl; }
 
     for(int probe=0; probe<nbOfProbes; probe++){ //Iterate each probe
       float enrg_sum=0.00;
       int countAtms=0;
 
-      if(printDetails==1){ cout<<endl<<"### PROBE "<<probe<<" ###"<<endl; }
+      // if(printDetails==1){ cout<<endl<<"### PROBE "<<probe<<" ###"<<endl; }
 
       for(int j=0; j<prot.size(); j++){ //Iterate each atom for this probe at this grid intersection
         enrg_sum+=calcNrg(m,prot.at(j),probe,countAtms);
-        printDetails=0;
       }
       if(countAtms>0){
-        if(enrg_sum<nrgT[probes[probe]] || (fabs(enrg_sum-nrgT[probes[probe]]))<0.0001){
+        if(enrg_sum<nrgT[probes[probe]] || (fabs(enrg_sum-nrgT[probes[probe]]))<0.001){
           m.ints[probe]=1;
           flag=1;
         }
@@ -1493,53 +1492,53 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms){
       rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
       rpDist=dist_3d(vrtx.x,vrtx.y,vrtx.z,atm.xr,atm.yr,atm.zr);
 
-      if(printDetails==1){
-        cout <<"Hbond Acceptor/Donor "<<endl;
-        cout<< "Dist "<< dist << " rDist "<< rDist<< " rpDist "<< rpDist<<" rDir "<< atm.rDir <<endl;
-      }
+      // if(printDetails==1){
+      //   cout <<"Hbond Acceptor/Donor "<<endl;
+      //   cout<< "Dist "<< dist << " rDist "<< rDist<< " rpDist "<< rpDist<<" rDir "<< atm.rDir <<endl;
+      // }
 
       angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
       angle=acos(angle)* 180.0 / PI;
       if(atm.rDir==0){ angle=180.00-angle; }
 
       if(atm.resn.compare("ASN")==0 && atm.atomn.compare("OD1")==0){
-        angleThresh=90.00;
+        angleThresh=80.00;
       }else if(atm.resn.compare("ASN")==0 && atm.atomn.compare("ND2")==0){
-        angleThresh=90.00;
+        angleThresh=80.00;
       }else if(atm.resn.compare("GLN")==0 && atm.atomn.compare("OE1")==0){
-        angleThresh=90.00;
+        angleThresh=80.00;
       }else if(atm.resn.compare("GLN")==0 && atm.atomn.compare("NE2")==0){
-        angleThresh=90.00;
+        angleThresh=80.00;
       }else if(atm.resn.compare("SER")==0 && atm.atomn.compare("OG")==0){
-        angleThresh=90.00;
+        angleThresh=80.00;
       }else if(atm.resn.compare("THR")==0 && atm.atomn.compare("OG1")==0){
-        angleThresh=90.00;
+        angleThresh=80.00;
       }else if(atm.resn.compare("ARG")==0 && atm.atomn.compare("NH1")==0){
-        angleThresh=90.00;
+        angleThresh=80.00;
       }else if(atm.resn.compare("ARG")==0 && atm.atomn.compare("NH2")==0){
-        angleThresh=90.00;
+        angleThresh=80.00;
       }else if(atm.resn.compare("LYS")==0 && atm.atomn.compare("NZ")==0){
-        angleThresh=90.00;
+        angleThresh=80.00;
       }else if(atm.resn.compare("ASP")==0 && atm.atomn.compare("OD1")==0){
-        angleThresh=90.00;
+        angleThresh=80.00;
       }else if(atm.resn.compare("ASP")==0 && atm.atomn.compare("OD2")==0){
-        angleThresh=90.00;
+        angleThresh=80.00;
       }else if(atm.resn.compare("GLU")==0 && atm.atomn.compare("OE1")==0){
-        angleThresh=90.00;
+        angleThresh=80.00;
       }else if(atm.resn.compare("GLU")==0 && atm.atomn.compare("OE2")==0){
-        angleThresh=90.00;
+        angleThresh=80.00;
       }
 
-      if(printDetails==1){
-        cout <<"Angle "<< angle << " thresh " << angleThresh << " | ref atom: "<<atm.xr<<" "<<atm.yr<<" "<<atm.zr << " dir: "<<atm.rDir<<endl;
-      }
+      // if(printDetails==1){
+        // cout <<"Angle "<< angle << " thresh " << angleThresh << " | ref atom: "<<atm.xr<<" "<<atm.yr<<" "<<atm.zr << " dir: "<<atm.rDir<<endl;
+      // }
 
       if(angle>angleThresh){
-        if(printDetails==1){ cout<<"Angle over threshold"<<endl; }
+        // if(printDetails==1){ cout<<"Angle over threshold"<<endl; }
         return(energy);
       }
     }else if(arm[at]==1 && arm[pat]==1){ //aromatic interaction
-      alpha=0.75;
+      alpha=1.0;
       rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
       rpDist=dist_3d(vrtx.x,vrtx.y,vrtx.z,atm.xr,atm.yr,atm.zr);
       angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
@@ -1548,32 +1547,30 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms){
         angle=180-angle;
       }
 
-      if(printDetails==1){
-        cout<< "aromatic"<<endl;
-        cout<< "Angle "<< angle<<endl;
-      }
+      // if(printDetails==1){
+        // cout<< "aromatic"<<endl;
+        // cout<< "Angle "<< angle<<endl;
+      // }
 
       if(angle>40.00 && angle < 80.00){
-        if(printDetails==1){ cout <<"angle between 60 and 80"<<endl; }
+        // if(printDetails==1){ cout <<"angle between 60 and 80"<<endl; }
         return(energy);
-      }else{
-        if(printDetails==1){ cout <<"angle < 60 or > 80"<<endl; }
       }
 
     }else if(chr[at]==1 && chr[pat]==1){ //charged interaction
-      if(printDetails==1){ cout << "charged couple"<< endl; }
-      alpha=0.75;
+      // if(printDetails==1){ cout << "charged couple"<< endl; }
+      alpha=1.0;
     }else if(hyd[pat]==1){//if its a hydrophoic probe
-      if(printDetails==1){ cout << "Hydrophobic probe"<< endl; }
-      alpha=0.75;
+      // if(printDetails==1){ cout << "Hydrophobic probe"<< endl; }
+      alpha=1.0;
     }
 
     count_atoms++;
     energy=(epsilon)*(exp(-1.0*dist*alpha));
 
-    if(printDetails==1){
-      cout<< "epsilon: " << epsilon<< " alpha: "<< alpha<< " dist: "<< dist<< " -> NRG: "<< energy<< endl<<endl;
-    }
+    // if(printDetails==1){
+    //   cout<< "epsilon: " << epsilon<< " alpha: "<< alpha<< " dist: "<< dist<< " -> NRG: "<< energy<< endl<<endl;
+    // }
     return(energy);
   }
 }

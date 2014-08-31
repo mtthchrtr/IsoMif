@@ -64,10 +64,10 @@
        HIS          O        o.2
        HIS         CB        c.3
        HIS         CG       c.ar
-       HIS        ND1       n.am
+       HIS        ND1      n.his
        HIS        CD2       c.ar
        HIS        CE1       c.ar
-       HIS        NE2       n.am
+       HIS        NE2      n.his
        ILE          N       n.am
        ILE         CA        c.3
        ILE          C        c.2
@@ -140,7 +140,7 @@
        TRP         CG       c.ar
        TRP        CD1       c.ar
        TRP        CD2       c.ar
-       TRP        NE1       n.ar
+       TRP        NE1       n.am
        TRP        CE2       c.ar
        TRP        CE3       c.ar
        TRP        CZ2       c.ar
