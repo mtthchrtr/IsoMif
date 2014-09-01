@@ -1502,31 +1502,31 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms){
       if(atm.rDir==0){ angle=180.00-angle; }
 
       if(atm.resn.compare("ASN")==0 && atm.atomn.compare("OD1")==0){
-        angleThresh=80.00;
+        angleThresh=90.00;
       }else if(atm.resn.compare("ASN")==0 && atm.atomn.compare("ND2")==0){
-        angleThresh=80.00;
+        angleThresh=90.00;
       }else if(atm.resn.compare("GLN")==0 && atm.atomn.compare("OE1")==0){
-        angleThresh=80.00;
+        angleThresh=90.00;
       }else if(atm.resn.compare("GLN")==0 && atm.atomn.compare("NE2")==0){
-        angleThresh=80.00;
+        angleThresh=90.00;
       }else if(atm.resn.compare("SER")==0 && atm.atomn.compare("OG")==0){
-        angleThresh=80.00;
+        angleThresh=90.00;
       }else if(atm.resn.compare("THR")==0 && atm.atomn.compare("OG1")==0){
-        angleThresh=80.00;
+        angleThresh=90.00;
       }else if(atm.resn.compare("ARG")==0 && atm.atomn.compare("NH1")==0){
-        angleThresh=80.00;
+        angleThresh=90.00;
       }else if(atm.resn.compare("ARG")==0 && atm.atomn.compare("NH2")==0){
-        angleThresh=80.00;
+        angleThresh=90.00;
       }else if(atm.resn.compare("LYS")==0 && atm.atomn.compare("NZ")==0){
-        angleThresh=80.00;
+        angleThresh=90.00;
       }else if(atm.resn.compare("ASP")==0 && atm.atomn.compare("OD1")==0){
-        angleThresh=80.00;
+        angleThresh=90.00;
       }else if(atm.resn.compare("ASP")==0 && atm.atomn.compare("OD2")==0){
-        angleThresh=80.00;
+        angleThresh=90.00;
       }else if(atm.resn.compare("GLU")==0 && atm.atomn.compare("OE1")==0){
-        angleThresh=80.00;
+        angleThresh=90.00;
       }else if(atm.resn.compare("GLU")==0 && atm.atomn.compare("OE2")==0){
-        angleThresh=80.00;
+        angleThresh=90.00;
       }
 
       // if(printDetails==1){
@@ -1538,7 +1538,7 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms){
         return(energy);
       }
     }else if(arm[at]==1 && arm[pat]==1){ //aromatic interaction
-      alpha=1.0;
+      alpha=0.75;
       rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
       rpDist=dist_3d(vrtx.x,vrtx.y,vrtx.z,atm.xr,atm.yr,atm.zr);
       angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
@@ -1559,10 +1559,10 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms){
 
     }else if(chr[at]==1 && chr[pat]==1){ //charged interaction
       // if(printDetails==1){ cout << "charged couple"<< endl; }
-      alpha=1.0;
+      alpha=0.75;
     }else if(hyd[pat]==1){//if its a hydrophoic probe
       // if(printDetails==1){ cout << "Hydrophobic probe"<< endl; }
-      alpha=1.0;
+      alpha=0.75;
     }
 
     count_atoms++;
