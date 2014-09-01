@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-use Parallel::ForkManager; #Call the package to use for forks.
+# use Parallel::ForkManager; #Call the package to use for forks.
 
 #by Matthieu Chartier 10 juin 2013
 #Description
