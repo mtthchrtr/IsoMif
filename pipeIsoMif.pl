@@ -187,8 +187,8 @@ sub areJobsDone{
   my $time=0;
   print "\n\nWaiting for jobs to terminate..";
   while(1){
-    sleep 5;
-    $time+=5;
+    sleep 25;
+    $time+=25;
     my $string;
     if($sys eq "nrg"){
       if($nbFiles!=0){
