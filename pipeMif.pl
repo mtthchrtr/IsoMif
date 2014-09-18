@@ -16,7 +16,6 @@ my $tag="pipeMif";
 my $nbFiles=0;
 my $outDir="";
 my $jobsDir="";
-my $junkDir="";
 my $batch=30;
 my @mifParam=();
 my @cases=();
@@ -34,7 +33,6 @@ for(my $i=0; $i<=$#ARGV; $i++){
   if($ARGV[$i] eq "-x"){ $nbFiles=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-o"){ $outDir=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-f"){ $jobsDir=$ARGV[$i+1]; }
-  if($ARGV[$i] eq "-v"){ $junkDir=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-h"){
     print "##################\nWelcome to pipeMif\n##################\n";
     print "-e         <path to MIF program>\n";
@@ -46,7 +44,6 @@ for(my $i=0; $i<=$#ARGV; $i++){
     print "-f         <dir where to print the job files>\n";
     print "-x         <nb of output files expected in jobsdir>\n";
     print "-o         <dit of the output files>\n";
-    print "-v         <dir for the  stderr stdout>\n";
     print "-h         <print help menu>\n";
     exit;
   }
@@ -67,7 +64,6 @@ sub runCmds{
     system("rm ".$jobsDir."/*");
     open OUT, ">".$jobsDir.$filenb.".pbs" or die "cant open".$jobsDir.$filenb.".pbs";
     print OUT "#!/bin/sh\n#PBS -l nodes=1:ppn=1\n#PBS -N ".$tag.$filenb."\n";
-    # if($junkDir ne ""){ print OUT "#PBS -O ".$junkDir."\n#PBS -E ".$junkDir."\n"; }
     for(my $i=0; $i<@cmds; $i++){
       # if($count==ceil(@cmds/$batch)){
       if($count==$batch){
@@ -76,7 +72,6 @@ sub runCmds{
         $filenb++;
         open OUT, ">".$jobsDir.$filenb.".pbs" or die "cant open".$jobsDir.$filenb.".pbs";
         print OUT "#!/bin/sh\n#PBS -l nodes=1:ppn=1\n#PBS -N ".$tag.$filenb."\n";
-        # if($junkDir ne ""){ print OUT "#PBS -O ".$junkDir."\n#PBS -E ".$junkDir."\n"; }
       }
       print OUT "$cmds[$i]";
       $count++;
@@ -86,7 +81,7 @@ sub runCmds{
     my @files=glob($jobsDir."/*");
     foreach my $file (@files){
       # print "qsub $file\n";
-      system("qsub $file");
+      system("qsub $file -o /dev/null -e /dev/null");
       # print "qsub $file\n";
       sleep(0.1);
     }
@@ -152,7 +147,7 @@ sub recur{
       if($p==$#mifParam){
         if($level==@mifParam){
           foreach my $c (@cases){
-            push @cmds, $c.$cmd." > /dev/null 2>&1";
+            push @cmds, $c.$cmd;
           }
         }
       }else{
