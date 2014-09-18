@@ -12,6 +12,7 @@ my $cg=0;
 my $res=1;
 my $tcg=0;
 my @ca=();
+my @pseudo=();
 my @rot=();
 my @cen=();
 my @va=();
@@ -109,6 +110,8 @@ while($line=<IN>){
   if($line!~/^REMARK/ && $tcg==$cg && $tcg==-1){
     my @l=split(/\s+/,$line);
     push @ca, "$l[0];$l[1];$l[4];$l[8];$l[9];$l[12]";
+  }elsif($line=~/^([a-z]{3})\s+([0-9\.-]+)\s+([0-9\.-]+)\s+([0-9\.-]+)\s+([a-z]{3})\s+([0-9\.-]+)\s+([0-9\.-]+)\s+([0-9\.-]+)/ && $cg==-3){
+    push @pseudo, "$1;$2;$3;$4;$5;$6;$7;$8";
   }elsif($line=~/^A\s+([0-9\.-]+)\s+([0-9\.-]+)\s+([0-9\.-]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)/ && $cg==-2){
     $line=~s/^A\s+//;
     my @s=split(/\s+/,$line);
@@ -257,6 +260,29 @@ if($cg==-1){
     # print PML3 "show lines, resi $s[1] & chain $s[2] & ".$mif1."\nshow lines, resi $s[4] & chain $s[5] & ".$mif2."\n";
     print NPML "show lines, resi $s[1] & chain $s[2] & ".$mif1."\nshow lines, resi $s[4] & chain $s[5] & ".$mif2."\n";
   }
+}elsif($cg==-3){
+  my $ps1="";
+  my $ps2="";
+  foreach my $p (@pseudo){
+    my @s=split(/;/,$p);
+    my $id=0;
+    my @coor=();
+    my @ncoor=();
+    $coor[0]=$s[1];
+    $coor[1]=$s[2];
+    $coor[2]=$s[3];
+    for(my $i=0; $i<3; $i++){
+      $ncoor[$i]=$cen[1][$i];
+      for(my $k=0; $k<3; $k++){
+        $ncoor[$i]+=($coor[$k]-$cen[0][$k])*$rot[$i][$k];
+      }
+    }
+    $ps1.=sprintf("HETATM%5d  CA  %3s A        %8.3f%8.3f%8.3f  0.00 10.00           C  \\\n",$id,uc($s[0]),$ncoor[0],$ncoor[1],$ncoor[2]);
+    $ps2.=sprintf("HETATM%5d  CA  %3s A        %8.3f%8.3f%8.3f  0.00 10.00           C  \\\n",$id,uc($s[4]),$s[5],$s[6],$s[7]);
+    $id++;
+  }
+  print NPML "cmd.read_pdbstr(\"\"\"".$ps1."TER \\\n\"\"\",\"".$tag."_1_pseudo\")\n";
+  print NPML "cmd.read_pdbstr(\"\"\"".$ps2."TER \\\n\"\"\",\"".$tag."_2_pseudo\")\n";
 }elsif($cg==-2){
   # print PML3 "set connect_mode,1\nload ".$outDir.$tag."_1_nodes.pdb\nset connect_mode,1\nload ".$outDir.$tag."_2_nodes.pdb\n";
   
@@ -384,7 +410,15 @@ sub printMifPml{
   # print PML3 "delete ".$tag."_mif".$_[2]."\n";
   return($str);
 }
-print NPML "remove hydrogens\nhide nonbonded\nshow sticks, HET\ndelete ".$tag."_1_nodes\ndelete ".$tag."_2_nodes";
+print NPML "remove hydrogens\nhide nonbonded\nshow sticks, HET\ndelete ".$tag."_1_nodes\ndelete ".$tag."_2_nodes\n";
+
+my @pseudoLab=("HYD","ARM","DON","ACC","DOA");
+
+print NPML "set sphere_scale, 0.25, ".$tag."_1_pseudo\ncolor aquamarine, resn HYD & ".$tag."_1_pseudo\ncolor brightorange, resn ARM & ".$tag."_1_pseudo\n";
+print NPML "color blue, resn DON & ".$tag."_1_pseudo\ncolor red, resn ACC & ".$tag."_1_pseudo\ncolor limegreen, resn DOA & ".$tag."_1_pseudo\nshow spheres, ".$tag."_1_pseudo\n";
+print NPML "set sphere_scale, 0.15, ".$tag."_2_pseudo\ncolor aquamarine, resn HYD & ".$tag."_2_pseudo\ncolor brightorange, resn ARM & ".$tag."_2_pseudo\n";
+print NPML "color blue, resn DON & ".$tag."_2_pseudo\ncolor red, resn ACC & ".$tag."_2_pseudo\ncolor limegreen, resn DOA & ".$tag."_2_pseudo\nshow spheres, ".$tag."_2_pseudo\n";
+
 # print PML3 "remove hydrogens\nhide nonbonded\nshow sticks, HET\ndelete ".$tag."_1_nodes\ndelete ".$tag."_2_nodes\nsave ".$outDir.$tag.".pse";
 # close NODES1;
 # close NODES2;

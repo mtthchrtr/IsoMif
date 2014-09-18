@@ -40,6 +40,7 @@ struct vertex {
 typedef struct atoms atom;
 struct atoms{
   float coor[3];
+  float ncoor[3];
   string resn;
   string atomn;
   string chain;
@@ -50,6 +51,13 @@ struct atoms{
   int mif;
 };
 
+//Atom struc
+struct pseudoC{
+  float coor[3];
+  string type;
+  int id;
+};
+
 typedef struct nodes node;
 typedef node *pNode;
 struct nodes{
@@ -57,6 +65,8 @@ struct nodes{
   vertex* b;
   atom* ca;
   atom* cb;
+  pseudoC* pa;
+  pseudoC* pb;
   // float** nrgs;
   // int* pbPass;
   // int neibrs;
@@ -72,6 +82,7 @@ struct CliqueStruct{
   float tani;
   float taniX;
   float rmsd;
+  float ligRMSD;
   float envSim;
   gsl_matrix *mat_r;
   float cen_a[3];
@@ -88,7 +99,7 @@ float topT=-1.0;
 float topN=-1;
 int bkAll = 0;
 int nCliques=0;
-int maxCliques=200;
+int maxCliques=2000;
 vector<Clique> cliques;
 
 char outH[4000];
@@ -112,12 +123,15 @@ char outPDB2[150];
 int maxNodes=100000;
 float dDist=3.0;
 float ca_dDist=3.0;
+float ps_dDist=1.0;
 float neibr_dDist=3.0;
 int cg_start=-1;
 vector<vertex> mif1;
 vector<vertex> mif2;
 vector<atom> prot1;
 vector<atom> prot2;
+vector<pseudoC> pseudoL1;
+vector<pseudoC> pseudoL2;
 int caSize1=0;
 int caSize2=0;
 vector<int> list1;
@@ -128,6 +142,10 @@ int ss1[4];
 int ss2[4];
 int totalVrtx=0;
 map<int,int> topCliques;
+vector<atom> lig1;
+vector<atom> lig2;
+string rnc1;
+string rnc2;
 
 void sortArray(int *&, int nn, bool*&);
 bool myfunction (nodeI,nodeI);
@@ -142,7 +160,7 @@ float dist3d(float[], float[]);
 void clearStep(int);
 void printNodes();
 int read_commandline(int, char*[]);
-int createVrtxVec(char[], vector<vertex>&, vector<atom>&, int*, int&);
+int createVrtxVec(char[], vector<vertex>&, vector<atom>&, int*, int&, vector<pseudoC>&, string, vector<atom>&);
 void createNodes(int, vector<node>&, int);
 void rem_spaces(char*);
 int get_info(char[], char[]);
@@ -152,3 +170,4 @@ double gsl_matrix_Det3D(gsl_matrix *);
 long long ConnID(int, int);
 void setJTT(int);
 int nam2n(string);
+int samePseudo(pseudoC&,pseudoC&);

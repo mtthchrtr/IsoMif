@@ -1,167 +1,167 @@
-ALA N n.am
-ALA CA c.3
-ALA C c.2
-ALA O o.2
-ALA CB c.3
-ARG N n.am
-ARG CA c.3
-ARG C c.2
-ARG O o.2
-ARG CB c.3
-ARG CG c.3
-ARG CD c.3
-ARG NE n.pl3
-ARG CZ c.cat
-ARG NH1 n.pl3
-ARG NH2 n.pl3
-ASN N n.am
-ASN CA c.3
-ASN C c.2
-ASN O o.2
-ASN CB c.3
-ASN CG c.2
-ASN OD1 o.2
-ASN ND2 n.am
-ASP N n.am
-ASP CA c.3
-ASP C c.2
-ASP O o.2
-ASP CB c.3
-ASP CG c.2
-ASP OD1 o.co2
-ASP OD2 o.co2
-CYS N n.am
-CYS CA c.3
-CYS C c.2
-CYS O o.2
-CYS CB c.3
-CYS SG s.3
-GLN N n.am
-GLN CA c.3
-GLN C c.2
-GLN O o.2
-GLN CB c.3
-GLN CG c.3
-GLN CD c.2
-GLN OE1 o.2
-GLN NE2 n.am
-GLU N n.am
-GLU CA c.3
-GLU C c.2
-GLU O o.2
-GLU CB c.3
-GLU CG c.3
-GLU CD c.2
-GLU OE1 o.co2
-GLU OE2 o.co2
-GLY N n.am
-GLY CA c.3
-GLY C c.2
-GLY O o.2
-HIS N n.am
-HIS CA c.3
-HIS C c.2
-HIS O o.2
-HIS CB c.3
-HIS CG c.ar
-HIS ND1 n.am
-HIS CD2 c.ar
-HIS CE1 c.ar
-HIS NE2 n.am
-ILE N n.am
-ILE CA c.3
-ILE C c.2
-ILE O o.2
-ILE CB c.3
-ILE CG1 c.3
-ILE CG2 c.3
-ILE CD1 c.3
-LEU N n.am
-LEU CA c.3
-LEU C c.2
-LEU O o.2
-LEU CB c.3
-LEU CG c.3
-LEU CD1 c.3
-LEU CD2 c.3
-LYS N n.am
-LYS CA c.3
-LYS C c.2
-LYS O o.2
-LYS CB c.3
-LYS CG c.3
-LYS CD c.3
-LYS CE c.3
-LYS NZ n.4
-MET N n.am
-MET CA c.3
-MET C c.2
-MET O o.2
-MET CB c.3
-MET CG c.3
-MET SD s.3
-MET CE c.3
-PHE N n.am
-PHE CA c.3
-PHE C c.2
-PHE O o.2
-PHE CB c.3
-PHE CG c.ar
-PHE CD1 c.ar
-PHE CD2 c.ar
-PHE CE1 c.ar
-PHE CE2 c.ar
-PHE CZ c.ar
-PRO N n.3
-PRO CA c.3
-PRO C c.2
-PRO O o.2
-PRO CB c.3
-PRO CG c.3
-PRO CD c.3
-SER N n.am
-SER CA c.3
-SER C c.2
-SER O o.2
-SER CB c.3
-SER OG o.3
-THR N n.am
-THR CA c.3
-THR C c.2
-THR O o.2
-THR CB c.3
-THR OG1 o.3
-THR CG2 c.3
-TRP N n.am
-TRP CA c.3
-TRP C c.2
-TRP O o.2
-TRP CB c.3
-TRP CG c.ar
-TRP CD1 c.ar
-TRP CD2 c.ar
-TRP NE1 n.am
-TRP CE2 c.ar
-TRP CE3 c.ar
-TRP CZ2 c.ar
-TRP CZ3 c.ar
-TRP CH2 c.ar
-TYR N n.am
-TYR CA c.3
-TYR C c.2
-TYR O o.2
-TYR CB c.3
-TYR CG c.ar
-TYR CD1 c.ar
-TYR CD2 c.ar
-TYR CE1 c.ar
-TYR CE2 c.ar
-TYR CZ c.ar
-TYR OH o.3
-VAL N n.am
-VAL CA c.3
-VAL C c.2
-VAL O o.2
-VAL CB c.3
-VAL CG1 c.3
-VAL CG2 c.3
+       ALA          N       n.am
+       ALA         CA        c.3
+       ALA          C        c.2
+       ALA          O        o.2
+       ALA         CB        c.3
+       ARG          N       n.am
+       ARG         CA        c.3
+       ARG          C        c.2
+       ARG          O        o.2
+       ARG         CB        c.3
+       ARG         CG        c.3
+       ARG         CD        c.3
+       ARG         NE      n.pl3
+       ARG         CZ      c.cat
+       ARG        NH1      n.pl3
+       ARG        NH2      n.pl3
+       ASN          N       n.am
+       ASN         CA        c.3
+       ASN          C        c.2
+       ASN          O        o.2
+       ASN         CB        c.3
+       ASN         CG        c.2
+       ASN        OD1        o.2
+       ASN        ND2       n.am
+       ASP          N       n.am
+       ASP         CA        c.3
+       ASP          C        c.2
+       ASP          O        o.2
+       ASP         CB        c.3
+       ASP         CG        c.2
+       ASP        OD1      o.co2
+       ASP        OD2      o.co2
+       CYS          N       n.am
+       CYS         CA        c.3
+       CYS          C        c.2
+       CYS          O        o.2
+       CYS         CB        c.3
+       CYS         SG        s.3
+       GLN          N       n.am
+       GLN         CA        c.3
+       GLN          C        c.2
+       GLN          O        o.2
+       GLN         CB        c.3
+       GLN         CG        c.3
+       GLN         CD        c.2
+       GLN        OE1        o.2
+       GLN        NE2       n.am
+       GLU          N       n.am
+       GLU         CA        c.3
+       GLU          C        c.2
+       GLU          O        o.2
+       GLU         CB        c.3
+       GLU         CG        c.3
+       GLU         CD        c.2
+       GLU        OE1      o.co2
+       GLU        OE2      o.co2
+       GLY          N       n.am
+       GLY         CA        c.3
+       GLY          C        c.2
+       GLY          O        o.2
+       HIS          N       n.am
+       HIS         CA        c.3
+       HIS          C        c.2
+       HIS          O        o.2
+       HIS         CB        c.3
+       HIS         CG       c.ar
+       HIS        ND1      n.his
+       HIS        CD2       c.ar
+       HIS        CE1       c.ar
+       HIS        NE2      n.his
+       ILE          N       n.am
+       ILE         CA        c.3
+       ILE          C        c.2
+       ILE          O        o.2
+       ILE         CB        c.3
+       ILE        CG1        c.3
+       ILE        CG2        c.3
+       ILE        CD1        c.3
+       LEU          N       n.am
+       LEU         CA        c.3
+       LEU          C        c.2
+       LEU          O        o.2
+       LEU         CB        c.3
+       LEU         CG        c.3
+       LEU        CD1        c.3
+       LEU        CD2        c.3
+       LYS          N       n.am
+       LYS         CA        c.3
+       LYS          C        c.2
+       LYS          O        o.2
+       LYS         CB        c.3
+       LYS         CG        c.3
+       LYS         CD        c.3
+       LYS         CE        c.3
+       LYS         NZ        n.4
+       MET          N       n.am
+       MET         CA        c.3
+       MET          C        c.2
+       MET          O        o.2
+       MET         CB        c.3
+       MET         CG        c.3
+       MET         SD        s.3
+       MET         CE        c.3
+       PHE          N       n.am
+       PHE         CA        c.3
+       PHE          C        c.2
+       PHE          O        o.2
+       PHE         CB        c.3
+       PHE         CG       c.ar
+       PHE        CD1       c.ar
+       PHE        CD2       c.ar
+       PHE        CE1       c.ar
+       PHE        CE2       c.ar
+       PHE         CZ       c.ar
+       PRO          N        n.3
+       PRO         CA        c.3
+       PRO          C        c.2
+       PRO          O        o.2
+       PRO         CB        c.3
+       PRO         CG        c.3
+       PRO         CD        c.3
+       SER          N       n.am
+       SER         CA        c.3
+       SER          C        c.2
+       SER          O        o.2
+       SER         CB        c.3
+       SER         OG        o.3
+       THR          N       n.am
+       THR         CA        c.3
+       THR          C        c.2
+       THR          O        o.2
+       THR         CB        c.3
+       THR        OG1        o.3
+       THR        CG2        c.3
+       TRP          N       n.am
+       TRP         CA        c.3
+       TRP          C        c.2
+       TRP          O        o.2
+       TRP         CB        c.3
+       TRP         CG       c.ar
+       TRP        CD1       c.ar
+       TRP        CD2       c.ar
+       TRP        NE1       n.am
+       TRP        CE2       c.ar
+       TRP        CE3       c.ar
+       TRP        CZ2       c.ar
+       TRP        CZ3       c.ar
+       TRP        CH2       c.ar
+       TYR          N       n.am
+       TYR         CA        c.3
+       TYR          C        c.2
+       TYR          O        o.2
+       TYR         CB        c.3
+       TYR         CG       c.ar
+       TYR        CD1       c.ar
+       TYR        CD2       c.ar
+       TYR        CE1       c.ar
+       TYR        CE2       c.ar
+       TYR         CZ       c.ar
+       TYR         OH        o.3
+       VAL          N       n.am
+       VAL         CA        c.3
+       VAL          C        c.2
+       VAL          O        o.2
+       VAL         CB        c.3
+       VAL        CG1        c.3
+       VAL        CG2        c.3

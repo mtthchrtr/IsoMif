@@ -32,15 +32,23 @@ int main(int argc, char *argv[]){
   //   cout << probesList[i]<<endl;
   // }
 
-  sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK nb_of_probes: %d\nREMARK C-alpha_dDist: %5.2f\nREMARK dDist: %5.2f\nREMARK jtt_threshold: %d\nREMARK max_nodes: %d\nREMARK commonInt: %d\n",cmdLine,nrg_file1,nrg_file2,nb_of_probes,ca_dDist,dDist,jttt,maxNodes,commonInt);
+  sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK nb_of_probes: %d\nREMARK C-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nREMARK dDist: %5.2f\nREMARK jtt_threshold: %d\nREMARK max_nodes: %d\nREMARK commonInt: %d\n",cmdLine,nrg_file1,nrg_file2,nb_of_probes,ca_dDist,ps_dDist,dDist,jttt,maxNodes,commonInt);
   strcpy(outH,tmp);
 
   //Print info to User
-  printf("--# Get Info #--\n\nEnergy file 1: %s\nEnergy file 2: %s\nOutfile: %s\nNumber of probes: %d\n\n--# Parameter Values #--\n\nC-alpha_dDist: %5.2f\nNode dDist: %5.2f\nneibr dDist: %5.2f\nJTT threshold: %d\nMaximum nodes: %d\nGet all C-alpha cliques: %d\nMinimum number of Common interaction: %d\nPrint details: %d\n",nrg_file1,nrg_file2,out_file,nb_of_probes,ca_dDist,dDist,neibr_dDist,jttt,maxNodes,bkAll,commonInt,printDetails);
+  printf("--# Get Info #--\n\nEnergy file 1: %s\nEnergy file 2: %s\nOutfile: %s\nNumber of probes: %d\n\n--# Parameter Values #--\n\nC-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nNode dDist: %5.2f\nneibr dDist: %5.2f\nJTT threshold: %d\nMaximum nodes: %d\nGet all C-alpha cliques: %d\nMinimum number of Common interaction: %d\nPrint details: %d\n",nrg_file1,nrg_file2,out_file,nb_of_probes,ca_dDist,ps_dDist,dDist,neibr_dDist,jttt,maxNodes,bkAll,commonInt,printDetails);
   cout<<"CG begin "<<steps.front()<<" cg_start "<<cg_start<<" end "<<steps.back()<<endl<<endl;
+  cout<<rnc1<<" "<<rnc2<<endl;
+  createVrtxVec(nrg_file1,mif1,prot1,ss1,caSize1,pseudoL1,rnc1,lig1);
+  createVrtxVec(nrg_file2,mif2,prot2,ss2,caSize2,pseudoL2,rnc2,lig2);
 
-  createVrtxVec(nrg_file1,mif1,prot1,ss1,caSize1);
-  createVrtxVec(nrg_file2,mif2,prot2,ss2,caSize2);
+  for(int i=0; i<lig1.size(); i++){
+    cout<<lig1[i].resn<<" "<<lig1[i].resnb<<" "<<lig1[i].chain<<" "<<lig1[i].atomn<<" "<<lig1[i].coor[0]<<" "<<lig1[i].coor[1]<<" "<<lig1[i].coor[2]<<endl;
+  }
+
+  for(int i=0; i<lig2.size(); i++){
+    cout<<lig2[i].resn<<" "<<lig2[i].resnb<<" "<<lig2[i].chain<<" "<<lig2[i].atomn<<" "<<lig2[i].coor[0]<<" "<<lig2[i].coor[1]<<" "<<lig2[i].coor[2]<<endl;
+  }
 
   // for(i=0; i<mif1.size(); i++){
   //   cout<< mif1.at(i).coor[0]<<" "<< mif1.at(i).coor[1]<<" "<< mif1.at(i).coor[2]<<" "<< mif1.at(i).pb[0]<<" "<< mif1.at(i).pb[1]<<" "<< mif1.at(i).pb[2]<<" "<< mif1.at(i).pb[3]<<" "<< mif1.at(i).pb[4]<<" "<< mif1.at(i).pb[5]<<endl;
@@ -194,7 +202,8 @@ int main(int argc, char *argv[]){
       }
       cg=steps[cs];
 
-      //If its not the first stage rotate the vertexes using the previous rotation matrix
+      //If its not the first stage and its a different grid resolution than previous stage
+      //rotate the vertexes using the previous rotation matrix
       if(cs>0 && steps[cs]!=steps[cs-1]){
 
         //Print Matrix and centers
@@ -244,6 +253,7 @@ int main(int argc, char *argv[]){
       createNodes(cg,graph,cgs);
       numNodes=graph.size();
       cout<<"NbNodes "<<numNodes<<endl;
+
       // cout<<"g.size: "<<graph.size()<<endl;
 
       // for(i=0; i<graph.size(); i++){
@@ -316,10 +326,21 @@ void adjMat(vector<node> &graph, bool* &conn, int cg){
   for(i=0; i<graph.size(); i++){
     conn[ConnID(i,i)]=1; //Diagonal == 1
     for(j=0; j<i; j++){
-      if(cg<0){
+      if(cg==-1){
         if(graph.at(i).ca->id != graph.at(j).ca->id && graph.at(i).cb->id != graph.at(j).cb->id){
           dist=fabs(dist3d(graph.at(i).ca->coor,graph.at(j).ca->coor)-dist3d(graph.at(i).cb->coor,graph.at(j).cb->coor));        
           if(dist < ca_dDist || fabs(dist-ca_dDist)<0.001){ //If passes distance threshold
+            // cout<<endl<<graph.at(i).a->coor[0]<<" "<<graph.at(i).a->coor[1]<<" "<<graph.at(i).a->coor[2]<<" "<<graph.at(j).a->coor[0]<<" "<<graph.at(j).a->coor[1]<<" "<<graph.at(j).a->coor[2];
+            // cout<<endl<<graph.at(i).b->coor[0]<<" "<<graph.at(i).b->coor[1]<<" "<<graph.at(i).b->coor[2]<<" "<<graph.at(j).b->coor[0]<<" "<<graph.at(j).b->coor[1]<<" "<<graph.at(j).b->coor[2];
+            // cout<<endl<<"Dist: "<<dist<<endl<<i<<" "<<j<< " ConnID: "<< ConnID(i,j)<<" Connection!"<<endl;
+            conn[ConnID(i,j)]=1;
+            numEdges++; //create the new edge
+          }
+        }
+      }else if(cg==-3){
+        if(graph.at(i).pa->id != graph.at(j).pa->id && graph.at(i).pb->id != graph.at(j).pb->id){
+          dist=fabs(dist3d(graph.at(i).pa->coor,graph.at(j).pa->coor)-dist3d(graph.at(i).pb->coor,graph.at(j).pb->coor));        
+          if(dist < ps_dDist || fabs(dist-ps_dDist)<0.001){ //If passes distance threshold
             // cout<<endl<<graph.at(i).a->coor[0]<<" "<<graph.at(i).a->coor[1]<<" "<<graph.at(i).a->coor[2]<<" "<<graph.at(j).a->coor[0]<<" "<<graph.at(j).a->coor[1]<<" "<<graph.at(j).a->coor[2];
             // cout<<endl<<graph.at(i).b->coor[0]<<" "<<graph.at(i).b->coor[1]<<" "<<graph.at(i).b->coor[2]<<" "<<graph.at(j).b->coor[0]<<" "<<graph.at(j).b->coor[1]<<" "<<graph.at(j).b->coor[2];
             // cout<<endl<<"Dist: "<<dist<<endl<<i<<" "<<j<< " ConnID: "<< ConnID(i,j)<<" Connection!"<<endl;
@@ -584,7 +605,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   // int envSim=0;
 
   nCliques++;
-  cout<<nCliques<<endl;
+  // cout<<nCliques<<endl;
 
   // for(int i=0; i<n; i++){
   //   graph.at(list[i]);
@@ -608,11 +629,19 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     for(int i=0; i<n; i++){ newClique.nodes.push_back(graph.at(list[i])); }
     cliques.push_back(newClique);
 
+    //Get list of coords to get rotation matrix
     if(cg==-1){
       for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
         for(int i=0; i<3; i++){
           la.push_back((*it).ca->coor[i]);
           lb.push_back((*it).cb->coor[i]);
+        }
+      }
+    }else if(cg==-3){
+      for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
+        for(int i=0; i<3; i++){
+          la.push_back((*it).pa->coor[i]);
+          lb.push_back((*it).pb->coor[i]);
         }
       }
     }else{
@@ -637,6 +666,64 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     }
     cliques.back().det=calcRot(la,lb,cliques.back().cen_a,cliques.back().cen_b,cliques.back().mat_r);
 
+    cout<<"Rotating vertexes of Mif 1 onto Mif 2 using list of atoms..."<<endl;
+    //Rotate mif 1 onto mif 2
+    for(int v=0; v<mif1.size(); v++){
+      for(int i=0; i<3; i++){
+        mif1[v].ncoor[i]=cliques.back().cen_b[i];
+        for(int j=0; j<3; j++){
+          mif1[v].ncoor[i]+=(mif1[v].coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
+        }
+      }
+    }
+
+    cout<<"Rotating ligand 1 on ligand 2..."<<endl;
+    //Rotate mif 1 onto mif 2
+    float ligRMSD=0.0;
+    int ligRMSDc=0;
+    if(rnc1.compare("")!=0 && rnc2.compare("")!=0 && lig1.size()>0 && lig2.size()>0){
+      for(int v=0; v<lig1.size(); v++){
+        float dist=0.0;
+        for(int i=0; i<3; i++){
+          lig1[v].ncoor[i]=cliques.back().cen_b[i];
+          for(int j=0; j<3; j++){ lig1[v].ncoor[i]+=(lig1[v].coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j); }
+        }
+        for(int w=0; w<lig2.size(); w++){
+          if(lig2[w].atomn.compare(lig1[v].atomn)==0){
+            ligRMSD+=dist3d(lig1[v].ncoor,lig2[w].coor);
+            cout<<lig1[v].atomn<<" "<<lig2[w].atomn<<" "<<dist3d(lig1[v].ncoor,lig2[w].coor)<<endl;
+            ligRMSDc++;
+            break;
+          }
+        }
+      }
+      if(ligRMSDc>0) ligRMSD=sqrt(ligRMSD/(float)ligRMSDc);
+    }
+    cout<<"ligRMSD "<<ligRMSD<<endl;
+    cliques.back().ligRMSD=ligRMSD;
+
+    // cout<<"Finding corresponding vertexes..."<<endl;
+    // float dist=0.0;
+    // for(int u=0; u<mif1.size(); u++){
+    //   if(mif1[u].grid[cg2]!=1) continue;
+    //   for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
+    //     // dist=dist3d(mif1[u].ncoor,(*it).a.coor);
+    //   }
+    //   for(int v=0; v<mif2.size(); v++){
+    //     if(mif2[v].grid[cg2]!=1) continue;
+    //     dist=dist3d(mif1[u].ncoor,mif2[v].coor);  
+    //     if(dist < dDist || fabs(dist-dDist)<0.001){ //If passes distance threshold
+    //       for(int i=0; i<6; i++){
+    //         if(mif1[u].pb[i]==1 && mif2[v].pb[i]==1){
+    //           cout<<i<<" - "<<mif1[u].ncoor[0]<<" "<<mif1[u].ncoor[1]<<" "<<mif1[u].ncoor[2]<<" "<<mif2[v].coor[0]<<" "<<mif2[v].coor[1]<<" "<<mif2[v].coor[2]<<" - "<<mif1[u].pb[i]<<" "<<mif2[v].pb[i]<<endl;  
+    //           mif1[u].m[i]=1;
+    //           mif2[v].m[i]=1;
+    //         }
+    //       }
+    //     }
+    //   }
+    // }
+
     //Calculating RMSD and vector similarity
     float rmsd=0.0;
     float envNodes=0.0;
@@ -647,17 +734,21 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
         for(int j=0; j<3; j++){
           if(cg==-1){
             ncoor[i]+=((*it).ca->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
+          }else if(cg==-3){
+            ncoor[i]+=((*it).pa->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
           }else{
             ncoor[i]+=((*it).a->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
           }
         }
-        if(cg==-1){
-          rmsd+=pow(ncoor[i]-(*it).cb->coor[i],2);
-        }else{
-          rmsd+=pow(ncoor[i]-(*it).b->coor[i],2);
-        }
       }
-      // if(cg!=-1){
+      if(cg==-1){
+        rmsd+=dist3d(ncoor,(*it).cb->coor);
+      }else if(cg==-3){
+        rmsd+=dist3d(ncoor,(*it).pb->coor);
+      }else{
+        rmsd+=dist3d(ncoor,(*it).b->coor);
+      }
+      // if(cg!=-1 && cg!=-3){
       //   float env=0.0;
       //   float envSum=0.0;
       //   int envC=0;
@@ -681,11 +772,12 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     }
     rmsd=sqrt(rmsd/(float)cliques.back().nbNodes);
     cliques.back().rmsd=rmsd;
-
     // cliques.back().envSim=sqrt(cliques.back().envSim/envNodes);
 
     if(cg==-1){
       cliques.back().tani=(float)n/((float)caSize1+(float)caSize2-(float)n);
+    }else if(cg==-3){
+      cliques.back().tani=(float)n/((float)pseudoL1.size()+(float)pseudoL2.size()-(float)n);
     }else{
       cliques.back().tani=(float)n/((float)ss1[cg]+(float)ss2[cg]-(float)n);
     }
@@ -705,11 +797,10 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     // cout<<endl<<"cen_a: "<<cliques.back().cen_a[0]<<" "<<cliques.back().cen_a[1]<<" "<<cliques.back().cen_a[2];
     // cout<<endl<<"cen_b: "<<cliques.back().cen_b[0]<<" "<<cliques.back().cen_b[1]<<" "<<cliques.back().cen_b[2]<<endl;
     
-    if(cliques.back().tani>topT){
+    if(cliques.back().nbNodes>topN){
       cout<<"TOP NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<endl;
-      // cout<<"TOP b4 "<<topN;
       topT=cliques.back().tani;
-      // cout<<" now "<<topN<<endl;
+      topN=cliques.back().nbNodes;
       topCliques[cg]=cliques.size()-1;
     }else{
       // cout<<"NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" envSim: "<<cliques.back().envSim<<endl;
@@ -730,7 +821,12 @@ void printNodes(){
   char suffix[50];
 
   if(wrfn==1){ //Add similarity score to filename
-    sprintf(suffix,"_%d_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].tani);
+    if(cliques[topCliques[steps.back()]].ligRMSD!=0){
+      sprintf(suffix,"_%d_%5.4f_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].tani,cliques[topCliques[steps.back()]].ligRMSD);
+    }else{
+      sprintf(suffix,"_%d_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].tani);
+    }
+    
     strcat(out_file,suffix);
   }
   strcat(out_file,".isomif");
@@ -752,6 +848,11 @@ void printNodes(){
       fprintf(fp,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)prot1.size(),(int)prot2.size());
       for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
         fprintf(fp, "%3s %4d %4s %5d %s %8.3f %8.3f %8.3f %3s %4d %4s %5d %s %8.3f %8.3f %8.3f\n",(*it).ca->resn.c_str(),(*it).ca->resnb,(*it).ca->atomn.c_str(),(*it).ca->atomnb,(*it).ca->chain.c_str(),(*it).ca->coor[0],(*it).ca->coor[1],(*it).ca->coor[2],(*it).cb->resn.c_str(),(*it).cb->resnb,(*it).cb->atomn.c_str(),(*it).cb->atomnb,(*it).cb->chain.c_str(),(*it).cb->coor[0],(*it).cb->coor[1],(*it).cb->coor[2]);
+      }
+    }else if(steps[cs]==-3){
+      fprintf(fp,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)pseudoL1.size(),(int)pseudoL2.size());
+      for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
+        fprintf(fp, "%3s %8.3f %8.3f %8.3f %3s %8.3f %8.3f %8.3f\n",(*it).pa->type.c_str(),(*it).pa->coor[0],(*it).pa->coor[1],(*it).pa->coor[2],(*it).pb->type.c_str(),(*it).pb->coor[0],(*it).pb->coor[1],(*it).pb->coor[2]);
       }
     }else{
       fprintf(fp,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cliques[i].cg],ss2[cliques[i].cg]);
@@ -975,6 +1076,20 @@ void createNodes(int cg, vector<node> &graph, int s){
         }
       }
     }
+  }else if(cg==-3){
+    for(int i=0; i<pseudoL1.size(); i++){
+      for(int j=0; j<pseudoL2.size(); j++){
+        if(samePseudo(pseudoL1.at(i),pseudoL2.at(j))==1){ //They are similar based on the JTT matrix and JTT threshold
+
+          node newNode;
+          newNode.pa=&pseudoL1.at(i);
+          newNode.pb=&pseudoL2.at(j);
+          graph.push_back(newNode);
+        }else{
+
+        }
+      }
+    }
   }else{
     for(int i=0; i<mif1.size(); i++){
       if(mif1.at(i).grid[cg]!=1) continue;
@@ -1022,15 +1137,42 @@ void createNodes(int cg, vector<node> &graph, int s){
 /*234567890123456789012345678901234567890123456789012345678901234567890*/
 /*        1         2         3         4         5         6         7*/
 /***********************************************************************/
-int createVrtxVec(char mifFile[], vector<vertex>& p, vector<atom>& a, int* ss, int &caSize){
+int samePseudo(pseudoC& ps1,pseudoC& ps2){
+  if(ps1.type.compare("don")==0 && ps2.type.compare("don")==0){
+    return(1);
+  }else if(ps1.type.compare("acc")==0 && ps2.type.compare("acc")==0){
+    return(1);
+  }else if(ps1.type.compare("doa")==0 && ps2.type.compare("acc")==0){
+    return(1);
+  }else if(ps1.type.compare("doa")==0 && ps2.type.compare("don")==0){
+    return(1);
+  }else if(ps1.type.compare("doa")==0 && ps2.type.compare("doa")==0){
+    return(1);
+  }else if(ps1.type.compare("hyd")==0 && ps2.type.compare("hyd")==0){
+    return(1);
+  }else if(ps1.type.compare("arm")==0 && ps2.type.compare("arm")==0){
+    return(1);
+  }
+  return(0);
+}
+/***********************************************************************/
+/*        1         2         3         4         5         6         7*/
+/*234567890123456789012345678901234567890123456789012345678901234567890*/
+/*        1         2         3         4         5         6         7*/
+/***********************************************************************/
+int createVrtxVec(char mifFile[], vector<vertex>& p, vector<atom>& a, int* ss, int &caSize, vector<pseudoC>& pl, string rnc, vector<atom>& llist){
   string line;
   vertex* nvrtx;
   atom* natom;
+  pseudoC* npseudo;
   float x,y,z;
   string resn;
   int resnb,mif,bs;
   int atmC=0;
+  int pcC=0;
   string atomn;
+  string pseudo;
+  string thisresnumc;
   int atomnb;
   string chain;
   string dump;
@@ -1056,9 +1198,26 @@ int createVrtxVec(char mifFile[], vector<vertex>& p, vector<atom>& a, int* ss, i
       natom->id=atmC;
       natom->mif=mif;
       natom->bs=bs;
+      thisresnumc = resn + to_string(resnb) + chain;
+      if(rnc.compare(thisresnumc)==0){
+        size_t found;
+        found = atomn.find("H");
+        if(found==string::npos) llist.push_back(*natom);
+      }
       if(atomn.compare("CA")==0 && bs==1) caSize++;
       a.push_back(*natom);
       atmC++;
+    }else if(line.compare(0,7,"#PSEUDO")==0){
+      stringstream test(line);
+      test >> dump >> pseudo >> x >> y >> z;
+      npseudo = new pseudoC;
+      npseudo->type=pseudo;
+      npseudo->coor[0]=x;
+      npseudo->coor[1]=y;
+      npseudo->coor[2]=z;
+      npseudo->id=pcC;
+      pl.push_back(*npseudo);
+      pcC++;
     }else if(line.compare(0,1,"#")!=0){
       stringstream test(line);
       test >> x >> y >> z >> pb0 >> pb1 >> pb2 >> pb3 >> pb4 >> pb5 >> gr0 >> gr1 >> gr2 >> gr3 >> e0 >> e1 >> e2 >> e3 >> e4 >> e5 >> e6 >> e7 >> e8 >> e9 >> e10 >> e11 >> e12 >> e13 >> e14 >> e15 >> e16 >> e17 >> e18 >> e19;
@@ -1179,6 +1338,8 @@ int read_commandline(int argc, char *argv[]){
 
   // assignment of default values to optional parameters
   commonInt=1;
+  rnc1="";
+  rnc2="";
 
   strcpy(usage,"\n!---   IsoMIF   ---!\nWelcome.Bienvenue.\n");
   strcat(usage,"\nObligatory Arguments:\n");
@@ -1193,6 +1354,8 @@ int read_commandline(int argc, char *argv[]){
   strcat(usage,tmp_line);
   sprintf(tmp_line,"-dca        : \t C-alpha Distance Threshold [default %4.2f A]\n",ca_dDist);
   strcat(usage,tmp_line);
+  sprintf(tmp_line,"-dps        : \t Pseudocenter Distance Threshold [default %4.2f A]\n",ps_dDist);
+  strcat(usage,tmp_line);
   sprintf(tmp_line,"-dcn        : \t C-alpha-Node Distance Threshold [default %4.2f A]\n",neibr_dDist);
   strcat(usage,tmp_line);
   sprintf(tmp_line,"-s          : \t Get all C-alpha cliques (1=yes, 0=no) [default %d]\n",bkAll);
@@ -1203,7 +1366,9 @@ int read_commandline(int argc, char *argv[]){
   strcat(usage,tmp_line);
   sprintf(tmp_line,"-o          : \t Output Directory Path [Default is generated using the Mif filenames]\n");
   strcat(usage,tmp_line);
-  sprintf(tmp_line,"-l          : \t List of probes to compare\n");
+  sprintf(tmp_line,"-l1         : \t Resnumc of ligand 1\n");
+  strcat(usage,tmp_line);
+  sprintf(tmp_line,"-l2         : \t Resnumc of ligand 2\n");
   strcat(usage,tmp_line);
   sprintf(tmp_line,"-q          : \t List of atoms from p1 and p2 to superimpose for step -2\n");
   strcat(usage,tmp_line);
@@ -1279,6 +1444,10 @@ int read_commandline(int argc, char *argv[]){
       sscanf(argv[nb_arg+1],"%f",&ca_dDist);
     }
 
+    if(strcmp(argv[nb_arg],"-dps")==0){
+      sscanf(argv[nb_arg+1],"%f",&ps_dDist);
+    }
+
     if(strcmp(argv[nb_arg],"-dcn")==0){
       sscanf(argv[nb_arg+1],"%f",&neibr_dDist);
     }
@@ -1314,6 +1483,14 @@ int read_commandline(int argc, char *argv[]){
 
     if(strcmp(argv[nb_arg],"-o")==0){
       sprintf(outbase,"%s",argv[nb_arg+1]);
+    }
+
+    if(strcmp(argv[nb_arg],"-l1")==0){
+      rnc1=argv[nb_arg+1];
+    }
+
+    if(strcmp(argv[nb_arg],"-l2")==0){
+      rnc2=argv[nb_arg+1];
     }
 
     if(strcmp(argv[nb_arg],"-pr")==0){

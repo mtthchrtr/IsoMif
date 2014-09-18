@@ -8,6 +8,8 @@ use warnings;
 
 my @probesInt=();
 my @ca=();
+my @pseudo=();
+my @protgrid=();
 my @gridInt=();
 my @probes=();
 my @grid=();
@@ -60,6 +62,14 @@ while(my $line=<IN>){
       # print "$1 $2 $3 $4 $5 $6 $7 $8\n";
     }
     next;
+  }elsif($line=~/^#PSEUDO/){
+    if($line=~/#PSEUDO\s+([a-z]+)\s+([\.0-9-]+)\s+([\.0-9-]+)\s+([\.0-9-]+)$/i){
+      push @pseudo, "$1 $2 $3 $4";
+    }
+    next;
+  }elsif($line=~/^#PG\s+([\.0-9-]+)\s+([\.0-9-]+)\s+([\.0-9-]+)$/){
+      push @protgrid, "$1 $2 $3";
+    next;
   }elsif($line=~/^#/){
     next;
   }elsif($line=~/^$/){
@@ -93,8 +103,16 @@ while(my $line=<IN>){
 print NPML "TER \\\n\"\"\",\"".$mifName."\")\nshow cartoon\nremove (resn HOH)\nshow sticks, HET & ".$mifName."\nset connect_mode,1\n";
 close IN;
 
-# open OUT, ">".$mifViewFolder."/".$mifName.".pdb" or die "Cant open mifView file";
 my $it=0;
+print NPML "cmd.read_pdbstr(\"\"\"";
+foreach my $p (@pseudo){
+  my @s=split(/\s+/,$p);
+  printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",$it,uc($s[0]),$s[1],$s[2],$s[3];
+  $it++;
+}
+print NPML "TER \\\n\"\"\",\"pseudocenters\")\nhide nonbonded\nset connect_mode,1\n";
+
+# open OUT, ">".$mifViewFolder."/".$mifName.".pdb" or die "Cant open mifView file";
 for(my $i=0; $i<6; $i++){ #Loop each probe
   if($#{$probes[$i]}){
     for(my $g=0; $g<4; $g++){ #Loop each grid resolution
@@ -103,7 +121,7 @@ for(my $i=0; $i<6; $i++){ #Loop each probe
       for(my $j=0; $j<@{$probes[$i]}; $j+=7){ #For each node
         if($probes[$i][$j+3+$g]==1){ #If its in this grid resolution
           # printf OUT "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\n",$it,$probesLab[$i],$probes[$i][$j],$probes[$i][$j+1],$probes[$i][$j+2];          
-          printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",$it,$probesLab[$i],$probes[$i][$j],$probes[$i][$j+1],$probes[$i][$j+2];
+          printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",0,$probesLab[$i],$probes[$i][$j],$probes[$i][$j+1],$probes[$i][$j+2];
           $it++;
         }
       }
@@ -113,12 +131,11 @@ for(my $i=0; $i<6; $i++){ #Loop each probe
   }
 }
 for(my $i=0; $i<3; $i++){
-  if(@{$grid[$i]}){
+  if(defined @{$grid[$i]}){
     $gridInt[$i][0]=$it;
     print NPML "cmd.read_pdbstr(\"\"\"";
-    for(my $j=0; $j<@{$grid[$i]}; $j+=3){
-      # printf OUT "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\n",$it,$gridLab[$i],$grid[$i][$j],$grid[$i][$j+1],$grid[$i][$j+2];          
-      printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",$it,$gridLab[$i],$grid[$i][$j],$grid[$i][$j+1],$grid[$i][$j+2];          
+    for(my $j=0; $j<@{$grid[$i]}; $j+=3){       
+      printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",0,$gridLab[$i],$grid[$i][$j],$grid[$i][$j+1],$grid[$i][$j+2];          
       $it++;
     }
     print NPML "TER \\\n\"\"\",\"".$gridLab[$i]."\")\n";
@@ -158,21 +175,34 @@ for(my $i=0; $i<3; $i++){
 }
 
 #Print Ca atoms
-# my $nbca=@ca;
-# if($nbca>0){
-#   print PML "create ca, id ";
-#   for(my $i=0; $i<@ca; $i++){
-#     my @s=split(/\s+/,$ca[$i]);
-#     print PML "$s[3]";
-#     print PML "+" unless($i==$#ca);
-#   }
-#   print PML " & ".$mifName."_cpy\n";
-# }
-# print PML "color deepteal, ca\nset sphere_scale, 0.3, ca\nshow spheres, ca\n";
+my $nbca=@ca;
+if($nbca>0){
+  print NPML "create ca, id ";
+  for(my $i=0; $i<@ca; $i++){
+    my @s=split(/\s+/,$ca[$i]);
+    print NPML "$s[3]";
+    print NPML "+" unless($i==$#ca);
+  }
+  print NPML " & ".$mifName."\n";
+}
+
+if(scalar @protgrid){
+  print NPML "cmd.read_pdbstr(\"\"\"";
+  for(my $i=0; $i<@protgrid; $i++){
+    my @s=split(/\s+/,$protgrid[$i]);
+    printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",0,"PGD",$s[0],$s[1],$s[2];
+  }
+  print NPML "TER \\\n\"\"\",\"".$mifName."_grid\")\ncolor white,".$mifName."_grid\nshow nonbonded,".$mifName."_grid\n";
+}
+
+# my @pbColors=("aquamarine","brightorange","blue","red","limegreen","lightmagenta");
+print NPML "color deepteal, ca\nset sphere_scale, 0.3, ca\nshow spheres, ca\n";
+print NPML "set sphere_scale, 0.3, pseudocenter\ncolor aquamarine, resn HYD & pseudocenters\ncolor brightorange, resn ARM & pseudocenters\n";
+print NPML "color blue, resn DON & pseudocenters\ncolor red, resn ACC & pseudocenters\ncolor limegreen, resn DOA & pseudocenters\nshow spheres, pseudocenters\n";
 
 # print PML "delete ".$mifName."\nhide lines\nshow sticks, HET & ".$mifName."_cpy\n";
 # print PML "save ".$mifViewFolder."/".$mifName.".pse\n";
-# close PML;
+close NPML;
 
 ########################################
 #   SUBS

@@ -32,6 +32,7 @@ struct atoms{
   string resn;
   string atomn;
   string chain;
+  string pseudo;
   int resnb; //residue ID in PDB
   int atomnb; //atomnb in PDB
   int dir;
@@ -47,10 +48,19 @@ struct vertexes{
   float x,y,z;
   // float** nrg;
   // int** pb_bool;
+  int p;
+  int bu;
   int* ints;
   int grid[4];
   map<string,float> env;
   int id;
+};
+
+struct pseudovrtx
+{
+    float x,y,z;
+    float dist;
+    string type;
 };
 
 struct atomSingleStruc{
@@ -97,6 +107,7 @@ float minGridDist=1.5;
 float atmPbMaxDist=8.0;
 float gridLigDist=2.0;
 float caT=5.0;
+int smoothDist=0;
 int printDetails=0;
 int printAtoms=1;
 int* probesList;
@@ -106,8 +117,10 @@ int nbOfAts=0;
 int nbOfAtoms=0;
 int nbOfProbes=0;
 int ss[4];
+int bul=10;
 float* epsilons;
 map<string,string> atomTypes;
+map<string,string> pseudoC;
 map<string,int> eps;
 map<string,int> hyd;
 map<string,int> arm;
@@ -119,6 +132,7 @@ map<string,float> maxD;
 map<string,float> nrgT;
 vector<string> probes;
 vector<string> aa;
+vector<pseudovrtx> pseudoList;
 
 class  Protein{
   public:
@@ -126,10 +140,9 @@ class  Protein{
     Protein(string);
     ~Protein(void);
     void readPDB(string);
-    void createProteinObject();
+    void getAtomDir();
     int getRefAtom(float&, float&, float&, string, int, string, string, int, float, float, float, string);
     vector<atom> PROTEIN;
-    vector<atom> PROTEINOBJ;
     vector<float> LIGAND;
   private:
 };
@@ -141,10 +154,12 @@ class  Grid{
     ~Grid(void);
   	int readGetCleft(string, vector<atom>&, vector<float>&);
   	int generateID(int, int, int, int, int);
+    int buildGrid(vector<atom>&);
   	void getMinMax(string);
+    int getDiag(int, int, int, int&);
   	float roundCoord(float, int);
   	int inGridRes(vertex&, float);
-    int smooth();
+    void smooth(map<int,vertex>&,vector<int>&);
     void writeMif(vector<atom>&);
     map<int,vertex> GRID;
     vector<int> vrtxIdList;
@@ -152,16 +167,18 @@ class  Grid{
   private:
     float min_x, min_y, min_z, max_x, max_y, max_z;
     int vrtx025,vrtx050,vrtx100,vrtx150,vrtx200;
-    int width, height;
+    int width, height, depth;
 };
 
 int readCmdLine(int, char**);
 float dist_3d(float, float, float, float, float, float);
 void getMif(map<int,vertex>&, vector<atom>&,vector<int>&);
+void getPseudo(map<int,vertex>&, vector<atom>&,vector<int>&);
 int is_coord_in_cube(float,float,float,float,float,float,float);
 void stripSpace(string &);
 double calcNrg(vertex&, atom&, int, int&);
 void getAtomRef();
+void getPseudoC();
 void getEpsilons();
 void getAtomTypes();
 void getProbes();
