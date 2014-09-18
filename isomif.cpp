@@ -1198,7 +1198,9 @@ int createVrtxVec(char mifFile[], vector<vertex>& p, vector<atom>& a, int* ss, i
       natom->id=atmC;
       natom->mif=mif;
       natom->bs=bs;
-      thisresnumc = resn + to_string(resnb) + chain;
+      stringstream ss;
+      ss << resnb;
+      thisresnumc = resn + ss.str() + chain;
       if(rnc.compare(thisresnumc)==0){
         size_t found;
         found = atomn.find("H");
