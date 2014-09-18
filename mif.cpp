@@ -18,6 +18,7 @@ int main(int argc, char **argv)
   if(readCmdLine(argc, argv)==24){ return(0); }
 
   getAtomRef();
+  getPseudoC();
   getEpsilons();
   getAtomTypes();
   getProbes();
@@ -42,9 +43,10 @@ int main(int argc, char **argv)
 	Grid grid=Grid(cleftFile,protein);
   cout<< "Grid has " <<grid.GRID.size()<< " vertexes."<<endl;
   cout<< "Vertex list size: "<< grid.vrtxIdList.size()<<endl;
+  getMif(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
+  if(smoothDist!=0) grid.smooth(grid.GRID,grid.vrtxIdList);
+  // getPseudo(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
 
-  getMif(grid.GRID,protein.PROTEINOBJ,grid.vrtxIdList);
-  //if(stepsize < 2.0){ grid.smooth(); }
   grid.writeMif(protein.PROTEIN);
 
 	return(0);
@@ -64,7 +66,7 @@ Protein::~Protein(void){
 
 Protein::Protein(string filename){
   readPDB(filename);
-  createProteinObject();
+  getAtomDir();
 }
 
 int readCmdLine(int argc, char **argv){
@@ -90,6 +92,7 @@ int readCmdLine(int argc, char **argv){
   usage << "-v <distance in Ang.>: \t maximum distance of the probes to the atoms (default: "<< maxGridDist <<" Angstrom)\n";
   usage << "-pr                  : \t print details of energy calculations for each probe-atom pair\n";
   usage << "-o                   : \t output directory\n";
+  usage << "-m                   : \t smooth\n";
   usage << "-t                   : \t filename (tag) [pdb name by default]\n";
   usage << "-l                   : \t RESNUMC of the ligand from which to crop the grid\n";
   usage << "-r                   : \t maximum distance between the grid and the ligand\n";
@@ -127,6 +130,9 @@ int readCmdLine(int argc, char **argv){
     }
     if(strcmp(argv[nb_arg],"-l")==0){
       resnumc=string(argv[nb_arg+1]);
+    }
+    if(strcmp(argv[nb_arg],"-m")==0){
+      sscanf(argv[nb_arg+1], "%d", &smoothDist);
     }
     if(strcmp(argv[nb_arg],"-v")==0){
       sscanf(argv[nb_arg+1], "%f", &maxGridDist);
@@ -253,7 +259,7 @@ void Protein::readPDB(string filename){
           LIGAND.push_back(atof((line.substr(30,8).c_str())));
           LIGAND.push_back(atof((line.substr(38,8).c_str())));
           LIGAND.push_back(atof((line.substr(46,8).c_str())));
-          cout<< resnumc<< " to "<< thisresnumc << " "<< atof((line.substr(30,8).c_str()))<<" "<< atof((line.substr(38,8).c_str()))<<" "<<atof((line.substr(46,8).c_str()))<<endl;
+          // cout<< resnumc<< " to "<< thisresnumc << " "<< atof((line.substr(30,8).c_str()))<<" "<< atof((line.substr(38,8).c_str()))<<" "<<atof((line.substr(46,8).c_str()))<<endl;
         }
       }
 
@@ -278,13 +284,7 @@ void Protein::readPDB(string filename){
         atm.h=0;
       }
 
-      // if(getAtomId_FAINT(fields[4],fields[2])!=-1){
-      //   atm.atomId=getAtomId_FAINT(fields[4],fields[2]);
-      // }else{
-      //   atm.atomId=99999;
-      // }
-
-      if(atomTypes.find(atm.resn+"_"+atm.atomn)== atomTypes.end()){ atm.mif=0; }
+      if(atomTypes.find(atm.resn+"_"+atm.atomn) == atomTypes.end()){ atm.mif=0; }
       if(fields[5].compare(chain)!=0 && chain.compare("none")!=0){ atm.mif=0; }
       if(line.compare(0,6,"HETATM") == 0){ atm.mif=0; }
 
@@ -295,7 +295,7 @@ void Protein::readPDB(string filename){
   ofs.close();
 }
 
-void Protein::createProteinObject(){
+void Protein::getAtomDir(){
   int i,found,ring,needRef,rDir;
   float xr,yr,zr;
   string tatomn;
@@ -539,48 +539,22 @@ void Protein::createProteinObject(){
 
       if(needRef==1){
         if(getRefAtom(xr, yr, zr, PROTEIN[i].resn, PROTEIN[i].resnb, tatomn, tatomn2, ring, PROTEIN[i].x, PROTEIN[i].y, PROTEIN[i].z, PROTEIN[i].chain)==1){
-          atom atm;
-          atm.x=PROTEIN[i].x;
-          atm.y=PROTEIN[i].y;
-          atm.z=PROTEIN[i].z;
-          atm.atomId=PROTEIN[i].atomId;
-          atm.chain=PROTEIN[i].chain;
-          atm.atomnb=PROTEIN[i].atomnb;
-          atm.resnb=PROTEIN[i].resnb;
-          atm.atomn=PROTEIN[i].atomn;
-          atm.resn=PROTEIN[i].resn;
-          atm.xr=xr;
-          atm.yr=yr;
-          atm.zr=zr;
-          atm.dir=1;
-          atm.rDir=rDir;
-          atm.bs=PROTEIN[i].bs;
-          atm.mif=PROTEIN[i].mif;
-          PROTEINOBJ.push_back(atm);
+          PROTEIN[i].xr=xr;
+          PROTEIN[i].yr=yr;
+          PROTEIN[i].zr=zr;
+          PROTEIN[i].dir=1;
+          PROTEIN[i].rDir=rDir;
           // cout<< atm.resn << " " << atm.resnb << " " << atm.atomn << " " << atm.atomnb<<" "<<atm.atomId << " "<<atm.x << " "<<atm.y<< " "<<atm.z<< " |ref: "<<xr << " "<<yr<< " "<<zr<<" dir "<<atm.rDir<< endl;
         }
       }else{
-        atom atm;
-        atm.x=PROTEIN[i].x;
-        atm.y=PROTEIN[i].y;
-        atm.z=PROTEIN[i].z;
-        atm.atomId=PROTEIN[i].atomId;
-        atm.chain=PROTEIN[i].chain;
-        atm.atomnb=PROTEIN[i].atomnb;
-        atm.resnb=PROTEIN[i].resnb;
-        atm.atomn=PROTEIN[i].atomn;
-        atm.resn=PROTEIN[i].resn;
-        atm.bs=PROTEIN[i].bs;
-        atm.mif=PROTEIN[i].mif;
-        atm.xr=0.0;
-        atm.yr=0.0;
-        atm.zr=0.0;
-        atm.dir=0;
-        PROTEINOBJ.push_back(atm);
+        PROTEIN[i].xr=0.0;
+        PROTEIN[i].yr=0.0;
+        PROTEIN[i].zr=0.0;
+        PROTEIN[i].dir=0;
       }
     }
   }
-  cout<<endl<<"Protein has "<< PROTEINOBJ.size()<<" atoms"<<endl;
+  cout<<endl<<"Protein has "<< PROTEIN.size()<<" atoms"<<endl;
 }
 
 int Protein::getRefAtom(float& xr, float& yr, float& zr, string tresn, int tresnb, string tatomn, string tatomn2, int ring, float x, float y, float z, string chain){
@@ -701,17 +675,328 @@ Grid::Grid(string filename, Protein& prot){
   vrtx150=0;
   vrtx200=0;
 
-  getMinMax(filename);
-  readGetCleft(filename, prot.PROTEIN, prot.LIGAND);
+  if(filename.compare("")==0){
+    buildGrid(prot.PROTEIN);
+  }else{
+    getMinMax(filename);
+    readGetCleft(filename, prot.PROTEIN, prot.LIGAND);
+  }
 }
 
-Grid::~Grid(void){
-}
+Grid::~Grid(void){ }
 
 int Grid::generateID(int w, int h, int x, int y, int z){
   int id;
   id=z * (w * h) + y * w + x;
   return(id);
+}
+
+int Grid::buildGrid(vector<atom>& prot){
+  int i=0;
+  float minx,miny,minz,maxx,maxy,maxz;
+  for(i=0; i<prot.size(); i++){
+      if(prot[i].mif==0) continue;
+
+      minx=roundCoord(prot[i].x-0.5,0);
+      miny=roundCoord(prot[i].y-0.5,0);
+      minz=roundCoord(prot[i].z-0.5,0);
+      maxx=roundCoord(prot[i].x+0.5,1);
+      maxy=roundCoord(prot[i].y+0.5,1);
+      maxz=roundCoord(prot[i].z+0.5,1);
+      //Set GRID min/max X,Y and Z
+      if(minx<min_x){ min_x=minx; }
+      if(miny<min_y){ min_y=miny; }
+      if(minz<min_z){ min_z=minz; }
+      if(maxx>max_x){ max_x=maxx; }
+      if(maxy>max_y){ max_y=maxy; }
+      if(maxz>max_z){ max_z=maxz; }
+  }
+  //Set GRID width and height
+  width=(int)(((max_x-min_x)/stepsize)+1.0);
+  height=(int)(((max_y-min_y)/stepsize)+1.0);
+  depth=(int)(((max_z-min_z)/stepsize)+1.0);
+
+  cout <<endl<< "GRID min/max values: minx: "<< min_x<< " miny: "<< min_y<< " minz: "<<min_z<<" maxx: "<<max_x<<" maxy: "<<max_y<<" maxz: "<<max_z<<endl;
+  cout<< "GRID Width "<<width<<" Height "<< height <<" Depth "<< depth << endl;
+
+  map<int,vertex>::iterator it;
+  int id;
+  int uID=0;
+  for(float x=min_x; x<=max_x; x+=stepsize){
+    for(float y=min_y; y<=max_y; y+=stepsize){
+      for(float z=min_z; z<=max_z; z+=stepsize){
+
+        int pg=0;
+        float minDist=10000.0;
+        for(i=0; i<prot.size(); i++){
+          if(prot[i].mif==0) continue;
+          float d=((abs(x-prot[i].x)*abs(x-prot[i].x))+(abs(y-prot[i].y)*abs(y-prot[i].y))+(abs(z-prot[i].z)*abs(z-prot[i].z)));
+          if(d<minDist){ minDist=d; }
+          
+        }
+        if(minDist<minGridDist){
+          pg=1;
+        }else if(minDist > maxGridDist){
+          continue;
+        }
+
+        //Generate grid vertex ID
+        id=generateID(width,height,(int)((x-min_x)/stepsize)+1,(int)((y-min_y)/stepsize)+1,(int)((z-min_z)/stepsize)+1);
+        it = GRID.find(id);
+
+        if(it == GRID.end()){ //If this grid point doesnt exist
+          vertex vrtx;
+          vrtx.x=x;
+          vrtx.y=y;
+          vrtx.z=z;
+
+          if(pg==1){
+            vrtx.p=1;
+            vrtx.id=uID;
+            uID++;
+          }else{
+            vrtx.p=0;
+            vrtx.ints=new int[nbOfProbes];              
+            if(vrtx.ints==NULL){
+              printf("\n\nCan't malloc int**\nGoodbye.\n");
+              return(24);
+            }
+            
+            for(i=0; i<nbOfProbes; i++){ vrtx.ints[i]=0; }
+
+            for(int i=0; i<aa.size(); i++){ vrtx.env[aa[i]]=1000.0; }
+
+            //Print grid in appropriate file
+            if(inGridRes(vrtx,2.0)==1){
+              vrtx.grid[0]=1;
+              vrtx200++;
+            }else{ vrtx.grid[0]=0; }
+
+            //Print grid in appropriate file
+            if(inGridRes(vrtx,1.5)==1){
+              vrtx.grid[1]=1;
+              vrtx150++;
+            }else{ vrtx.grid[1]=0; }
+            
+            if(inGridRes(vrtx,1.0)==1){
+              vrtx.grid[2]=1;
+              vrtx100++;
+            }else{ vrtx.grid[2]=0; }
+            
+            if(inGridRes(vrtx,0.5)==1){
+              vrtx.grid[3]=1;
+              vrtx050++;               
+            }else{ vrtx.grid[3]=0; }
+            vrtx025++;
+
+            vrtx.id=uID;
+            uID++;
+          }
+          GRID.insert(pair<int,vertex>(id,vrtx));
+          vrtxIdList.push_back(id);
+        }
+      }
+    }
+  }
+
+  //Get buriedness of each grid point
+  for(int i=0; i<vrtxIdList.size(); i++){
+    vertex& m=GRID.at(vrtxIdList.at(i));
+    if(m.p==1){ continue; }
+    int bu=0;
+    int xi=(int)((m.x-min_x)/stepsize)+1;
+    int yi=(int)((m.y-min_y)/stepsize)+1;
+    int zi=(int)((m.z-min_z)/stepsize)+1;
+    int xl=(int)((m.x-min_x)/stepsize);
+    int xr=(int)((max_x-m.x)/stepsize);
+    int yd=(int)((m.y-min_y)/stepsize);
+    int yu=(int)((max_y-m.y)/stepsize);
+    int zb=(int)((m.z-min_z)/stepsize);
+    int zf=(int)((max_z-m.z)/stepsize);
+    // cout<<xi<<" "<<yi<<" "<<zi<<endl;
+    // cout<<min_x<<" | "<<xl<<" "<<m.x<<" "<<xr<<" | "<<max_x<<" || "<<width<<endl;
+    // cout<<min_y<<" | "<<yd<<" "<<m.y<<" "<<yu<<" | "<<max_y<<" || "<<height<<endl;
+    // cout<<min_z<<" | "<<zb<<" "<<m.z<<" "<<zf<<" | "<<max_z<<" || "<<depth<<endl;
+
+    // cout<<endl<<"going xl"<<endl;
+    for(int tx=xi-1; tx>=1; tx--){
+      id=generateID(width,height,tx,yi,zi);
+      // cout<<tx<<" "<<yi<<" "<<zi<<endl;
+      it = GRID.find(id);
+      if(it != GRID.end()){
+        if(GRID[id].p==1){
+          bu++;
+          break;
+        }
+      }
+    }
+    // cout<<endl<<"going xr"<<endl;
+    for(int tx=xi+1; tx<=width; tx++){
+      id=generateID(width,height,tx,yi,zi);
+      // cout<<tx<<" "<<yi<<" "<<zi<<endl;
+      it = GRID.find(id);
+      if(it != GRID.end()){
+        if(GRID[id].p==1){
+          bu++;
+          break;
+        }
+      }
+    }
+    // cout<<endl<<"going yd"<<endl;
+    for(int ty=yi-1; ty>=1; ty--){
+      id=generateID(width,height,xi,ty,zi);
+      // cout<<xi<<" "<<ty<<" "<<zi<<endl;
+      it = GRID.find(id);
+      if(it != GRID.end()){
+        if(GRID[id].p==1){
+          bu++;
+          break;
+        }
+      }
+    }
+    // cout<<endl<<"going yu"<<endl;
+    for(int ty=yi+1; ty<=height; ty++){
+      id=generateID(width,height,xi,ty,zi);
+      // cout<<xi<<" "<<ty<<" "<<zi<<endl;
+      it = GRID.find(id);
+      if(it != GRID.end()){
+        if(GRID[id].p==1){
+          bu++;
+          break;
+        }
+      }
+    }
+    // cout<<endl<<"going zb"<<endl;
+    for(int tz=zi-1; tz>=1; tz--){
+      // cout<<xi<<" "<<yi<<" "<<tz<<endl;
+      id=generateID(width,height,xi,yi,tz);
+      it = GRID.find(id);
+      if(it != GRID.end()){
+        if(GRID[id].p==1){
+          bu++;
+          break;
+        }
+      }
+    }
+    // cout<<endl<<"going zf"<<endl;
+    for(int tz=zi+1; tz<=depth; tz++){
+      // cout<<xi<<" "<<yi<<" "<<tz<<endl;
+      id=generateID(width,height,xi,yi,tz);
+      it = GRID.find(id);
+      if(it != GRID.end()){
+        if(GRID[id].p==1){
+          bu++;
+          break;
+        }
+      }
+    }
+
+    //Diagonals
+    // cout<<endl<<"going diag 0"<<endl;
+    int tx=xi;
+    int ty=yi;
+    int tz=zi;
+    int flag=0;
+    while(flag==0){
+      tx--; ty++; tz++;
+      int diag=getDiag(tx,ty,tz,flag);
+      if(diag){
+        bu++;
+      }
+    }
+
+    flag=0;
+    tx=xi; ty=yi; tz=zi;
+    while(flag==0){
+      tx--; ty++; tz--; 
+      int diag=getDiag(tx,ty,tz,flag);
+      if(diag){
+        bu++;
+      }
+    }
+
+    flag=0;
+    tx=xi; ty=yi; tz=zi;
+    while(flag==0){
+      tx++; ty++; tz--; 
+      int diag=getDiag(tx,ty,tz,flag);
+      if(diag){
+        bu++;
+      }
+    }
+
+    flag=0;
+    tx=xi; ty=yi; tz=zi;
+    while(flag==0){
+      tx++; ty++; tz++; 
+      int diag=getDiag(tx,ty,tz,flag);
+      if(diag){
+        bu++;
+      }
+    }
+
+    flag=0;
+    tx=xi; ty=yi; tz=zi;
+    while(flag==0){
+      tx--; ty--; tz++; 
+      int diag=getDiag(tx,ty,tz,flag);
+      if(diag){
+        bu++;
+      }
+    }
+
+    flag=0;
+    tx=xi; ty=yi; tz=zi;
+    while(flag==0){
+      tx--; ty--; tz--; 
+      int diag=getDiag(tx,ty,tz,flag);
+      if(diag){
+        bu++;
+      }
+    }
+
+    flag=0;
+    tx=xi; ty=yi; tz=zi;
+    while(flag==0){
+      tx++; ty--; tz--; 
+      int diag=getDiag(tx,ty,tz,flag);
+      if(diag){
+        bu++;
+      }
+    }
+
+    flag=0;
+    tx=xi; ty=yi; tz=zi;
+    while(flag==0){
+      tx++; ty--; tz++;
+      int diag=getDiag(tx,ty,tz,flag);
+      if(diag){
+        bu++;
+      }
+    }
+    m.bu=bu;
+  }
+  return(0);
+}
+
+int Grid::getDiag(int tx, int ty, int tz, int& flag){
+  int id=generateID(width,height,tx,ty,tz);
+
+  map<int,vertex>::iterator it = GRID.find(id);
+  if(it != GRID.end()){
+    if(GRID[id].p==1){
+      // cout<<"p"<<endl;
+      flag=1;
+      return(1);
+    }else{
+      // cout<<"p0"<<endl;
+      return(0);
+    }
+  }else{
+    // cout<<"doesn't exist"<<endl;
+    flag=1;
+    return(0);
+  }
 }
 
 void Grid::getMinMax(string filename){
@@ -859,6 +1144,8 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
               vrtx.x=nx;
               vrtx.y=ny;
               vrtx.z=nz;
+              vrtx.bu=99;
+              vrtx.p=0;
 
               vrtx.ints=new int[nbOfProbes];              
               if(vrtx.ints==NULL){
@@ -969,235 +1256,101 @@ float dist_3d(float x1, float y1, float z1, float x2, float y2, float z2){
   return(dist);
 }
 
-// int Grid::smooth(){
-//   float xi,yi,zi;
-//   float** tmp_sm;
-//   map<int,vertex>::iterator it;
-//   map<int,vertex>::iterator isit;
-//   int probe,i,m,n;
-//   float sum_100,sum_50,sum_25;
-//   float count_100,count_50,count_25;
-//   int count_passed=0;
-//   int count_found=0;
-//   float smoothing_dist;
+void Grid::smooth(map<int,vertex>& grid, vector<int>& vrtxList){
+  map<int,vertex>::iterator it;
+  int id;
+  cout<<"Smoothing..."<<endl;
+  for(int i=0; i<vrtxList.size(); i++){
+    vertex& m=grid.at(vrtxList.at(i));
+    if(m.p==1){ continue; }
+    if(m.grid[0]!=1){ continue; }
+    int xi=(int)((m.x-min_x)/stepsize)+1;
+    int yi=(int)((m.y-min_y)/stepsize)+1;
+    int zi=(int)((m.z-min_z)/stepsize)+1;
 
-//   cout<<endl<<"Smoothing energies"<<endl;
-//   for(it=GRID.begin();it!=GRID.end();it++){
-//     //printf("\n\nsmoothing: %5.2f, %5.2f, %5.2f",it->second.x,it->second.y,it->second.z);
-
-//     //Allocate temporary memory
-//     tmp_sm = new float*[nbOfProbes];
-//     for(m=0; m<nbOfProbes; m++){
-//       tmp_sm[m] = new float[6];
-//     }
-
-//     for(m=0; m<nbOfProbes; m++){
-//       for(n=0; n<=5; n++){ //Set em all to 0
-//         tmp_sm[m][n]=0.0;
-//       }
-//     }
-
-//     count_passed=0;
-//     count_found=0;
-
-//     //Check in which grid resolution this vertex is in
-//     if(it->second.grid[2]==1){
-//       smoothing_dist=1.0;
-
-//       //cout<<endl<<"In grid 2.0 "<<it->second.x<< " "<<it->second.y<< " "<< it->second.z<<endl<<"Here are its neibrs:"<<endl;
-
-//       //Go through all the coords in the 1.0A edge cube around this coord
-//       for(zi=(it->second.z-smoothing_dist); zi<=(it->second.z+smoothing_dist); zi+=stepsize){
-//         for(yi=(it->second.y-smoothing_dist); yi<=(it->second.y+smoothing_dist); yi+=stepsize){
-//           for(xi=(it->second.x-smoothing_dist); xi<=(it->second.x+smoothing_dist); xi+=stepsize){
-//             count_passed++;
-
-//             i=generateID(width,height,(int)((xi-min_x)/stepsize)+1,(int)((yi-min_y)/stepsize)+1,(int)((zi-min_z)/stepsize)+1);
-//             isit = GRID.find(i);
-
-//             //printf("\n\t %6.2f, %6.2f, %6.2f",xi,yi,zi);
-//             if(isit != GRID.end()){
-//               count_found++;
-//               if(stepsize < 0.5){
-//                 if(is_coord_in_cube(xi, yi, zi, it->second.x, it->second.y, it->second.z, 0.25)==1){
-//                   //printf(" cube 0.25 s<0.5");
-//                   for(probe=0; probe<nbOfProbes; probe++){
-//                     tmp_sm[probe][0]+=isit->second.nrg[probe][0];
-//                     tmp_sm[probe][1]+=1.0;
-//                     tmp_sm[probe][2]+=isit->second.nrg[probe][0];
-//                     tmp_sm[probe][3]+=1.0;
-//                     tmp_sm[probe][4]+=isit->second.nrg[probe][0];
-//                     tmp_sm[probe][5]+=1.0;
-//                     //printf("\n\t\t[%d]{0.25} %8.6f sum: %8.6f count: %8.6f",probe,isit->second.nrg[probe][0],tmp_sm[probe][0],tmp_sm[probe][1]);
-//                     //printf("\n\t\t[%d]{0.5} %8.6f sum: %8.6f count: %8.6f",probe,isit->second.nrg[probe][0],tmp_sm[probe][2],tmp_sm[probe][3]);
-//                     //printf("\n\t\t[%d]{1.0} %8.6f sum: %8.6f count: %8.6f",probe,isit->second.nrg[probe][0],tmp_sm[probe][4],tmp_sm[probe][5]);
-//                   }
-//                 }else if(is_coord_in_cube(xi, yi, zi, it->second.x, it->second.y, it->second.z, 0.5)==1){
-//                   //printf(" cube 0.5 s<0.5");
-//                   for(probe=0; probe<nbOfProbes; probe++){
-//                     tmp_sm[probe][2]+=isit->second.nrg[probe][0];
-//                     tmp_sm[probe][3]+=1.0;
-//                     tmp_sm[probe][4]+=isit->second.nrg[probe][0];
-//                     tmp_sm[probe][5]+=1.0;
-//                     //printf("\n\t\t[%d]{0.5} %8.6f sum: %8.6f count: %8.6f",probe,isit->second.nrg[probe][0],tmp_sm[probe][2],tmp_sm[probe][3]);
-//                     //printf("\n\t\t[%d]{1.0} %8.6f sum: %8.6f count: %8.6f",probe,isit->second.nrg[probe][0],tmp_sm[probe][4],tmp_sm[probe][5]);
-//                   }
-//                 }else{
-//                   //printf(" cube 1.0 s<0.5");
-//                   for(probe=0; probe<nbOfProbes; probe++){
-//                     tmp_sm[probe][4]+=isit->second.nrg[probe][0];
-//                     tmp_sm[probe][5]+=1.0;
-//                     //printf("\n\t\t[%d]{1.0} %8.6f sum: %8.6f count: %8.6f",probe,isit->second.nrg[probe][0],tmp_sm[probe][4],tmp_sm[probe][5]);
-//                   }
-//                 }
-//               }else if(stepsize < 1.0){
-//                 if(is_coord_in_cube(xi, yi, zi, it->second.x, it->second.y, it->second.z, 0.5)==1){
-//                   //printf(" cube 0.5 s<1.0");
-//                   for(probe=0; probe<nbOfProbes; probe++){
-//                     tmp_sm[probe][2]+=isit->second.nrg[probe][0];
-//                     tmp_sm[probe][3]+=1.0;
-//                     tmp_sm[probe][4]+=isit->second.nrg[probe][0];
-//                     tmp_sm[probe][5]+=1.0;
-//                     //printf("\n\t\t[%d]{0.5} %8.6f sum: %8.6f count: %8.6f",probe,isit->second.nrg[probe][0],tmp_sm[probe][2],tmp_sm[probe][3]);
-//                     //printf("\n\t\t[%d]{1.0} %8.6f sum: %8.6f count: %8.6f",probe,isit->second.nrg[probe][0],tmp_sm[probe][4],tmp_sm[probe][5]);
-//                   }
-//                 }else{
-//                   //printf(" cube 1.0 s<1.0");
-//                   for(probe=0; probe<nbOfProbes; probe++){
-//                     tmp_sm[probe][4]+=isit->second.nrg[probe][0];
-//                     tmp_sm[probe][5]+=1.0;
-//                     //printf("\n\t\t[%d]{1.0} %8.6f sum: %8.6f count: %8.6f",probe,isit->second.nrg[probe][0],tmp_sm[probe][4],tmp_sm[probe][5]);
-//                   }
-//                 }
-//               }else if(stepsize < 2.0){
-//                 //printf(" cube 1.0 s<2.0");
-//                 for(probe=0; probe<nbOfProbes; probe++){
-//                   tmp_sm[probe][4]+=isit->second.nrg[probe][0];
-//                   tmp_sm[probe][5]+=1.0;
-//                   //printf("\n\t\t[%d]{1.0} %8.6f sum: %8.6f count: %8.6f",probe,isit->second.nrg[probe][0],tmp_sm[probe][4],tmp_sm[probe][5]);
-//                 }
-//               }
-//             }else{
-//               //cout<<" coord does not exist"<<endl;
-//             }
-//           }
-//         }
-//       }
-//     }else if(it->second.grid[1]==1 && stepsize < 1.0){
-//       smoothing_dist=0.5;
-//       //cout<<endl<<"In grid 1.0 "<<it->second.x<< " "<<it->second.y<< " "<< it->second.z<<endl<<"Here are its neibrs:"<<endl;
-
-//       //Go through all the coords in the 0.5A edge cube around this coord
-//       for(zi=(it->second.z-smoothing_dist); zi<=(it->second.z+smoothing_dist); zi+=stepsize){
-//         for(yi=(it->second.y-smoothing_dist); yi<=(it->second.y+smoothing_dist); yi+=stepsize){
-//           for(xi=(it->second.x-smoothing_dist); xi<=(it->second.x+smoothing_dist); xi+=stepsize){
-//             count_passed++;
-
-//             i=generateID(width,height,(int)((xi-min_x)/stepsize)+1,(int)((yi-min_y)/stepsize)+1,(int)((zi-min_z)/stepsize)+1);
-//             isit = GRID.find(i);
-            
-//             if(isit != GRID.end()){
-//               count_found++;
-
-//               if(stepsize < 0.5){
-//                 if(is_coord_in_cube(xi, yi, zi, it->second.x, it->second.y, it->second.z, 0.25)==1){
-//                   //printf(" cube 0.25");
-//                   for(probe=0; probe<nbOfProbes; probe++){
-//                     tmp_sm[probe][0]+=isit->second.nrg[probe][0];
-//                     tmp_sm[probe][1]+=1.0;
-//                     tmp_sm[probe][2]+=isit->second.nrg[probe][0];
-//                     tmp_sm[probe][3]+=1.0;
-//                     //printf("\n\t\t[%d]{0.5} %8.6f sum: %8.6f count: %8.6f",probe,isit->second->nrg[probe][0],tmp_sm[probe][2],tmp_sm[probe][3]);
-//                     //printf("\n\t\t[%d]{0.25} %8.6f sum: %8.6f count: %8.6f",probe,isit->second->nrg[probe][0],tmp_sm[probe][0],tmp_sm[probe][1]);
-//                   }
-//                 }else{
-//                   //printf(" cube 0.5");
-//                   for(probe=0; probe<nbOfProbes; probe++){
-//                     tmp_sm[probe][2]+=isit->second.nrg[probe][0];
-//                     tmp_sm[probe][3]+=1.0;
-//                     //printf("\n\t\t[%d]{0.5} %8.6f sum: %8.6f count: %8.6f",probe,isit->second->nrg[probe][0],tmp_sm[probe][2],tmp_sm[probe][3]);
-//                   }
-//                 }
-//               }else {
-//                 //printf(" cube 0.5");
-//                 for(probe=0; probe<nbOfProbes; probe++){
-//                   tmp_sm[probe][2]+=isit->second.nrg[probe][0];
-//                   tmp_sm[probe][3]+=1.0;
-//                   //printf("\n\t\t[%d]{0.5} %8.6f sum: %8.6f count: %8.6f",probe,isit->second->nrg[probe][0],tmp_sm[probe][2],tmp_sm[probe][3]);
-//                 }
-//               }
-//             }else{
-//               //cout<<"coord does not exist"<<endl;
-//             }
-//           }
-//         }
-//       }
-//     }else if(it->second.grid[0]==1 && stepsize<0.5){ //If it's in 0.5 we'll need to smooth for 0.25A
-//       smoothing_dist=0.25;
-//       //printf(" [0.5]\nsmooth_dist %7.3f\n\tNeibrs:",smoothing_dist);
-
-//       //Go through all the coords in the 0.25A edge cube around this coord
-//       for(zi=(it->second.z-smoothing_dist); zi<=(it->second.z+smoothing_dist); zi+=stepsize){
-//         for(yi=(it->second.y-smoothing_dist); yi<=(it->second.y+smoothing_dist); yi+=stepsize){
-//           for(xi=(it->second.x-smoothing_dist); xi<=(it->second.x+smoothing_dist); xi+=stepsize){
-//             count_passed++;
-
-//             i=generateID(width,height,(int)((xi-min_x)/stepsize)+1,(int)((yi-min_y)/stepsize)+1,(int)((zi-min_z)/stepsize)+1);
-//             isit = GRID.find(i);
-            
-//             //printf("\n\t %6.2f, %6.2f, %6.2f",xi,yi,zi);
-//             if(isit != GRID.end()){
-//               count_found++;
-//               //printf(" cube 0.25");
-//               for(probe=0; probe<nbOfProbes; probe++){
-//                 tmp_sm[probe][0]+=isit->second.nrg[probe][0];
-//                 tmp_sm[probe][1]+=1.0;
-//                 //printf("\n\t\t[%d]{0.25} %8.6f sum: %8.6f count: %8.6f",probe,isit->second->nrg[probe][0],tmp_sm[probe][0],tmp_sm[probe][1]);
-//               }
-//             }else{
-//               //cout<<"coord does not exist"<<endl;
-//             }
-//           }
-//         }
-//       }
-//       //cout<<"passed "<<count_passed<<endl;
-//     }else{
-
-//     }
-
-//     //Calculate and store the smoothed probes
-//     //printf("\nPASSED %d FOUND %d",count_passed,count_found);
-//     for(probe=0; probe<nbOfProbes; probe++){
-//       if(tmp_sm[probe][1]>0.00){
-//         it->second.nrg[probe][1]=tmp_sm[probe][0]/tmp_sm[probe][1];
-//         it->second.pb_bool[probe][1]=1;
-//       }else{
-//         it->second.pb_bool[probe][1]=0; //No value = well assign 0
-//       }
-//       if(tmp_sm[probe][3]>0.00){
-//         it->second.nrg[probe][2]=tmp_sm[probe][2]/tmp_sm[probe][3];
-//         it->second.pb_bool[probe][2]=1;
-//       }else{
-//         it->second.pb_bool[probe][2]=0; //No value = well assign 0
-//       }
-//       if(tmp_sm[probe][5]>0.00){
-//         it->second.nrg[probe][3]=tmp_sm[probe][4]/tmp_sm[probe][5];
-//         it->second.pb_bool[probe][3]=1;
-//       }else{
-//         it->second.pb_bool[probe][3]=0; //No value = well assign 0
-//       }
-//       //printf("\n[0] %15.10f [1] %15.10f [2] %15.10f [3] %15.10f [4] %15.10f [5] %15.10f",tmp_sm[probe][0],tmp_sm[probe][1],tmp_sm[probe][2],tmp_sm[probe][3],tmp_sm[probe][4],tmp_sm[probe][5]);
-//       //printf("\nFINAL SMOOTHED ENERGY [probe: %d] [0.25] %22.15f [0.5] %22.15f [1.0] %22.15f\n",probe,it->second.nrg[probe][1],it->second.nrg[probe][2],it->second.nrg[probe][3]);
-//     }
+    for(int tx=xi-smoothDist; tx<=xi+smoothDist; tx++){
+      id=generateID(width,height,tx,yi,zi);
+      it = grid.find(id);
+      if(it != grid.end()){
+        for(int j=0; j<6; j++){
+          if(grid[id].ints[j]==1){ m.ints[j]=1; }
+        }
+      }
+    }
+    for(int ty=yi-smoothDist; ty<=yi+smoothDist; ty++){
+      id=generateID(width,height,xi,ty,zi);
+      it = grid.find(id);
+      if(it != grid.end()){
+        for(int j=0; j<6; j++){
+          if(grid[id].ints[j]==1){ m.ints[j]=1; }
+        }
+      }
+    }
+    for(int tz=zi-smoothDist; tz<=zi+smoothDist; tz++){
+      id=generateID(width,height,xi,yi,tz);
+      it = grid.find(id);
+      if(it != grid.end()){
+        for(int j=0; j<6; j++){
+          if(grid[id].ints[j]==1){ m.ints[j]=1; }
+        }
+      }
+    }
     
-//     //printf("\nDeleting memory\n");
-//     for (m=0; m<nbOfProbes; m++){
-//       delete [] tmp_sm[m];
-//     }
-//     delete [] tmp_sm;  
-//   }
-//   return(0);
-// }
+    //Diagonals
+    // cout<<endl<<"going diag 0"<<endl;
+    int tx;
+    int ty;
+    int tz;
+
+    tx=xi-smoothDist; ty=yi+smoothDist; tz=zi+smoothDist;
+    for(int s=0; s<6; s++){
+      tx++; ty--; tz--;
+      id=generateID(width,height,tx,ty,tz);
+      it = grid.find(id);
+      if(it != grid.end()){
+        for(int j=0; j<6; j++){
+          if(grid[id].ints[j]==1){ m.ints[j]=1; }
+        }
+      }
+    }
+
+    tx=xi-smoothDist; ty=yi+smoothDist; tz=zi-smoothDist;
+    for(int s=0; s<6; s++){
+      tx++; ty--; tz++;
+      id=generateID(width,height,tx,ty,tz);
+      it = grid.find(id);
+      if(it != grid.end()){
+        for(int j=0; j<6; j++){
+          if(grid[id].ints[j]==1){ m.ints[j]=1; }
+        }
+      }
+    }
+
+    tx=xi+smoothDist; ty=yi+smoothDist; tz=zi-smoothDist;
+    for(int s=0; s<6; s++){
+      tx--; ty--; tz++;
+      id=generateID(width,height,tx,ty,tz);
+      it = grid.find(id);
+      if(it != grid.end()){
+        for(int j=0; j<6; j++){
+          if(grid[id].ints[j]==1){ m.ints[j]=1; }
+        }
+      }
+    }
+
+    tx=xi-smoothDist; ty=yi-smoothDist; tz=zi-smoothDist;
+    for(int s=0; s<6; s++){
+      tx++; ty++; tz++;
+      id=generateID(width,height,tx,ty,tz);
+      it = grid.find(id);
+      if(it != grid.end()){
+        for(int j=0; j<6; j++){
+          if(grid[id].ints[j]==1){ m.ints[j]=1; }
+        }
+      }
+    }
+  }
+}
 
 int is_coord_in_cube(float x, float y, float z, float center_x, float center_y, float center_z, float edge){
   float x_max,x_min,y_max,y_min,z_max,z_min;
@@ -1253,27 +1406,34 @@ void Grid::writeMif(vector<atom>& prot){
   fprintf(fpNew,"#gs %d %d %d %d\n",vrtx200,vrtx150,vrtx100,vrtx050);
   fprintf(fpNew,"#ss %d %d %d %d\n",ss[0],ss[1],ss[2],ss[3]);
 
-  int cvrtx=0;
   for(it=GRID.begin();it!=GRID.end();it++){
-    fprintf(fpNew, "%7.2f %7.2f %7.2f",
-      it->second.x,
-      it->second.y,
-      it->second.z);
-    for(probe=0; probe<nbOfProbes; probe++){
-      fprintf(fpNew, " %1d",it->second.ints[probe]);
-    }
-    for(i=0; i<4; i++){
-      fprintf(fpNew, " %1d",it->second.grid[i]);
-    }
-    for(i=0; i<aa.size(); i++){
-      if(it->second.env[aa[i]]>8.0){
-        fprintf(fpNew, " %d",0);
-      }else{
-        fprintf(fpNew, " %d",(int)round(it->second.env[aa[i]]));
+    if(it->second.p==1){
+      if(it->second.grid[2]==1){
+        fprintf(fpNew, "#PG %7.2f %7.2f %7.2f\n",it->second.x,it->second.y,it->second.z);  
       }
+    }else{
+      if(it->second.bu<bul) continue;
+      // cout<<"bu "<<it->second.bu<<endl;
+      fprintf(fpNew, "%7.2f %7.2f %7.2f",it->second.x,it->second.y,it->second.z);
+      for(probe=0; probe<nbOfProbes; probe++){
+        fprintf(fpNew, " %1d",it->second.ints[probe]);
+      }
+      for(i=0; i<4; i++){
+        fprintf(fpNew, " %1d",it->second.grid[i]);
+      }
+      for(i=0; i<aa.size(); i++){
+        if(it->second.env[aa[i]]>8.0){
+          fprintf(fpNew, " %d",0);
+        }else{
+          fprintf(fpNew, " %d",(int)round(it->second.env[aa[i]]));
+        }
+      }
+      fprintf(fpNew, "\n");     
     }
-    fprintf(fpNew, "\n");
-    cvrtx++;
+  }
+
+  for(int i=0; i<pseudoList.size(); i++){
+    fprintf(fpNew,"#PSEUDO %s %8.3f %8.3f %8.3f\n",pseudoList[i].type.c_str(),pseudoList[i].x,pseudoList[i].y,pseudoList[i].z);
   }
 
   if(printAtoms==1){
@@ -1303,9 +1463,7 @@ void Grid::writeMif(vector<atom>& prot){
     }   
   }
 
-
   fclose(fpNew);
-  cout<<"count vrtx file "<<cvrtx<<endl;
 }
 
 void stripSpace(string &str) {
@@ -1328,6 +1486,21 @@ void getAtomRef(){
     stringstream test(line);
     test >> res >> atom >> type;
     atomTypes[res + "_" + atom]=type;
+  }
+}
+
+void getPseudoC(){
+  string fn=basePath + "/forcefield_files/pseudocenters";
+  ifstream infile(fn.c_str());
+  string line;
+  string res;
+  string atom;
+  string pseudo;
+
+  while(getline(infile,line)){
+    stringstream test(line);
+    test >> res >> atom >> pseudo;
+    pseudoC[res+"_"+atom]=pseudo;
   }
 }
 
@@ -1418,17 +1591,16 @@ void getaa(){
 void getMif(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
   int j;
   cout<<endl<< "Searching for potential interactions at each grid intersection"<< endl;
-  int cvrtx=0;
 
   for(int i=0; i<vrtxList.size(); i++){
     vertex& m=grid.at(vrtxList.at(i));
-    cvrtx++;
     
-    int flag=0;
+    if(m.p==1){ continue; }
+    if(m.bu<bul){ continue; }
     if(m.grid[0]!=1 && m.grid[1]!=1 && m.grid[2]!=1 && m.grid[3]==1) continue;
   
     // if(printDetails==1){ cout<<endl<<"Vertex id: "<< m.id <<" "<<m.x<<" "<<m.y<<" "<<m.z<<endl; }
-
+    int flag=0;
     for(int probe=0; probe<nbOfProbes; probe++){ //Iterate each probe
       float enrg_sum=0.00;
       int countAtms=0;
@@ -1455,8 +1627,74 @@ void getMif(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
       }
     }
   }
-  cout<<"count vrtx in getMif: "<<cvrtx<<endl;
   //cout<<"Calculated non-bonded energies at "<<countVrtx<<" grid intersections using "<< nbOfProbes <<" probe(s)."<<endl;
+}
+
+void getPseudo(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
+  cout<<endl<< "Projecting pseudocenters..."<< endl;
+
+  for(int j=0; j<prot.size(); j++){
+    if(prot[j].mif!=1) continue;
+
+    // cout<< prot[j].resn + " " + prot[j].atomn + " " << prot[j].resnb<< " mif "<< prot[j].mif;
+
+    map<string,string>::iterator it = pseudoC.find(prot[j].resn+"_"+prot[j].atomn);
+    if(it != pseudoC.end()){
+
+      string pseudo=it->second;
+      int angleType=0;
+      if(pseudo.compare("doa")==0 || pseudo.compare("don")==0 || pseudo.compare("acc")==0){
+        angleType=1;
+      }else if(pseudo.compare("arm")==0){
+        // angleType=2;
+      }
+      // cout<<" "+pseudo<<" angletype "<<angleType<<endl;
+    
+      int bestID=-1;
+      float bestD=10.0;
+      for(int i=0; i<vrtxList.size(); i++){
+        vertex& m=grid.at(vrtxList.at(i));
+        if(m.bu<bul) continue;
+        if(m.grid[2]!=1) continue;
+
+        float angle=0.0;
+        float dist=dist_3d(prot[j].x,prot[j].y,prot[j].z,m.x,m.y,m.z);
+        
+        if(dist>4.0) continue;
+        if(angleType==1){
+          float rDist=dist_3d(prot[j].x,prot[j].y,prot[j].z,prot[j].xr,prot[j].yr,prot[j].zr);
+          float rpDist=dist_3d(m.x,m.y,m.z,prot[j].xr,prot[j].yr,prot[j].zr);
+          angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
+          angle=acos(angle)* 180.0 / PI;
+          if(prot[j].rDir==0){ angle=180.00-angle; }
+          if(angle > 60.00) continue;
+          // cout<< " angle "<<angle<<" dist "<<dist<<endl;
+        }else if(angleType==2){ //aromatic angle
+          // float rDist=dist_3d(prot[j].x,prot[j].y,prot[j].z,prot[j].xr,prot[j].yr,prot[j].zr);
+          // float rpDist=dist_3d(m.x,m.y,m.z,prot[j].xr,prot[j].yr,prot[j].zr);
+          // angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
+          // angle=acos(angle)* 180.0 / PI;
+          // if(angle>90 || fabs(180.00-angle) < 0.001){
+          //   angle=180-angle;
+          // }
+          // cout<< " angle "<<angle<<" dist "<<dist<<endl;
+        }
+        if(dist<bestD){
+          bestD=dist;
+          bestID=i;
+        }
+      }
+      if(bestID!=-1){
+        pseudovrtx npv;
+        npv.dist=bestD;
+        npv.type=pseudo;
+        npv.x=grid.at(vrtxList.at(bestID)).x;
+        npv.y=grid.at(vrtxList.at(bestID)).y;
+        npv.z=grid.at(vrtxList.at(bestID)).z;
+        pseudoList.push_back(npv);
+      }
+    }
+  }
 }
 
 double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms){
