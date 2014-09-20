@@ -666,7 +666,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     }
     cliques.back().det=calcRot(la,lb,cliques.back().cen_a,cliques.back().cen_b,cliques.back().mat_r);
 
-    cout<<"Rotating vertexes of Mif 1 onto Mif 2 using list of atoms..."<<endl;
+    // cout<<"Rotating vertexes of Mif 1 onto Mif 2 using list of atoms..."<<endl;
     //Rotate mif 1 onto mif 2
     for(int v=0; v<mif1.size(); v++){
       for(int i=0; i<3; i++){
@@ -677,7 +677,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
       }
     }
 
-    cout<<"Rotating ligand 1 on ligand 2..."<<endl;
+    // cout<<"Rotating ligand 1 on ligand 2..."<<endl;
     //Rotate mif 1 onto mif 2
     float ligRMSD=0.0;
     int ligRMSDc=0;
@@ -699,7 +699,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
       }
       if(ligRMSDc>0) ligRMSD=sqrt(ligRMSD/(float)ligRMSDc);
     }
-    cout<<"ligRMSD "<<ligRMSD<<endl;
+    // cout<<"ligRMSD "<<ligRMSD<<endl;
     cliques.back().ligRMSD=ligRMSD;
 
     // cout<<"Finding corresponding vertexes..."<<endl;
@@ -832,46 +832,47 @@ void printNodes(){
   strcat(out_file,".isomif");
 
   open_file_ptr(&fp,out_file,1);
-  fprintf(fp,"%s",outH);
-
-  for(int cs=0; cs<steps.size(); cs++){
-    int i=topCliques[steps[cs]];
-    if(steps[cs]==-2){
-      fprintf(fp,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cg2],ss2[cg2]);
-      for(int j=0; j<cliques[i].va.size(); j++){
-        fprintf(fp, "A %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].va[j].ncoor[0],cliques[i].va[j].ncoor[1],cliques[i].va[j].ncoor[2],cliques[i].va[j].m[0],cliques[i].va[j].m[1],cliques[i].va[j].m[2],cliques[i].va[j].m[3],cliques[i].va[j].m[4],cliques[i].va[j].m[5]);
-      }
-      for(int j=0; j<cliques[i].vb.size(); j++){
-        fprintf(fp, "B %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].vb[j].coor[0],cliques[i].vb[j].coor[1],cliques[i].vb[j].coor[2],cliques[i].vb[j].m[0],cliques[i].vb[j].m[1],cliques[i].vb[j].m[2],cliques[i].vb[j].m[3],cliques[i].vb[j].m[4],cliques[i].vb[j].m[5]);
-      }
-    }else if(steps[cs]==-1){
-      fprintf(fp,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)prot1.size(),(int)prot2.size());
-      for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
-        fprintf(fp, "%3s %4d %4s %5d %s %8.3f %8.3f %8.3f %3s %4d %4s %5d %s %8.3f %8.3f %8.3f\n",(*it).ca->resn.c_str(),(*it).ca->resnb,(*it).ca->atomn.c_str(),(*it).ca->atomnb,(*it).ca->chain.c_str(),(*it).ca->coor[0],(*it).ca->coor[1],(*it).ca->coor[2],(*it).cb->resn.c_str(),(*it).cb->resnb,(*it).cb->atomn.c_str(),(*it).cb->atomnb,(*it).cb->chain.c_str(),(*it).cb->coor[0],(*it).cb->coor[1],(*it).cb->coor[2]);
-      }
-    }else if(steps[cs]==-3){
-      fprintf(fp,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)pseudoL1.size(),(int)pseudoL2.size());
-      for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
-        fprintf(fp, "%3s %8.3f %8.3f %8.3f %3s %8.3f %8.3f %8.3f\n",(*it).pa->type.c_str(),(*it).pa->coor[0],(*it).pa->coor[1],(*it).pa->coor[2],(*it).pb->type.c_str(),(*it).pb->coor[0],(*it).pb->coor[1],(*it).pb->coor[2]);
-      }
-    }else{
-      fprintf(fp,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cliques[i].cg],ss2[cliques[i].cg]);
-      for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
-        for(int j=0; j<nb_of_probes; ++j){
-          if((*it).a->pb[j]==1 && (*it).b->pb[j]==1){
-            fprintf(fp, "%d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",j,(*it).a->coor[0],(*it).a->coor[1],(*it).a->coor[2],(*it).b->coor[0],(*it).b->coor[1],(*it).b->coor[2]);
+  if(emptOut!=1){
+    fprintf(fp,"%s",outH);
+    for(int cs=0; cs<steps.size(); cs++){
+      int i=topCliques[steps[cs]];
+      if(steps[cs]==-2){
+        fprintf(fp,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cg2],ss2[cg2]);
+        for(int j=0; j<cliques[i].va.size(); j++){
+          fprintf(fp, "A %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].va[j].ncoor[0],cliques[i].va[j].ncoor[1],cliques[i].va[j].ncoor[2],cliques[i].va[j].m[0],cliques[i].va[j].m[1],cliques[i].va[j].m[2],cliques[i].va[j].m[3],cliques[i].va[j].m[4],cliques[i].va[j].m[5]);
+        }
+        for(int j=0; j<cliques[i].vb.size(); j++){
+          fprintf(fp, "B %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].vb[j].coor[0],cliques[i].vb[j].coor[1],cliques[i].vb[j].coor[2],cliques[i].vb[j].m[0],cliques[i].vb[j].m[1],cliques[i].vb[j].m[2],cliques[i].vb[j].m[3],cliques[i].vb[j].m[4],cliques[i].vb[j].m[5]);
+        }
+      }else if(steps[cs]==-1){
+        fprintf(fp,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)prot1.size(),(int)prot2.size());
+        for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
+          fprintf(fp, "%3s %4d %4s %5d %s %8.3f %8.3f %8.3f %3s %4d %4s %5d %s %8.3f %8.3f %8.3f\n",(*it).ca->resn.c_str(),(*it).ca->resnb,(*it).ca->atomn.c_str(),(*it).ca->atomnb,(*it).ca->chain.c_str(),(*it).ca->coor[0],(*it).ca->coor[1],(*it).ca->coor[2],(*it).cb->resn.c_str(),(*it).cb->resnb,(*it).cb->atomn.c_str(),(*it).cb->atomnb,(*it).cb->chain.c_str(),(*it).cb->coor[0],(*it).cb->coor[1],(*it).cb->coor[2]);
+        }
+      }else if(steps[cs]==-3){
+        fprintf(fp,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)pseudoL1.size(),(int)pseudoL2.size());
+        for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
+          fprintf(fp, "%3s %8.3f %8.3f %8.3f %3s %8.3f %8.3f %8.3f\n",(*it).pa->type.c_str(),(*it).pa->coor[0],(*it).pa->coor[1],(*it).pa->coor[2],(*it).pb->type.c_str(),(*it).pb->coor[0],(*it).pb->coor[1],(*it).pb->coor[2]);
+        }
+      }else{
+        fprintf(fp,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cliques[i].cg],ss2[cliques[i].cg]);
+        for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
+          for(int j=0; j<nb_of_probes; ++j){
+            if((*it).a->pb[j]==1 && (*it).b->pb[j]==1){
+              fprintf(fp, "%d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",j,(*it).a->coor[0],(*it).a->coor[1],(*it).a->coor[2],(*it).b->coor[0],(*it).b->coor[1],(*it).b->coor[2]);
+            }
           }
         }
       }
-    }
-    fprintf(fp,"REMARK ROTMAT ");
-    for(int m=0; m<3; m++) {
-      for(int n=0; n<3; n++){
-        fprintf(fp," %9.4f",gsl_matrix_get(cliques[i].mat_r,m,n));
+      fprintf(fp,"REMARK ROTMAT ");
+      for(int m=0; m<3; m++) {
+        for(int n=0; n<3; n++){
+          fprintf(fp," %9.4f",gsl_matrix_get(cliques[i].mat_r,m,n));
+        }
       }
+      fprintf(fp,"\nREMARK CENTRES %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n",cliques[i].cen_a[0],cliques[i].cen_a[1],cliques[i].cen_a[2],cliques[i].cen_b[0],cliques[i].cen_b[1],cliques[i].cen_b[2]);
+      fprintf(fp,"REMARK DET %g\n",cliques[i].det);
     }
-    fprintf(fp,"\nREMARK CENTRES %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n",cliques[i].cen_a[0],cliques[i].cen_a[1],cliques[i].cen_a[2],cliques[i].cen_b[0],cliques[i].cen_b[1],cliques[i].cen_b[2]);
-    fprintf(fp,"REMARK DET %g\n",cliques[i].det);
   }
 
   fclose(fp);
@@ -893,6 +894,7 @@ void clearStep(int cg){
     newClique.nbNodes=0;
     newClique.tani=0.0;
     newClique.taniX=0.0;
+    newClique.ligRMSD=0.0;
     newClique.mat_r=gsl_matrix_alloc(3,3);
     for(int i=0; i<3; i++) {
       newClique.cen_a[i]=0.0;
@@ -1376,6 +1378,10 @@ int read_commandline(int argc, char *argv[]){
   strcat(usage,tmp_line);
   sprintf(tmp_line,"-w          : \t Print similarity in filename\n");
   strcat(usage,tmp_line);
+  sprintf(tmp_line,"-e          : \t Empty result file\n");
+  strcat(usage,tmp_line);
+  sprintf(tmp_line,"-a          : \t Max Cliques\n");
+  strcat(usage,tmp_line);
   sprintf(tmp_line,"-n          : \t Number of common interactions for a vector to be similar\n");
   strcat(usage,tmp_line);
   sprintf(tmp_line,"-j          : \t JTT matrix rank threhsold [default 5]\n");
@@ -1464,6 +1470,14 @@ int read_commandline(int argc, char *argv[]){
 
     if(strcmp(argv[nb_arg],"-n")==0){
       commonInt=atoi(argv[nb_arg+1]);
+    }
+
+    if(strcmp(argv[nb_arg],"-e")==0){
+      emptOut=1;
+    }
+
+    if(strcmp(argv[nb_arg],"-a")==0){
+      maxCliques=atoi(argv[nb_arg+1]);
     }
 
     if(strcmp(argv[nb_arg],"-j")==0){

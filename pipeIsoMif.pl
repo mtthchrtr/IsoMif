@@ -83,7 +83,6 @@ sub runCmds{
     foreach my $file (@files){
       system("qsub $file -o /dev/null -e /dev/null");
       # print "qsub $file\n";
-      sleep(0.1);
     }
     &areJobsDone("nrg",$tag);
   }elsif($cmdMode eq "print"){

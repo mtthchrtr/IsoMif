@@ -99,9 +99,10 @@ float topT=-1.0;
 float topN=-1;
 int bkAll = 0;
 int nCliques=0;
-int maxCliques=2000;
+int maxCliques=200;
 vector<Clique> cliques;
 
+int emptOut=0;
 char outH[4000];
 int printDetails=0;
 char nrg_file1[200];
