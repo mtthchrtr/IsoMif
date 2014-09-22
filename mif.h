@@ -117,7 +117,7 @@ int nbOfAts=0;
 int nbOfAtoms=0;
 int nbOfProbes=0;
 int ss[4];
-int bul=10;
+int bul=99;
 float* epsilons;
 map<string,string> atomTypes;
 map<string,string> pseudoC;
@@ -133,6 +133,8 @@ map<string,float> nrgT;
 vector<string> probes;
 vector<string> aa;
 vector<pseudovrtx> pseudoList;
+float min_x, min_y, min_z, max_x, max_y, max_z;
+int width, height, depth;
 
 class  Protein{
   public:
@@ -144,7 +146,9 @@ class  Protein{
     int getRefAtom(float&, float&, float&, string, int, string, string, int, float, float, float, string);
     vector<atom> PROTEIN;
     vector<float> LIGAND;
+
   private:
+
 };
 
 class  Grid{
@@ -155,9 +159,10 @@ class  Grid{
   	int readGetCleft(string, vector<atom>&, vector<float>&);
   	int generateID(int, int, int, int, int);
     int buildGrid(vector<atom>&);
+    void getProtVrtx(vector<atom>&);
   	void getMinMax(string);
+    void getBuriedness();
     int getDiag(int, int, int, int&);
-  	float roundCoord(float, int);
   	int inGridRes(vertex&, float);
     void smooth(map<int,vertex>&,vector<int>&);
     void writeMif(vector<atom>&);
@@ -165,9 +170,7 @@ class  Grid{
     vector<int> vrtxIdList;
 
   private:
-    float min_x, min_y, min_z, max_x, max_y, max_z;
     int vrtx025,vrtx050,vrtx100,vrtx150,vrtx200;
-    int width, height, depth;
 };
 
 int readCmdLine(int, char**);
@@ -176,6 +179,7 @@ void getMif(map<int,vertex>&, vector<atom>&,vector<int>&);
 void getPseudo(map<int,vertex>&, vector<atom>&,vector<int>&);
 int is_coord_in_cube(float,float,float,float,float,float,float);
 void stripSpace(string &);
+float roundCoord(float, int);
 double calcNrg(vertex&, atom&, int, int&);
 void getAtomRef();
 void getPseudoC();

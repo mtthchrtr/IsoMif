@@ -86,7 +86,7 @@ while(my $line=<IN>){
 
   #Store vrtx grid presence
   for(my $i=9; $i<13; $i++){
-      push @{$grid[$i-9]}, ($info[0],$info[1],$info[2]) if($info[$i]==1);
+      push @{$grid[$i-9]}, ($info[0],$info[1],$info[2],$info[33]) if($info[$i]==1);
   }
 }
 close IN;
@@ -100,17 +100,20 @@ while(my $line=<IN>){
   chomp($line);
   print NPML $line."\\\n";
 }
-print NPML "TER \\\n\"\"\",\"".$mifName."\")\nshow cartoon\nremove (resn HOH)\nshow sticks, HET & ".$mifName."\nset connect_mode,1\n";
+print NPML "TER \\\n\"\"\",\"".$mifName."\")\nset connect_mode,1\n";
 close IN;
 
 my $it=0;
-print NPML "cmd.read_pdbstr(\"\"\"";
-foreach my $p (@pseudo){
-  my @s=split(/\s+/,$p);
-  printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",$it,uc($s[0]),$s[1],$s[2],$s[3];
-  $it++;
+if(@pseudo){
+  print NPML "cmd.read_pdbstr(\"\"\"";
+  foreach my $p (@pseudo){
+    my @s=split(/\s+/,$p);
+    printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",$it,uc($s[0]),$s[1],$s[2],$s[3];
+    $it++;
+  }
+  print NPML "TER \\\n\"\"\",\"pseudocenters\")\nhide nonbonded\nset connect_mode,1\n";  
 }
-print NPML "TER \\\n\"\"\",\"pseudocenters\")\nhide nonbonded\nset connect_mode,1\n";
+
 
 # open OUT, ">".$mifViewFolder."/".$mifName.".pdb" or die "Cant open mifView file";
 for(my $i=0; $i<6; $i++){ #Loop each probe
@@ -134,8 +137,8 @@ for(my $i=0; $i<3; $i++){
   if(defined @{$grid[$i]}){
     $gridInt[$i][0]=$it;
     print NPML "cmd.read_pdbstr(\"\"\"";
-    for(my $j=0; $j<@{$grid[$i]}; $j+=3){       
-      printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",0,$gridLab[$i],$grid[$i][$j],$grid[$i][$j+1],$grid[$i][$j+2];          
+    for(my $j=0; $j<@{$grid[$i]}; $j+=4){       
+      printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00%6.2f           N\\\n",0,$gridLab[$i],$grid[$i][$j],$grid[$i][$j+1],$grid[$i][$j+2],$grid[$i][$j+3];          
       $it++;
     }
     print NPML "TER \\\n\"\"\",\"".$gridLab[$i]."\")\n";
@@ -144,7 +147,16 @@ for(my $i=0; $i<3; $i++){
 }
 # close OUT;
 
-print NPML "feedback enable,all,output\norient\n";
+if(scalar @protgrid){
+  print NPML "cmd.read_pdbstr(\"\"\"";
+  for(my $i=0; $i<@protgrid; $i++){
+    my @s=split(/\s+/,$protgrid[$i]);
+    printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",0,"PGD",$s[0],$s[1],$s[2];
+  }
+  print NPML "TER \\\n\"\"\",\"".$mifName."_grid\")\n";
+}
+
+print NPML "feedback enable,all,output\norient\nshow cartoon, ".$mifName."\nremove (resn HOH)\nshow sticks, HET & ".$mifName."\ncolor white,".$mifName."_grid\nshow nonbonded,".$mifName."_grid\n";
 
 # open PML, ">".$mifViewFolder."/".$mifName.".pml" or die "Can't open file";
 # system("cp ".$mifFolder."/".$mifName."_cpy.pdb ".$mifViewFolder."/") unless($mifFolder eq $mifViewFolder);
@@ -175,30 +187,28 @@ for(my $i=0; $i<3; $i++){
 }
 
 #Print Ca atoms
-my $nbca=@ca;
-if($nbca>0){
-  print NPML "create ca, id ";
-  for(my $i=0; $i<@ca; $i++){
-    my @s=split(/\s+/,$ca[$i]);
-    print NPML "$s[3]";
-    print NPML "+" unless($i==$#ca);
-  }
-  print NPML " & ".$mifName."\n";
-}
-
-if(scalar @protgrid){
-  print NPML "cmd.read_pdbstr(\"\"\"";
-  for(my $i=0; $i<@protgrid; $i++){
-    my @s=split(/\s+/,$protgrid[$i]);
-    printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",0,"PGD",$s[0],$s[1],$s[2];
-  }
-  print NPML "TER \\\n\"\"\",\"".$mifName."_grid\")\ncolor white,".$mifName."_grid\nshow nonbonded,".$mifName."_grid\n";
-}
+# if(@ca){
+#   print NPML "create ca, id ";
+#   for(my $i=0; $i<@ca; $i++){
+#     my @s=split(/\s+/,$ca[$i]);
+#     print NPML "$s[3]";
+#     print NPML "+" unless($i==$#ca);
+#   }
+#   print NPML " & ".$mifName."\n";
+# }
 
 # my @pbColors=("aquamarine","brightorange","blue","red","limegreen","lightmagenta");
-print NPML "color deepteal, ca\nset sphere_scale, 0.3, ca\nshow spheres, ca\n";
+# print NPML "color deepteal, ca\nset sphere_scale, 0.3, ca\nshow spheres, ca\n";
 print NPML "set sphere_scale, 0.3, pseudocenter\ncolor aquamarine, resn HYD & pseudocenters\ncolor brightorange, resn ARM & pseudocenters\n";
 print NPML "color blue, resn DON & pseudocenters\ncolor red, resn ACC & pseudocenters\ncolor limegreen, resn DOA & pseudocenters\nshow spheres, pseudocenters\n";
+
+print NPML "set sphere_scale, 0.3, 100\nshow spheres, 100\n";
+for(my $i=0; $i<15; $i++){
+  my $c=((255/14)*($i));
+  $c=1-($c/255);
+  print NPML "set_color red".$i.", [1,".$c.",".$c."]\n";
+  print NPML "color red".$i.", 100 & b=".$i."\n";
+}
 
 # print PML "delete ".$mifName."\nhide lines\nshow sticks, HET & ".$mifName."_cpy\n";
 # print PML "save ".$mifViewFolder."/".$mifName.".pse\n";

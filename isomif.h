@@ -32,6 +32,7 @@ struct vertex {
   int cg[4];
   int pb[6];
   int m[6];
+  int bu;
   int id;
   vector<int> env;
 };

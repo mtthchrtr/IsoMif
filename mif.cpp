@@ -41,10 +41,11 @@ int main(int argc, char **argv)
   Protein protein=Protein(proteinFile);
 
 	Grid grid=Grid(cleftFile,protein);
-  cout<< "Grid has " <<grid.GRID.size()<< " vertexes."<<endl;
-  cout<< "Vertex list size: "<< grid.vrtxIdList.size()<<endl;
+
   getMif(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
+
   if(smoothDist!=0) grid.smooth(grid.GRID,grid.vrtxIdList);
+
   // getPseudo(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
 
   grid.writeMif(protein.PROTEIN);
@@ -65,6 +66,12 @@ Protein::~Protein(void){
 }
 
 Protein::Protein(string filename){
+  min_x=1000.00;
+  min_y=1000.00;
+  min_z=1000.00;
+  max_x=-1000.00;
+  max_y=-1000.00;
+  max_z=-1000.00;
   readPDB(filename);
   getAtomDir();
 }
@@ -199,6 +206,7 @@ void Protein::readPDB(string filename){
   size_t found;
   ifs.open(filename.c_str());
   ofs.open(outFileName.c_str());
+  float minx,miny,minz,maxx,maxy,maxz;
 
   if(!ifs.is_open()){ 
     cout << "could not read "<< filename << endl;
@@ -288,11 +296,35 @@ void Protein::readPDB(string filename){
       if(fields[5].compare(chain)!=0 && chain.compare("none")!=0){ atm.mif=0; }
       if(line.compare(0,6,"HETATM") == 0){ atm.mif=0; }
 
+      if(atm.mif==1){
+        minx=roundCoord(x-0.5,0);
+        miny=roundCoord(y-0.5,0);
+        minz=roundCoord(z-0.5,0);
+        maxx=roundCoord(x+0.5,1);
+        maxy=roundCoord(y+0.5,1);
+        maxz=roundCoord(z+0.5,1);
+        //Set GRID min/max X,Y and Z
+        if(minx<min_x){ min_x=minx; }
+        if(miny<min_y){ min_y=miny; }
+        if(minz<min_z){ min_z=minz; }
+        if(maxx>max_x){ max_x=maxx; }
+        if(maxy>max_y){ max_y=maxy; }
+        if(maxz>max_z){ max_z=maxz; }
+      }
+
       PROTEIN.push_back(atm);
     }
   }
   ifs.close();
   ofs.close();
+
+  width=(int)(((max_x-min_x)/stepsize)+1.0);
+  height=(int)(((max_y-min_y)/stepsize)+1.0);
+  depth=(int)(((max_z-min_z)/stepsize)+1.0);
+
+  cout <<endl<< "PROTEIN min/max values: minx: "<< min_x<< " miny: "<< min_y<< " minz: "<<min_z<<" maxx: "<<max_x<<" maxy: "<<max_y<<" maxz: "<<max_z<<endl;
+  cout<< "PROTEIN Width "<<width<<" Height "<< height << endl;
+
 }
 
 void Protein::getAtomDir(){
@@ -663,12 +695,6 @@ int Protein::getRefAtom(float& xr, float& yr, float& zr, string tresn, int tresn
 }
 
 Grid::Grid(string filename, Protein& prot){
-  min_x=1000.00;
-  min_y=1000.00;
-  min_z=1000.00;
-  max_x=-1000.00;
-  max_y=-1000.00;
-  max_z=-1000.00;
   vrtx025=0;
   vrtx050=0;
   vrtx100=0;
@@ -678,9 +704,11 @@ Grid::Grid(string filename, Protein& prot){
   if(filename.compare("")==0){
     buildGrid(prot.PROTEIN);
   }else{
-    getMinMax(filename);
+    // getMinMax(filename,prot);
     readGetCleft(filename, prot.PROTEIN, prot.LIGAND);
+    getProtVrtx(prot.PROTEIN);
   }
+  getBuriedness();
 }
 
 Grid::~Grid(void){ }
@@ -693,31 +721,6 @@ int Grid::generateID(int w, int h, int x, int y, int z){
 
 int Grid::buildGrid(vector<atom>& prot){
   int i=0;
-  float minx,miny,minz,maxx,maxy,maxz;
-  for(i=0; i<prot.size(); i++){
-      if(prot[i].mif==0) continue;
-
-      minx=roundCoord(prot[i].x-0.5,0);
-      miny=roundCoord(prot[i].y-0.5,0);
-      minz=roundCoord(prot[i].z-0.5,0);
-      maxx=roundCoord(prot[i].x+0.5,1);
-      maxy=roundCoord(prot[i].y+0.5,1);
-      maxz=roundCoord(prot[i].z+0.5,1);
-      //Set GRID min/max X,Y and Z
-      if(minx<min_x){ min_x=minx; }
-      if(miny<min_y){ min_y=miny; }
-      if(minz<min_z){ min_z=minz; }
-      if(maxx>max_x){ max_x=maxx; }
-      if(maxy>max_y){ max_y=maxy; }
-      if(maxz>max_z){ max_z=maxz; }
-  }
-  //Set GRID width and height
-  width=(int)(((max_x-min_x)/stepsize)+1.0);
-  height=(int)(((max_y-min_y)/stepsize)+1.0);
-  depth=(int)(((max_z-min_z)/stepsize)+1.0);
-
-  cout <<endl<< "GRID min/max values: minx: "<< min_x<< " miny: "<< min_y<< " minz: "<<min_z<<" maxx: "<<max_x<<" maxy: "<<max_y<<" maxz: "<<max_z<<endl;
-  cout<< "GRID Width "<<width<<" Height "<< height <<" Depth "<< depth << endl;
 
   map<int,vertex>::iterator it;
   int id;
@@ -798,7 +801,12 @@ int Grid::buildGrid(vector<atom>& prot){
       }
     }
   }
+  return(0);
+}
 
+void Grid::getBuriedness(){
+  map<int,vertex>::iterator it;
+  int id;
   //Get buriedness of each grid point
   for(int i=0; i<vrtxIdList.size(); i++){
     vertex& m=GRID.at(vrtxIdList.at(i));
@@ -976,7 +984,6 @@ int Grid::buildGrid(vector<atom>& prot){
     }
     m.bu=bu;
   }
-  return(0);
 }
 
 int Grid::getDiag(int tx, int ty, int tz, int& flag){
@@ -1200,7 +1207,64 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
   return(0);
 }
 
-float Grid::roundCoord(float number, int min_or_max){ 
+void Grid::getProtVrtx(vector<atom>& prot){
+  int i=0;
+  map<int,vertex>::iterator it;
+  int id;
+  int uID=0;
+  for(float x=min_x; x<=max_x; x+=stepsize){
+    for(float y=min_y; y<=max_y; y+=stepsize){
+      for(float z=min_z; z<=max_z; z+=stepsize){
+
+        int pg=0;
+        float minDist=10000.0;
+        for(i=0; i<prot.size(); i++){
+          if(prot[i].mif==0) continue;
+          float d=((abs(x-prot[i].x)*abs(x-prot[i].x))+(abs(y-prot[i].y)*abs(y-prot[i].y))+(abs(z-prot[i].z)*abs(z-prot[i].z)));
+          if(d<minDist){ minDist=d; }
+          
+        }
+        if(minDist<minGridDist){
+          //Generate grid vertex ID
+          id=generateID(width,height,(int)((x-min_x)/stepsize)+1,(int)((y-min_y)/stepsize)+1,(int)((z-min_z)/stepsize)+1);
+          it = GRID.find(id);
+
+          if(it == GRID.end()){ //If this grid point doesnt exist
+            vertex vrtx;
+            vrtx.x=x;
+            vrtx.y=y;
+            vrtx.z=z;
+            vrtx.p=1;
+            vrtx.id=uID;
+            uID++;
+            //Print grid in appropriate file
+            if(inGridRes(vrtx,2.0)==1){
+              vrtx.grid[0]=1;
+            }else{ vrtx.grid[0]=0; }
+
+            //Print grid in appropriate file
+            if(inGridRes(vrtx,1.5)==1){
+              vrtx.grid[1]=1;
+            }else{ vrtx.grid[1]=0; }
+            
+            if(inGridRes(vrtx,1.0)==1){
+              vrtx.grid[2]=1;
+            }else{ vrtx.grid[2]=0; }
+            
+            if(inGridRes(vrtx,0.5)==1){
+              vrtx.grid[3]=1;          
+            }else{ vrtx.grid[3]=0; }
+            
+            GRID.insert(pair<int,vertex>(id,vrtx));
+            vrtxIdList.push_back(id);
+          }
+        }
+      }
+    }
+  }
+}
+
+float roundCoord(float number, int min_or_max){ 
   //min_or_max (1=max, 0=min)
   float quotient;
   int rounded;
@@ -1412,7 +1476,7 @@ void Grid::writeMif(vector<atom>& prot){
         fprintf(fpNew, "#PG %7.2f %7.2f %7.2f\n",it->second.x,it->second.y,it->second.z);  
       }
     }else{
-      if(it->second.bu<bul) continue;
+      // if(it->second.bu<bul) continue;
       // cout<<"bu "<<it->second.bu<<endl;
       fprintf(fpNew, "%7.2f %7.2f %7.2f",it->second.x,it->second.y,it->second.z);
       for(probe=0; probe<nbOfProbes; probe++){
@@ -1428,7 +1492,7 @@ void Grid::writeMif(vector<atom>& prot){
           fprintf(fpNew, " %d",(int)round(it->second.env[aa[i]]));
         }
       }
-      fprintf(fpNew, "\n");     
+      fprintf(fpNew, " %d\n",it->second.bu);     
     }
   }
 
@@ -1596,7 +1660,7 @@ void getMif(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
     vertex& m=grid.at(vrtxList.at(i));
     
     if(m.p==1){ continue; }
-    if(m.bu<bul){ continue; }
+    // if(m.bu<bul){ continue; }
     if(m.grid[0]!=1 && m.grid[1]!=1 && m.grid[2]!=1 && m.grid[3]==1) continue;
   
     // if(printDetails==1){ cout<<endl<<"Vertex id: "<< m.id <<" "<<m.x<<" "<<m.y<<" "<<m.z<<endl; }
@@ -1608,6 +1672,7 @@ void getMif(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
       // if(printDetails==1){ cout<<endl<<"### PROBE "<<probe<<" ###"<<endl; }
 
       for(int j=0; j<prot.size(); j++){ //Iterate each atom for this probe at this grid intersection
+        if(prot.at(j).mif!=1) continue;
         enrg_sum+=calcNrg(m,prot.at(j),probe,countAtms);
       }
       if(countAtms>0){
@@ -1624,74 +1689,6 @@ void getMif(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
         if(m.grid[gi]==1){
           ss[gi]++;
         }
-      }
-    }
-  }
-  //cout<<"Calculated non-bonded energies at "<<countVrtx<<" grid intersections using "<< nbOfProbes <<" probe(s)."<<endl;
-}
-
-void getPseudo(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
-  cout<<endl<< "Projecting pseudocenters..."<< endl;
-
-  for(int j=0; j<prot.size(); j++){
-    if(prot[j].mif!=1) continue;
-
-    // cout<< prot[j].resn + " " + prot[j].atomn + " " << prot[j].resnb<< " mif "<< prot[j].mif;
-
-    map<string,string>::iterator it = pseudoC.find(prot[j].resn+"_"+prot[j].atomn);
-    if(it != pseudoC.end()){
-
-      string pseudo=it->second;
-      int angleType=0;
-      if(pseudo.compare("doa")==0 || pseudo.compare("don")==0 || pseudo.compare("acc")==0){
-        angleType=1;
-      }else if(pseudo.compare("arm")==0){
-        // angleType=2;
-      }
-      // cout<<" "+pseudo<<" angletype "<<angleType<<endl;
-    
-      int bestID=-1;
-      float bestD=10.0;
-      for(int i=0; i<vrtxList.size(); i++){
-        vertex& m=grid.at(vrtxList.at(i));
-        if(m.bu<bul) continue;
-        if(m.grid[2]!=1) continue;
-
-        float angle=0.0;
-        float dist=dist_3d(prot[j].x,prot[j].y,prot[j].z,m.x,m.y,m.z);
-        
-        if(dist>4.0) continue;
-        if(angleType==1){
-          float rDist=dist_3d(prot[j].x,prot[j].y,prot[j].z,prot[j].xr,prot[j].yr,prot[j].zr);
-          float rpDist=dist_3d(m.x,m.y,m.z,prot[j].xr,prot[j].yr,prot[j].zr);
-          angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
-          angle=acos(angle)* 180.0 / PI;
-          if(prot[j].rDir==0){ angle=180.00-angle; }
-          if(angle > 60.00) continue;
-          // cout<< " angle "<<angle<<" dist "<<dist<<endl;
-        }else if(angleType==2){ //aromatic angle
-          // float rDist=dist_3d(prot[j].x,prot[j].y,prot[j].z,prot[j].xr,prot[j].yr,prot[j].zr);
-          // float rpDist=dist_3d(m.x,m.y,m.z,prot[j].xr,prot[j].yr,prot[j].zr);
-          // angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
-          // angle=acos(angle)* 180.0 / PI;
-          // if(angle>90 || fabs(180.00-angle) < 0.001){
-          //   angle=180-angle;
-          // }
-          // cout<< " angle "<<angle<<" dist "<<dist<<endl;
-        }
-        if(dist<bestD){
-          bestD=dist;
-          bestID=i;
-        }
-      }
-      if(bestID!=-1){
-        pseudovrtx npv;
-        npv.dist=bestD;
-        npv.type=pseudo;
-        npv.x=grid.at(vrtxList.at(bestID)).x;
-        npv.y=grid.at(vrtxList.at(bestID)).y;
-        npv.z=grid.at(vrtxList.at(bestID)).z;
-        pseudoList.push_back(npv);
       }
     }
   }
@@ -1810,5 +1807,72 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms){
     //   cout<< "epsilon: " << epsilon<< " alpha: "<< alpha<< " dist: "<< dist<< " -> NRG: "<< energy<< endl<<endl;
     // }
     return(energy);
+  }
+}
+
+void getPseudo(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
+  cout<<endl<< "Projecting pseudocenters..."<< endl;
+
+  for(int j=0; j<prot.size(); j++){
+    if(prot[j].mif!=1) continue;
+
+    // cout<< prot[j].resn + " " + prot[j].atomn + " " << prot[j].resnb<< " mif "<< prot[j].mif;
+
+    map<string,string>::iterator it = pseudoC.find(prot[j].resn+"_"+prot[j].atomn);
+    if(it != pseudoC.end()){
+
+      string pseudo=it->second;
+      int angleType=0;
+      if(pseudo.compare("doa")==0 || pseudo.compare("don")==0 || pseudo.compare("acc")==0){
+        angleType=1;
+      }else if(pseudo.compare("arm")==0){
+        // angleType=2;
+      }
+      // cout<<" "+pseudo<<" angletype "<<angleType<<endl;
+    
+      int bestID=-1;
+      float bestD=10.0;
+      for(int i=0; i<vrtxList.size(); i++){
+        vertex& m=grid.at(vrtxList.at(i));
+        if(m.bu<bul) continue;
+        if(m.grid[2]!=1) continue;
+
+        float angle=0.0;
+        float dist=dist_3d(prot[j].x,prot[j].y,prot[j].z,m.x,m.y,m.z);
+        
+        if(dist>4.0) continue;
+        if(angleType==1){
+          float rDist=dist_3d(prot[j].x,prot[j].y,prot[j].z,prot[j].xr,prot[j].yr,prot[j].zr);
+          float rpDist=dist_3d(m.x,m.y,m.z,prot[j].xr,prot[j].yr,prot[j].zr);
+          angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
+          angle=acos(angle)* 180.0 / PI;
+          if(prot[j].rDir==0){ angle=180.00-angle; }
+          if(angle > 60.00) continue;
+          // cout<< " angle "<<angle<<" dist "<<dist<<endl;
+        }else if(angleType==2){ //aromatic angle
+          // float rDist=dist_3d(prot[j].x,prot[j].y,prot[j].z,prot[j].xr,prot[j].yr,prot[j].zr);
+          // float rpDist=dist_3d(m.x,m.y,m.z,prot[j].xr,prot[j].yr,prot[j].zr);
+          // angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
+          // angle=acos(angle)* 180.0 / PI;
+          // if(angle>90 || fabs(180.00-angle) < 0.001){
+          //   angle=180-angle;
+          // }
+          // cout<< " angle "<<angle<<" dist "<<dist<<endl;
+        }
+        if(dist<bestD){
+          bestD=dist;
+          bestID=i;
+        }
+      }
+      if(bestID!=-1){
+        pseudovrtx npv;
+        npv.dist=bestD;
+        npv.type=pseudo;
+        npv.x=grid.at(vrtxList.at(bestID)).x;
+        npv.y=grid.at(vrtxList.at(bestID)).y;
+        npv.z=grid.at(vrtxList.at(bestID)).z;
+        pseudoList.push_back(npv);
+      }
+    }
   }
 }

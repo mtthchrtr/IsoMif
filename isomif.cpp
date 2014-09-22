@@ -666,7 +666,6 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     }
     cliques.back().det=calcRot(la,lb,cliques.back().cen_a,cliques.back().cen_b,cliques.back().mat_r);
 
-    // cout<<"Rotating vertexes of Mif 1 onto Mif 2 using list of atoms..."<<endl;
     //Rotate mif 1 onto mif 2
     for(int v=0; v<mif1.size(); v++){
       for(int i=0; i<3; i++){
@@ -677,8 +676,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
       }
     }
 
-    // cout<<"Rotating ligand 1 on ligand 2..."<<endl;
-    //Rotate mif 1 onto mif 2
+    // Rotate ligand and calculate RMSD
     float ligRMSD=0.0;
     int ligRMSDc=0;
     if(rnc1.compare("")!=0 && rnc2.compare("")!=0 && lig1.size()>0 && lig2.size()>0){
@@ -691,7 +689,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
         for(int w=0; w<lig2.size(); w++){
           if(lig2[w].atomn.compare(lig1[v].atomn)==0){
             ligRMSD+=dist3d(lig1[v].ncoor,lig2[w].coor);
-            cout<<lig1[v].atomn<<" "<<lig2[w].atomn<<" "<<dist3d(lig1[v].ncoor,lig2[w].coor)<<endl;
+            // cout<<lig1[v].atomn<<" "<<lig2[w].atomn<<" "<<dist3d(lig1[v].ncoor,lig2[w].coor)<<endl;
             ligRMSDc++;
             break;
           }
@@ -699,7 +697,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
       }
       if(ligRMSDc>0) ligRMSD=sqrt(ligRMSD/(float)ligRMSDc);
     }
-    // cout<<"ligRMSD "<<ligRMSD<<endl;
+
     cliques.back().ligRMSD=ligRMSD;
 
     // cout<<"Finding corresponding vertexes..."<<endl;
@@ -748,6 +746,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
       }else{
         rmsd+=dist3d(ncoor,(*it).b->coor);
       }
+      cout<<(*it).a->bu<<" "<<(*it).b->bu<<endl;
       // if(cg!=-1 && cg!=-3){
       //   float env=0.0;
       //   float envSum=0.0;
@@ -1169,7 +1168,7 @@ int createVrtxVec(char mifFile[], vector<vertex>& p, vector<atom>& a, int* ss, i
   pseudoC* npseudo;
   float x,y,z;
   string resn;
-  int resnb,mif,bs;
+  int resnb,mif,bs,bu;
   int atmC=0;
   int pcC=0;
   string atomn;
@@ -1224,7 +1223,7 @@ int createVrtxVec(char mifFile[], vector<vertex>& p, vector<atom>& a, int* ss, i
       pcC++;
     }else if(line.compare(0,1,"#")!=0){
       stringstream test(line);
-      test >> x >> y >> z >> pb0 >> pb1 >> pb2 >> pb3 >> pb4 >> pb5 >> gr0 >> gr1 >> gr2 >> gr3 >> e0 >> e1 >> e2 >> e3 >> e4 >> e5 >> e6 >> e7 >> e8 >> e9 >> e10 >> e11 >> e12 >> e13 >> e14 >> e15 >> e16 >> e17 >> e18 >> e19;
+      test >> x >> y >> z >> pb0 >> pb1 >> pb2 >> pb3 >> pb4 >> pb5 >> gr0 >> gr1 >> gr2 >> gr3 >> e0 >> e1 >> e2 >> e3 >> e4 >> e5 >> e6 >> e7 >> e8 >> e9 >> e10 >> e11 >> e12 >> e13 >> e14 >> e15 >> e16 >> e17 >> e18 >> e19 >> bu;
       nvrtx = new vertex;
       nvrtx->coor[0]=x;
       nvrtx->coor[1]=y;
@@ -1265,6 +1264,7 @@ int createVrtxVec(char mifFile[], vector<vertex>& p, vector<atom>& a, int* ss, i
       nvrtx->env.push_back(e17);
       nvrtx->env.push_back(e18);
       nvrtx->env.push_back(e19);
+      nvrtx->bu=bu;
       // cout<<line<<endl;
       // for(int i=0; i<nvrtx->env.size(); i++){
       //   cout<<" "<<nvrtx->env[i];
