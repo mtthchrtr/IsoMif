@@ -84,7 +84,8 @@ struct CliqueStruct{
   float taniX;
   float rmsd;
   float ligRMSD;
-  float envSim;
+  float envD;
+  float buD;
   gsl_matrix *mat_r;
   float cen_a[3];
   float cen_b[3];

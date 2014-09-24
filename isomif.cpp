@@ -42,13 +42,13 @@ int main(int argc, char *argv[]){
   createVrtxVec(nrg_file1,mif1,prot1,ss1,caSize1,pseudoL1,rnc1,lig1);
   createVrtxVec(nrg_file2,mif2,prot2,ss2,caSize2,pseudoL2,rnc2,lig2);
 
-  for(int i=0; i<lig1.size(); i++){
-    cout<<lig1[i].resn<<" "<<lig1[i].resnb<<" "<<lig1[i].chain<<" "<<lig1[i].atomn<<" "<<lig1[i].coor[0]<<" "<<lig1[i].coor[1]<<" "<<lig1[i].coor[2]<<endl;
-  }
+  // for(int i=0; i<lig1.size(); i++){
+  //   cout<<lig1[i].resn<<" "<<lig1[i].resnb<<" "<<lig1[i].chain<<" "<<lig1[i].atomn<<" "<<lig1[i].coor[0]<<" "<<lig1[i].coor[1]<<" "<<lig1[i].coor[2]<<endl;
+  // }
 
-  for(int i=0; i<lig2.size(); i++){
-    cout<<lig2[i].resn<<" "<<lig2[i].resnb<<" "<<lig2[i].chain<<" "<<lig2[i].atomn<<" "<<lig2[i].coor[0]<<" "<<lig2[i].coor[1]<<" "<<lig2[i].coor[2]<<endl;
-  }
+  // for(int i=0; i<lig2.size(); i++){
+  //   cout<<lig2[i].resn<<" "<<lig2[i].resnb<<" "<<lig2[i].chain<<" "<<lig2[i].atomn<<" "<<lig2[i].coor[0]<<" "<<lig2[i].coor[1]<<" "<<lig2[i].coor[2]<<endl;
+  // }
 
   // for(i=0; i<mif1.size(); i++){
   //   cout<< mif1.at(i).coor[0]<<" "<< mif1.at(i).coor[1]<<" "<< mif1.at(i).coor[2]<<" "<< mif1.at(i).pb[0]<<" "<< mif1.at(i).pb[1]<<" "<< mif1.at(i).pb[2]<<" "<< mif1.at(i).pb[3]<<" "<< mif1.at(i).pb[4]<<" "<< mif1.at(i).pb[5]<<endl;
@@ -292,7 +292,7 @@ int main(int argc, char *argv[]){
       //Print nodes in the output file
       clearStep(cg);
 
-      cout<<"top clique of "<<cg<<" "<<topCliques[cg]<<" size "<<cliques[topCliques[cg]].nbNodes<<" envSim "<<cliques[topCliques[cg]].envSim<<endl;
+      cout<<"top clique of "<<cg<<" "<<topCliques[cg]<<" size "<<cliques[topCliques[cg]].nbNodes<<" envD "<<cliques[topCliques[cg]].envD<<endl;
 
       //Delete graph and adjacency matrix
       delete[] conn;
@@ -602,211 +602,191 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   vector<nodes>::iterator it;
   vector<float> la;
   vector<float> lb;
-  // int envSim=0;
 
   nCliques++;
   // cout<<nCliques<<endl;
 
-  // for(int i=0; i<n; i++){
-  //   graph.at(list[i]);
-  //   for(int i=0; i<20; ++i){
-  //     if(graph.at(list[i]).a->env[i]!=0 && graph.at(list[i]).b->env[i]!=0){
-  //       envSim+=(8-(abs(graph.at(list[i]).a->env[i]-graph.at(list[i]).b->env[i])));
+  Clique newClique;
+  newClique.cg=cg;
+  newClique.nbNodes=n;
+  newClique.envD=0.0;
+  newClique.taniX=0.0;
+  for(int i=0; i<n; i++){ newClique.nodes.push_back(graph.at(list[i])); }
+  cliques.push_back(newClique);
+
+  //Get list of coords to get rotation matrix
+  if(cg==-1){
+    for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
+      for(int i=0; i<3; i++){
+        la.push_back((*it).ca->coor[i]);
+        lb.push_back((*it).cb->coor[i]);
+      }
+    }
+  }else if(cg==-3){
+    for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
+      for(int i=0; i<3; i++){
+        la.push_back((*it).pa->coor[i]);
+        lb.push_back((*it).pb->coor[i]);
+      }
+    }
+  }else{
+    for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
+      for(int i=0; i<nb_of_probes; ++i){
+        if((*it).a->pb[i]==1 && (*it).b->pb[i]==1){
+          for(int j=0; j<3; j++){
+            la.push_back((*it).a->coor[j]);
+            lb.push_back((*it).b->coor[j]);
+          }
+        }
+      }
+    }
+  }
+
+  //Calculate rotation matrix
+  cliques.back().mat_r=gsl_matrix_alloc(3,3);
+  gsl_matrix_set_zero(cliques.back().mat_r);
+  for(int i=0; i<3; i++){
+    cliques.back().cen_a[i]=0.0;
+    cliques.back().cen_b[i]=0.0;
+  }
+  cliques.back().det=calcRot(la,lb,cliques.back().cen_a,cliques.back().cen_b,cliques.back().mat_r);
+
+  //Rotate mif 1 onto mif 2
+  for(int v=0; v<mif1.size(); v++){
+    for(int i=0; i<3; i++){
+      mif1[v].ncoor[i]=cliques.back().cen_b[i];
+      for(int j=0; j<3; j++){
+        mif1[v].ncoor[i]+=(mif1[v].coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
+      }
+    }
+  }
+
+  // Rotate ligand and calculate RMSD
+  float ligRMSD=0.0;
+  int ligRMSDc=0;
+  if(rnc1.compare("")!=0 && rnc2.compare("")!=0 && lig1.size()>0 && lig2.size()>0){
+    for(int v=0; v<lig1.size(); v++){
+      float dist=0.0;
+      for(int i=0; i<3; i++){
+        lig1[v].ncoor[i]=cliques.back().cen_b[i];
+        for(int j=0; j<3; j++){ lig1[v].ncoor[i]+=(lig1[v].coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j); }
+      }
+      for(int w=0; w<lig2.size(); w++){
+        if(lig2[w].atomn.compare(lig1[v].atomn)==0){
+          ligRMSD+=dist3d(lig1[v].ncoor,lig2[w].coor);
+          // cout<<lig1[v].atomn<<" "<<lig2[w].atomn<<" "<<dist3d(lig1[v].ncoor,lig2[w].coor)<<endl;
+          ligRMSDc++;
+          break;
+        }
+      }
+    }
+    if(ligRMSDc>0) ligRMSD=sqrt(ligRMSD/(float)ligRMSDc);
+  }
+
+  cliques.back().ligRMSD=ligRMSD;
+
+  //Calculate RMSD
+  //Calculate envD
+  //Calculate buD
+  float rmsd=0.0;
+  float envD=0.0;
+  float bud=0.0;
+  for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
+    float ncoor[3];
+    for(int i=0; i<3; i++){
+      ncoor[i]=cliques.back().cen_b[i];
+      for(int j=0; j<3; j++){
+        if(cg==-1){
+          ncoor[i]+=((*it).ca->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
+        }else if(cg==-3){
+          ncoor[i]+=((*it).pa->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
+        }else{
+          ncoor[i]+=((*it).a->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
+        }
+      }
+    }
+    if(cg==-1){
+      rmsd+=dist3d(ncoor,(*it).cb->coor);
+    }else if(cg==-3){
+      rmsd+=dist3d(ncoor,(*it).pb->coor);
+    }else{
+      rmsd+=dist3d(ncoor,(*it).b->coor);
+    }
+    // cout<<(*it).a->bu<<" "<<(*it).b->bu<<endl;
+    bud+=pow(((*it).a->bu)-((*it).b->bu),2);
+    if(cg!=-1 && cg!=-3){
+      float num=0.0;
+      float d1=0.0;
+      float d2=0.0;
+      for(int i=0; i<20; ++i){
+        // cout <<(*it).a->env[i]<<" "<<(*it).b->env[i]<<" | ";
+        num+=(*it).a->env[i]*(*it).b->env[i];
+        d1+=pow((*it).a->env[i],2);
+        d2+=pow((*it).b->env[i],2);
+      }
+      float cosd=num/(sqrt(d1)*sqrt(d2));
+      envD+=cosd;
+    }
+  }
+  rmsd=sqrt(rmsd/(float)cliques.back().nbNodes);
+  cliques.back().rmsd=rmsd;
+  cliques.back().envD=envD/(float)cliques.back().nbNodes;
+  cliques.back().buD=sqrt(bud/(float)cliques.back().nbNodes);
+
+  // cout<<"Finding corresponding vertexes..."<<endl;
+  // float dist=0.0;
+  // for(int u=0; u<mif1.size(); u++){
+  //   if(mif1[u].grid[cg2]!=1) continue;
+  //   for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
+  //     dist=dist3d(mif1[u].ncoor,(*it).a.coor);
+  //   }
+  //   for(int v=0; v<mif2.size(); v++){
+  //     if(mif2[v].grid[cg2]!=1) continue;
+  //     dist=dist3d(mif1[u].ncoor,mif2[v].coor);  
+  //     if(dist < dDist || fabs(dist-dDist)<0.001){ //If passes distance threshold
+  //       for(int i=0; i<6; i++){
+  //         if(mif1[u].pb[i]==1 && mif2[v].pb[i]==1){
+  //           cout<<i<<" - "<<mif1[u].ncoor[0]<<" "<<mif1[u].ncoor[1]<<" "<<mif1[u].ncoor[2]<<" "<<mif2[v].coor[0]<<" "<<mif2[v].coor[1]<<" "<<mif2[v].coor[2]<<" - "<<mif1[u].pb[i]<<" "<<mif2[v].pb[i]<<endl;  
+  //           mif1[u].m[i]=1;
+  //           mif2[v].m[i]=1;
+  //         }
+  //       }
   //     }
   //   }
   // }
-  // cout<<"envSim "<<envSim<<endl;
 
-  // if(topN==-1){
-  //   topN=envSim;
-  // }else if(envSim>topN){
+  if(cg==-1){
+    cliques.back().tani=(float)n/((float)caSize1+(float)caSize2-(float)n);
+  }else if(cg==-3){
+    cliques.back().tani=(float)n/((float)pseudoL1.size()+(float)pseudoL2.size()-(float)n);
+  }else{
+    cliques.back().tani=(float)n/((float)ss1[cg]+(float)ss2[cg]-(float)n);
+  }
 
-    Clique newClique;
-    newClique.cg=cg;
-    newClique.nbNodes=n;
-    newClique.envSim=0.0;
-    newClique.taniX=0.0;
-    for(int i=0; i<n; i++){ newClique.nodes.push_back(graph.at(list[i])); }
-    cliques.push_back(newClique);
-
-    //Get list of coords to get rotation matrix
-    if(cg==-1){
-      for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
-        for(int i=0; i<3; i++){
-          la.push_back((*it).ca->coor[i]);
-          lb.push_back((*it).cb->coor[i]);
-        }
-      }
-    }else if(cg==-3){
-      for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
-        for(int i=0; i<3; i++){
-          la.push_back((*it).pa->coor[i]);
-          lb.push_back((*it).pb->coor[i]);
-        }
-      }
-    }else{
-      for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
-        for(int i=0; i<nb_of_probes; ++i){
-          if((*it).a->pb[i]==1 && (*it).b->pb[i]==1){
-            for(int j=0; j<3; j++){
-              la.push_back((*it).a->coor[j]);
-              lb.push_back((*it).b->coor[j]);
-            }
-          }
-        }
-      }
-    }
-
-    //Calculate rotation matrix
-    cliques.back().mat_r=gsl_matrix_alloc(3,3);
-    gsl_matrix_set_zero(cliques.back().mat_r);
-    for(int i=0; i<3; i++){
-      cliques.back().cen_a[i]=0.0;
-      cliques.back().cen_b[i]=0.0;
-    }
-    cliques.back().det=calcRot(la,lb,cliques.back().cen_a,cliques.back().cen_b,cliques.back().mat_r);
-
-    //Rotate mif 1 onto mif 2
-    for(int v=0; v<mif1.size(); v++){
-      for(int i=0; i<3; i++){
-        mif1[v].ncoor[i]=cliques.back().cen_b[i];
-        for(int j=0; j<3; j++){
-          mif1[v].ncoor[i]+=(mif1[v].coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
-        }
-      }
-    }
-
-    // Rotate ligand and calculate RMSD
-    float ligRMSD=0.0;
-    int ligRMSDc=0;
-    if(rnc1.compare("")!=0 && rnc2.compare("")!=0 && lig1.size()>0 && lig2.size()>0){
-      for(int v=0; v<lig1.size(); v++){
-        float dist=0.0;
-        for(int i=0; i<3; i++){
-          lig1[v].ncoor[i]=cliques.back().cen_b[i];
-          for(int j=0; j<3; j++){ lig1[v].ncoor[i]+=(lig1[v].coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j); }
-        }
-        for(int w=0; w<lig2.size(); w++){
-          if(lig2[w].atomn.compare(lig1[v].atomn)==0){
-            ligRMSD+=dist3d(lig1[v].ncoor,lig2[w].coor);
-            // cout<<lig1[v].atomn<<" "<<lig2[w].atomn<<" "<<dist3d(lig1[v].ncoor,lig2[w].coor)<<endl;
-            ligRMSDc++;
-            break;
-          }
-        }
-      }
-      if(ligRMSDc>0) ligRMSD=sqrt(ligRMSD/(float)ligRMSDc);
-    }
-
-    cliques.back().ligRMSD=ligRMSD;
-
-    // cout<<"Finding corresponding vertexes..."<<endl;
-    // float dist=0.0;
-    // for(int u=0; u<mif1.size(); u++){
-    //   if(mif1[u].grid[cg2]!=1) continue;
-    //   for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
-    //     // dist=dist3d(mif1[u].ncoor,(*it).a.coor);
-    //   }
-    //   for(int v=0; v<mif2.size(); v++){
-    //     if(mif2[v].grid[cg2]!=1) continue;
-    //     dist=dist3d(mif1[u].ncoor,mif2[v].coor);  
-    //     if(dist < dDist || fabs(dist-dDist)<0.001){ //If passes distance threshold
-    //       for(int i=0; i<6; i++){
-    //         if(mif1[u].pb[i]==1 && mif2[v].pb[i]==1){
-    //           cout<<i<<" - "<<mif1[u].ncoor[0]<<" "<<mif1[u].ncoor[1]<<" "<<mif1[u].ncoor[2]<<" "<<mif2[v].coor[0]<<" "<<mif2[v].coor[1]<<" "<<mif2[v].coor[2]<<" - "<<mif1[u].pb[i]<<" "<<mif2[v].pb[i]<<endl;  
-    //           mif1[u].m[i]=1;
-    //           mif2[v].m[i]=1;
-    //         }
-    //       }
-    //     }
-    //   }
-    // }
-
-    //Calculating RMSD and vector similarity
-    float rmsd=0.0;
-    float envNodes=0.0;
-    for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
-      float ncoor[3];
-      for(int i=0; i<3; i++){
-        ncoor[i]=cliques.back().cen_b[i];
-        for(int j=0; j<3; j++){
-          if(cg==-1){
-            ncoor[i]+=((*it).ca->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
-          }else if(cg==-3){
-            ncoor[i]+=((*it).pa->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
-          }else{
-            ncoor[i]+=((*it).a->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
-          }
-        }
-      }
-      if(cg==-1){
-        rmsd+=dist3d(ncoor,(*it).cb->coor);
-      }else if(cg==-3){
-        rmsd+=dist3d(ncoor,(*it).pb->coor);
-      }else{
-        rmsd+=dist3d(ncoor,(*it).b->coor);
-      }
-      cout<<(*it).a->bu<<" "<<(*it).b->bu<<endl;
-      // if(cg!=-1 && cg!=-3){
-      //   float env=0.0;
-      //   float envSum=0.0;
-      //   int envC=0;
-      //   cliques.back().envSim+=1.0;
-      //   for(int i=0; i<20; ++i){
-      //     if((*it).a->env[i]!=0 && (*it).b->env[i]!=0){
-      //       float diff=abs((*it).a->env[i]-(*it).b->env[i]);
-      //       // cliques.back().envSim+=1.0;
-      //       envSum+=pow(diff,2);
-      //       envC++;
-      //       cout<<" "<<diff<<" |";
-      //     }
-      //   }
-      //   if(envC>0){
-      //     env=sqrt(envSum/(float)envC);
-      //     envNodes+=1.0;
-      //     cout<< " env "<<env<<endl;
-      //     cliques.back().envSim+=env;
-      //   }
-      // }
-    }
-    rmsd=sqrt(rmsd/(float)cliques.back().nbNodes);
-    cliques.back().rmsd=rmsd;
-    // cliques.back().envSim=sqrt(cliques.back().envSim/envNodes);
-
-    if(cg==-1){
-      cliques.back().tani=(float)n/((float)caSize1+(float)caSize2-(float)n);
-    }else if(cg==-3){
-      cliques.back().tani=(float)n/((float)pseudoL1.size()+(float)pseudoL2.size()-(float)n);
-    }else{
-      cliques.back().tani=(float)n/((float)ss1[cg]+(float)ss2[cg]-(float)n);
-    }
-
-    // if(cg==-1){
-    //   cliques.back().taniX=(float)n/((float)caSize1+(float)caSize2-(float)n);
-    // }else{
-    //   cliques.back().taniX=cliques.back().envSim/((float)ss1[cg]+(float)ss2[cg]-(float)n);
-    // }
-
-    // cout<<"ROTATION MAT:";
-    // for(int i=0; i<3; i++){
-      // for(int j=0; j<3; j++){
-        // cout<<" "<<gsl_matrix_get(cliques.back().mat_r,i,j);
-      // }
-    // }
-    // cout<<endl<<"cen_a: "<<cliques.back().cen_a[0]<<" "<<cliques.back().cen_a[1]<<" "<<cliques.back().cen_a[2];
-    // cout<<endl<<"cen_b: "<<cliques.back().cen_b[0]<<" "<<cliques.back().cen_b[1]<<" "<<cliques.back().cen_b[2]<<endl;
-    
-    if(cliques.back().nbNodes>topN){
-      cout<<"TOP NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<endl;
-      topT=cliques.back().tani;
-      topN=cliques.back().nbNodes;
-      topCliques[cg]=cliques.size()-1;
-    }else{
-      // cout<<"NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" envSim: "<<cliques.back().envSim<<endl;
-    }
-    
-    // topN=cliques.back().envSim;
+  // if(cg==-1){
+  //   cliques.back().taniX=(float)n/((float)caSize1+(float)caSize2-(float)n);
+  // }else{
+  //   cliques.back().taniX=cliques.back().envD/((float)ss1[cg]+(float)ss2[cg]-(float)n);
   // }
+
+  // cout<<"ROTATION MAT:";
+  // for(int i=0; i<3; i++){
+    // for(int j=0; j<3; j++){
+      // cout<<" "<<gsl_matrix_get(cliques.back().mat_r,i,j);
+    // }
+  // }
+  // cout<<endl<<"cen_a: "<<cliques.back().cen_a[0]<<" "<<cliques.back().cen_a[1]<<" "<<cliques.back().cen_a[2];
+  // cout<<endl<<"cen_b: "<<cliques.back().cen_b[0]<<" "<<cliques.back().cen_b[1]<<" "<<cliques.back().cen_b[2]<<endl;
+  
+  if(cliques.back().nbNodes>topN){
+    cout<<"TOP NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" envD: "<<cliques.back().envD<<" buD: "<<cliques.back().buD<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
+    topT=cliques.back().tani;
+    topN=cliques.back().nbNodes;
+    topCliques[cg]=cliques.size()-1;
+  }else{
+    cout<<"NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" envD: "<<cliques.back().envD<<" buD: "<<cliques.back().buD<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
+  }
+
   return;
 }
 /***********************************************************************/
