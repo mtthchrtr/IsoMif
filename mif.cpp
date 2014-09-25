@@ -84,6 +84,7 @@ int readCmdLine(int argc, char **argv){
   usage << "-v <distance in Ang.>: \t maximum distance of the probes to the atoms (default: "<< maxGridDist <<" Angstrom)\n";
   usage << "-pr                  : \t print details of energy calculations for each probe-atom pair\n";
   usage << "-o                   : \t output directory\n";
+  usage << "-b                   : \t burriedness level (0-14) [8]\n";
   usage << "-m                   : \t smooth\n";
   usage << "-t                   : \t filename (tag) [pdb name by default]\n";
   usage << "-l                   : \t RESNUMC of the ligand from which to crop the grid\n";
@@ -141,6 +142,9 @@ int readCmdLine(int argc, char **argv){
     if(strcmp(argv[nb_arg],"-s")==0){
       sscanf(argv[nb_arg+1], "%f", &stepsize);
     }
+    if(strcmp(argv[nb_arg],"-b")==0){
+      sscanf(argv[nb_arg+1], "%d", &bul);
+    }
     if(strcmp(argv[nb_arg],"-pr")==0){
       printDetails=1;
     }
@@ -164,6 +168,7 @@ int readCmdLine(int argc, char **argv){
   cout<< "Outbase: "<< outBase <<endl;
   cout<< "Chain: "<< chain <<endl;
   cout<< "Tag: " << tag << endl;
+  cout<< "Burriedness level: " << bul << endl;
   cout<< "Stepsize: "<<stepsize<<endl;
   cout<< "MinGridDist: "<< minGridDist <<endl;
   cout<< "MaxGridDist: "<< maxGridDist <<endl;
@@ -1196,13 +1201,13 @@ void Grid::getBuriedness(){
       }
     }
 
-    if(bu<bul){
-      GRID.erase(m++);
-    }else{
+    if(bu>=bul){
       m->second.bu=bu;
       id=generateID(width,height,xi,yi,zi);
       vrtxIdList.push_back(id);
       ++m;
+    }else{
+      GRID.erase(m++);
     }
   }
   cout<<"Final Grid points "<<vrtxIdList.size()<<endl;
@@ -1547,9 +1552,9 @@ void Grid::writeMif(vector<atom>& prot){
 
   for(it=GRID.begin();it!=GRID.end();it++){
     if(it->second.p==1){
-      if(it->second.grid[2]==1){
-        fprintf(fpNew, "#PG %7.2f %7.2f %7.2f\n",it->second.x,it->second.y,it->second.z);  
-      }
+      // if(it->second.grid[2]==1){
+      //   fprintf(fpNew, "#PG %7.2f %7.2f %7.2f\n",it->second.x,it->second.y,it->second.z);  
+      // }
     }else{
       // if(it->second.bu<bul) continue;
       // cout<<"bu "<<it->second.bu<<endl;
@@ -1590,16 +1595,15 @@ void Grid::writeMif(vector<atom>& prot){
         }
       }
       prot[i].bs=1;
-      cout<<i<<endl;
-      // if(bsFlag==1){
-      //   // cout<<endl<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].atomn<<" "<<prot[i].chain;
-      //   for(j=0; j<prot.size(); j++){
-      //       if(prot[j].resn.compare(prot[i].resn)==0 && prot[j].resnb==prot[i].resnb && prot[j].chain.compare(prot[i].chain)==0){
-      //         // cout<<" found "<<prot[j].resn<<" "<<prot[j].resnb<<" "<<prot[j].atomn<<" "<<prot[j].chain;
-      //         prot[j].bs=1;
-      //       }
-      //   }
-      // }
+      if(bsFlag==1){
+        // cout<<endl<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].atomn<<" "<<prot[i].chain;
+        for(j=0; j<prot.size(); j++){
+            if(prot[j].resn.compare(prot[i].resn)==0 && prot[j].resnb==prot[i].resnb && prot[j].chain.compare(prot[i].chain)==0){
+              // cout<<" found "<<prot[j].resn<<" "<<prot[j].resnb<<" "<<prot[j].atomn<<" "<<prot[j].chain;
+              prot[j].bs=1;
+            }
+        }
+      }
     }  
     for(j=0; j<prot.size(); j++){
       fprintf(fpNew,"#ATOM %3s %4d %4s %5d %s %8.3f %8.3f %8.3f %d %d\n",prot[j].resn.c_str(),prot[j].resnb,prot[j].atomn.c_str(),prot[j].atomnb,prot[j].chain.c_str(),prot[j].x,prot[j].y,prot[j].z,prot[j].mif,prot[j].bs);
