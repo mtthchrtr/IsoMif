@@ -105,7 +105,7 @@ float maxGridDist=4.5;
 float minGridDist=1.5;
 float atmPbMaxDist=8.0;
 float gridLigDist=2.0;
-float caT=25.0;
+float caT=5.0;
 int smoothDist=0;
 int printDetails=0;
 int printAtoms=1;
@@ -164,7 +164,7 @@ class  Grid{
     void getBuriedness();
     int getDiag(int, int, int, int&);
   	int inGridRes(vertex&, float);
-    void smooth(map<int,vertex>&,vector<int>&);
+    void smooth();
     void writeMif(vector<atom>&);
     map<int,vertex> GRID;
     vector<int> vrtxIdList;

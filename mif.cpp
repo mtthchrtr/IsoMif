@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 
   getMif(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
 
-  if(smoothDist!=0) grid.smooth(grid.GRID,grid.vrtxIdList);
+  if(smoothDist!=0) grid.smooth();
 
   // getPseudo(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
 
@@ -875,6 +875,7 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
   vector<atom>::iterator pit;
   vertex* vrtx=NULL;
   int i=0;
+  int newv=0;
   int id;
   int uID=0;
   float x,y,z,rad,nx,ny,nz;
@@ -970,6 +971,7 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
             }
             vrtx.id=uID;
             uID++;
+            newv++;
             GRID.insert(pair<int,vertex>(id,vrtx));
           }
         }
@@ -977,7 +979,9 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
     }
   }
   ifs.close();
+  cout<<"Grid points added: "<<newv<<endl;
 
+  int chipped=0;
   cout<<"Chipping grid..."<<endl;
   it=GRID.begin();
   while(it!=GRID.end()){
@@ -994,6 +998,7 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
     }
     if(minDist<minGridDist || minDist > maxGridDist){
       GRID.erase(it++);
+      chipped++;
     }else{
       if(inGridRes(it->second,2.0)==1){
         it->second.grid[0]=1;
@@ -1014,14 +1019,15 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
       ++it;
     }
   }
-  cout<<"Grid points "<<GRID.size()<<" 2.0 "<<vrtx200<<" 1.5 "<<vrtx150<<" 1.0 "<<vrtx100<<" 0.5 "<<vrtx050<<endl;
+  cout<<"Chipped "<<chipped<<" grid points."<<endl;
+  cout<<"Grid points [2.0] "<<vrtx200<<" [1.5] "<<vrtx150<<" [1.0] "<<vrtx100<<" [0.5] "<<vrtx050<<"."<<endl;
   return(0);
 }
 
 void Grid::getBuriedness(){
   map<int,vertex>::iterator it;
   int id;
-
+  int nbu=0;
   //Get buriedness of each grid point
   cout<<"Getting buriedness..."<<endl;
   map<int,vertex>::iterator m=GRID.begin();
@@ -1208,9 +1214,10 @@ void Grid::getBuriedness(){
       ++m;
     }else{
       GRID.erase(m++);
+      nbu++;
     }
   }
-  cout<<"Final Grid points "<<vrtxIdList.size()<<endl;
+  cout<<"Removed "<<nbu<<" not burried grid points."<<endl;
 }
 
 int Grid::getDiag(int tx, int ty, int tz, int& flag){
@@ -1400,42 +1407,47 @@ float dist_3d(float x1, float y1, float z1, float x2, float y2, float z2){
   return(dist);
 }
 
-void Grid::smooth(map<int,vertex>& grid, vector<int>& vrtxList){
-  map<int,vertex>::iterator it;
-  int id;
+void Grid::smooth(){
+  map<int,vertex>::iterator git;
   cout<<"Smoothing..."<<endl;
-  for(int i=0; i<vrtxList.size(); i++){
-    vertex& m=grid.at(vrtxList.at(i));
+  for(git=this->GRID.begin(); git!=this->GRID.end(); git++){
+    map<int,vertex>::iterator it;
+    int id;
+    vertex& m=git->second;
     if(m.p==1){ continue; }
     if(m.grid[0]!=1){ continue; }
     int xi=(int)((m.x-min_x)/stepsize)+1;
     int yi=(int)((m.y-min_y)/stepsize)+1;
     int zi=(int)((m.z-min_z)/stepsize)+1;
 
+
     for(int tx=xi-smoothDist; tx<=xi+smoothDist; tx++){
       id=generateID(width,height,tx,yi,zi);
-      it = grid.find(id);
-      if(it != grid.end()){
+      it = this->GRID.find(id);
+      if(it != this->GRID.end()){
+        if(this->GRID[id].p==1) continue;
         for(int j=0; j<6; j++){
-          if(grid[id].ints[j]==1){ m.ints[j]=1; }
+          if(this->GRID[id].ints[j]==1){ m.ints[j]=1; }
         }
       }
     }
     for(int ty=yi-smoothDist; ty<=yi+smoothDist; ty++){
       id=generateID(width,height,xi,ty,zi);
-      it = grid.find(id);
-      if(it != grid.end()){
+      it = this->GRID.find(id);
+      if(it != this->GRID.end()){
+        if(this->GRID[id].p==1) continue;
         for(int j=0; j<6; j++){
-          if(grid[id].ints[j]==1){ m.ints[j]=1; }
+          if(this->GRID[id].ints[j]==1){ m.ints[j]=1; }
         }
       }
     }
     for(int tz=zi-smoothDist; tz<=zi+smoothDist; tz++){
       id=generateID(width,height,xi,yi,tz);
-      it = grid.find(id);
-      if(it != grid.end()){
+      it = this->GRID.find(id);
+      if(it != this->GRID.end()){
+        if(this->GRID[id].p==1) continue;
         for(int j=0; j<6; j++){
-          if(grid[id].ints[j]==1){ m.ints[j]=1; }
+          if(this->GRID[id].ints[j]==1){ m.ints[j]=1; }
         }
       }
     }
@@ -1450,10 +1462,11 @@ void Grid::smooth(map<int,vertex>& grid, vector<int>& vrtxList){
     for(int s=0; s<6; s++){
       tx++; ty--; tz--;
       id=generateID(width,height,tx,ty,tz);
-      it = grid.find(id);
-      if(it != grid.end()){
+      it = this->GRID.find(id);
+      if(it != this->GRID.end()){
+        if(this->GRID[id].p==1) continue;
         for(int j=0; j<6; j++){
-          if(grid[id].ints[j]==1){ m.ints[j]=1; }
+          if(this->GRID[id].ints[j]==1){ m.ints[j]=1; }
         }
       }
     }
@@ -1462,10 +1475,11 @@ void Grid::smooth(map<int,vertex>& grid, vector<int>& vrtxList){
     for(int s=0; s<6; s++){
       tx++; ty--; tz++;
       id=generateID(width,height,tx,ty,tz);
-      it = grid.find(id);
-      if(it != grid.end()){
+      it = this->GRID.find(id);
+      if(it != this->GRID.end()){
+        if(this->GRID[id].p==1) continue;
         for(int j=0; j<6; j++){
-          if(grid[id].ints[j]==1){ m.ints[j]=1; }
+          if(this->GRID[id].ints[j]==1){ m.ints[j]=1; }
         }
       }
     }
@@ -1474,10 +1488,11 @@ void Grid::smooth(map<int,vertex>& grid, vector<int>& vrtxList){
     for(int s=0; s<6; s++){
       tx--; ty--; tz++;
       id=generateID(width,height,tx,ty,tz);
-      it = grid.find(id);
-      if(it != grid.end()){
+      it = this->GRID.find(id);
+      if(it != this->GRID.end()){
+        if(this->GRID[id].p==1) continue;
         for(int j=0; j<6; j++){
-          if(grid[id].ints[j]==1){ m.ints[j]=1; }
+          if(this->GRID[id].ints[j]==1){ m.ints[j]=1; }
         }
       }
     }
@@ -1486,10 +1501,11 @@ void Grid::smooth(map<int,vertex>& grid, vector<int>& vrtxList){
     for(int s=0; s<6; s++){
       tx++; ty++; tz++;
       id=generateID(width,height,tx,ty,tz);
-      it = grid.find(id);
-      if(it != grid.end()){
+      it = this->GRID.find(id);
+      if(it != this->GRID.end()){
+        if(this->GRID[id].p==1) continue;
         for(int j=0; j<6; j++){
-          if(grid[id].ints[j]==1){ m.ints[j]=1; }
+          if(this->GRID[id].ints[j]==1){ m.ints[j]=1; }
         }
       }
     }
@@ -1556,8 +1572,6 @@ void Grid::writeMif(vector<atom>& prot){
       //   fprintf(fpNew, "#PG %7.2f %7.2f %7.2f\n",it->second.x,it->second.y,it->second.z);  
       // }
     }else{
-      // if(it->second.bu<bul) continue;
-      // cout<<"bu "<<it->second.bu<<endl;
       fprintf(fpNew, "%7.2f %7.2f %7.2f",it->second.x,it->second.y,it->second.z);
       for(probe=0; probe<nbOfProbes; probe++){
         fprintf(fpNew, " %1d",it->second.ints[probe]);
@@ -1581,29 +1595,50 @@ void Grid::writeMif(vector<atom>& prot){
   }
 
   if(printAtoms==1){
+    int step=(int)caT/stepsize;
     for(i=0; i<prot.size(); i++){
-      if(prot[i].h!=1) continue;
-      if(prot[i].bs==1) continue;
-      bsFlag=0;
-      for(it=GRID.begin();it!=GRID.end();it++){
-        if(it->second.p==1) continue;
-        if(it->second.grid[0]!=1) continue;
-        d=dist_3d(prot[i].x,prot[i].y,prot[i].z,it->second.x,it->second.y,it->second.z);
-        if(d<caT || fabs(d-caT)<0.001){
-          bsFlag=1;
-          break;
-        }
-      }
-      prot[i].bs=1;
-      if(bsFlag==1){
-        // cout<<endl<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].atomn<<" "<<prot[i].chain;
-        for(j=0; j<prot.size(); j++){
-            if(prot[j].resn.compare(prot[i].resn)==0 && prot[j].resnb==prot[i].resnb && prot[j].chain.compare(prot[i].chain)==0){
-              // cout<<" found "<<prot[j].resn<<" "<<prot[j].resnb<<" "<<prot[j].atomn<<" "<<prot[j].chain;
-              prot[j].bs=1;
+      int xi=(int)((prot[i].x-min_x)/stepsize)+1;
+      int yi=(int)((prot[i].y-min_y)/stepsize)+1;
+      int zi=(int)((prot[i].z-min_z)/stepsize)+1;
+
+      int flag=0;
+      for(int tx=xi-step; tx<=xi+step; tx++){
+        for(int ty=yi-step; ty<=yi+step; ty++){
+          for(int tz=zi-step; tz<=zi+step; tz++){
+            int id=generateID(width,height,tx,ty,tz);
+            it = this->GRID.find(id);
+            if(it != this->GRID.end()){
+              if(this->GRID[id].p!=1) continue;
+                prot[i].bs=1;
+                flag=1;
             }
+            if(flag==1) break;
+          }
+          if(flag==1) break;
         }
+        if(flag==1) break;
       }
+
+      // bsFlag=0;
+      // for(it=GRID.begin();it!=GRID.end();it++){
+      //   if(it->second.p==1) continue;
+      //   if(it->second.grid[0]!=1) continue;
+      //   d=dist_3d(prot[i].x,prot[i].y,prot[i].z,it->second.x,it->second.y,it->second.z);
+      //   if(d<caT || fabs(d-caT)<0.001){
+      //     bsFlag=1;
+      //     break;
+      //   }
+      // }
+      // prot[i].bs=1;
+      // if(bsFlag==1){
+      //   // cout<<endl<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].atomn<<" "<<prot[i].chain;
+      //   for(j=0; j<prot.size(); j++){
+      //       if(prot[j].resn.compare(prot[i].resn)==0 && prot[j].resnb==prot[i].resnb && prot[j].chain.compare(prot[i].chain)==0){
+      //         // cout<<" found "<<prot[j].resn<<" "<<prot[j].resnb<<" "<<prot[j].atomn<<" "<<prot[j].chain;
+      //         prot[j].bs=1;
+      //       }
+      //   }
+      // }
     }  
     for(j=0; j<prot.size(); j++){
       fprintf(fpNew,"#ATOM %3s %4d %4s %5d %s %8.3f %8.3f %8.3f %d %d\n",prot[j].resn.c_str(),prot[j].resnb,prot[j].atomn.c_str(),prot[j].atomnb,prot[j].chain.c_str(),prot[j].x,prot[j].y,prot[j].z,prot[j].mif,prot[j].bs);
