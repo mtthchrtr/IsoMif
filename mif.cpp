@@ -61,21 +61,6 @@ int main(int argc, char **argv)
 /*        1         2         3         4         5         6         7*/
 /***********************************************************************/
 
-Protein::~Protein(void){
-
-}
-
-Protein::Protein(string filename){
-  min_x=1000.00;
-  min_y=1000.00;
-  min_z=1000.00;
-  max_x=-1000.00;
-  max_y=-1000.00;
-  max_z=-1000.00;
-  readPDB(filename);
-  getAtomDir();
-}
-
 int readCmdLine(int argc, char **argv){
   stringstream usage;
   int nb_arg;
@@ -192,6 +177,21 @@ int readCmdLine(int argc, char **argv){
   return(0);
 }
 
+Protein::~Protein(void){
+
+}
+
+Protein::Protein(string filename){
+  min_x=1000.00;
+  min_y=1000.00;
+  min_z=1000.00;
+  max_x=-1000.00;
+  max_y=-1000.00;
+  max_z=-1000.00;
+  readPDB(filename);
+  getAtomDir();
+}
+
 void Protein::readPDB(string filename){
   ifstream ifs;
   ofstream ofs;
@@ -211,7 +211,7 @@ void Protein::readPDB(string filename){
   if(!ifs.is_open()){ 
     cout << "could not read "<< filename << endl;
   }
-  cout<<"Reading PDB"<<endl;
+  cout<<"Reading PDB file..."<<endl;
   while(ifs.good()){
     getline(ifs,line);
 
@@ -317,13 +317,14 @@ void Protein::readPDB(string filename){
   }
   ifs.close();
   ofs.close();
+  min_x-=5.0; min_y-=5.0; min_z-=5.0; max_x+=5.0; max_y+=5.0; max_z+=5.0;
 
   width=(int)(((max_x-min_x)/stepsize)+1.0);
   height=(int)(((max_y-min_y)/stepsize)+1.0);
   depth=(int)(((max_z-min_z)/stepsize)+1.0);
 
-  cout <<endl<< "PROTEIN min/max values: minx: "<< min_x<< " miny: "<< min_y<< " minz: "<<min_z<<" maxx: "<<max_x<<" maxy: "<<max_y<<" maxz: "<<max_z<<endl;
-  cout<< "PROTEIN Width "<<width<<" Height "<< height << endl;
+  cout<<"PROTEIN min/max values: minx: "<< min_x<< " miny: "<< min_y<< " minz: "<<min_z<<" maxx: "<<max_x<<" maxy: "<<max_y<<" maxz: "<<max_z<<endl;
+  cout<<"PROTEIN Width "<<width<<" Height "<< height << endl;
 
 }
 
@@ -576,7 +577,6 @@ void Protein::getAtomDir(){
           PROTEIN[i].zr=zr;
           PROTEIN[i].dir=1;
           PROTEIN[i].rDir=rDir;
-          // cout<< atm.resn << " " << atm.resnb << " " << atm.atomn << " " << atm.atomnb<<" "<<atm.atomId << " "<<atm.x << " "<<atm.y<< " "<<atm.z<< " |ref: "<<xr << " "<<yr<< " "<<zr<<" dir "<<atm.rDir<< endl;
         }
       }else{
         PROTEIN[i].xr=0.0;
@@ -701,12 +701,13 @@ Grid::Grid(string filename, Protein& prot){
   vrtx150=0;
   vrtx200=0;
 
+  createProtVrtx(prot.PROTEIN);
   if(filename.compare("")==0){
     buildGrid(prot.PROTEIN);
   }else{
     // getMinMax(filename,prot);
     readGetCleft(filename, prot.PROTEIN, prot.LIGAND);
-    getProtVrtx(prot.PROTEIN);
+    // getProtVrtx(prot.PROTEIN);
   }
   getBuriedness();
 }
@@ -717,6 +718,63 @@ int Grid::generateID(int w, int h, int x, int y, int z){
   int id;
   id=z * (w * h) + y * w + x;
   return(id);
+}
+
+void Grid::createProtVrtx(vector<atom>& prot){
+  map<int,vertex>::iterator it;
+  int id;
+  int uID=0;
+  float minx,miny,minz,maxx,maxy,maxz;
+  float nmgd=sqrt(minGridDist)+stepsize;
+  cout<<"Getting prot vertexes..."<<endl;
+  for(int i=0; i<prot.size(); i++){
+    if(prot[i].mif==0) continue;
+    minx=roundCoord(prot[i].x-nmgd,0);
+    miny=roundCoord(prot[i].y-nmgd,0);
+    minz=roundCoord(prot[i].z-nmgd,0);
+    maxx=roundCoord(prot[i].x+nmgd,1);
+    maxy=roundCoord(prot[i].y+nmgd,1);
+    maxz=roundCoord(prot[i].z+nmgd,1);
+
+    for(float x=minx; x<=maxx; x+=stepsize){
+      for(float y=miny; y<=maxy; y+=stepsize){
+        for(float z=minz; z<=maxz; z+=stepsize){
+
+          float d=((abs(x-prot[i].x)*abs(x-prot[i].x))+(abs(y-prot[i].y)*abs(y-prot[i].y))+(abs(z-prot[i].z)*abs(z-prot[i].z)));
+
+          if(d<minGridDist){
+            //Generate grid vertex ID
+            id=generateID(width,height,(int)((x-min_x)/stepsize)+1,(int)((y-min_y)/stepsize)+1,(int)((z-min_z)/stepsize)+1);
+            it = GRID.find(id);
+
+            if(it == GRID.end()){ //If this grid point doesnt exist
+              vertex vrtx;
+              vrtx.x=x;
+              vrtx.y=y;
+              vrtx.z=z;
+              vrtx.p=1;
+              vrtx.id=uID;
+              uID++;
+              if(inGridRes(vrtx,2.0)==1){
+                vrtx.grid[0]=1;
+              }else{ vrtx.grid[0]=0; }
+              if(inGridRes(vrtx,1.5)==1){
+                vrtx.grid[1]=1;
+              }else{ vrtx.grid[1]=0; }
+              if(inGridRes(vrtx,1.0)==1){
+                vrtx.grid[2]=1;
+              }else{ vrtx.grid[2]=0; }
+              if(inGridRes(vrtx,0.5)==1){
+                vrtx.grid[3]=1;          
+              }else{ vrtx.grid[3]=0; }
+              GRID.insert(pair<int,vertex>(id,vrtx));
+            }
+          }
+        }
+      }
+    }
+  }
+  // cout<<"Protein grid points: "<<GRID.size()<<endl;
 }
 
 int Grid::buildGrid(vector<atom>& prot){
@@ -804,23 +862,179 @@ int Grid::buildGrid(vector<atom>& prot){
   return(0);
 }
 
+int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& ligVec){
+  ifstream ifs;
+  string line="";
+  string fields[4];
+  map<int,vertex>::iterator it;
+  vector<atom>::iterator pit;
+  vertex* vrtx=NULL;
+  int i=0;
+  int id;
+  int uID=0;
+  float x,y,z,rad,nx,ny,nz;
+  float minx,miny,minz,maxx,maxy,maxz;
+  float dist,minDist;
+  float nmxgd=sqrt(maxGridDist)+stepsize;
+
+  ifs.open(filename.c_str());
+
+  if(!ifs.is_open()){ 
+    cout << "could not read "<< filename << endl;
+  }
+
+  cout<<"Reading cleft file..."<<endl;
+  while(ifs.good()){
+    getline(ifs,line);
+        
+    if(line.compare(0,6,"ATOM  ") == 0 || line.compare(0,6,"HETATM") == 0){
+      fields[0] = line.substr(30,8);   // x-coord
+      fields[1] = line.substr(38,8);   // y-coord
+      fields[2] = line.substr(46,8);   // z-coord
+      fields[3] = line.substr(60,6);   // bfactor
+      x=atof(fields[0].c_str());
+      y=atof(fields[1].c_str());
+      z=atof(fields[2].c_str());
+      rad=atof(fields[3].c_str());
+      rad+=1.0;
+
+      minx=roundCoord(x-rad,0);
+      miny=roundCoord(y-rad,0);
+      minz=roundCoord(z-rad,0);
+      maxx=roundCoord(x+rad,1);
+      maxy=roundCoord(y+rad,1);
+      maxz=roundCoord(z+rad,1);
+
+      for(nx=minx; nx<=maxx; nx+=stepsize){
+        for(ny=miny; ny<=maxy; ny+=stepsize){
+          for(nz=minz; nz<=maxz; nz+=stepsize){
+
+            //Generate grid vertex ID
+            id=generateID(width,height,(int)((nx-min_x)/stepsize)+1,(int)((ny-min_y)/stepsize)+1,(int)((nz-min_z)/stepsize)+1);
+            it = GRID.find(id);
+
+            //Skip if already exists
+            if(it != GRID.end()) continue;
+
+            //Skip if not within the sphere
+            if(((abs(nx-x)*abs(nx-x))+(abs(ny-y)*abs(ny-y))+(abs(nz-z)*abs(nz-z)))>(rad*rad)) continue;
+
+            //Skip if too far from the ligand, if necessary
+            if(resnumc.compare("")!=0){
+              minDist=10000.0;
+              for(i=0; i<ligVec.size(); i+=3){
+                dist=((abs(nx-ligVec.at(i))*abs(nx-ligVec.at(i)))+(abs(ny-ligVec.at(i+1))*abs(ny-ligVec.at(i+1)))+(abs(nz-ligVec.at(i+2))*abs(nz-ligVec.at(i+2))));
+                //cout<< ligVec.at(i) << " "<< ligVec.at(i+1) << " "<< ligVec.at(i+2) << " grid: "<<nx<<" "<<ny<<" "<<nz<< " dist:"<< dist<< endl;
+                if(dist<minDist){
+                  minDist=dist;
+                  //cout<< "New mindist: "<< minDist<<endl;
+                }
+              }
+              //Skip to next grid intersection if too far from the ligand
+              if(minDist>gridLigDist) continue;
+            }
+
+            // for(pit=protVec.begin(); pit!=protVec.end(); ++pit){
+            //   if((*pit).h==1) continue;
+            //   if((*pit).mif==0) continue;
+            //   dist=((abs(nx-(*pit).x)*abs(nx-(*pit).x))+(abs(ny-(*pit).y)*abs(ny-(*pit).y))+(abs(nz-(*pit).z)*abs(nz-(*pit).z)));
+            //   if(dist<minDist){ minDist=dist; }
+            // }
+            // if(minDist<minGridDist || minDist > maxGridDist){
+            //   continue;
+            // }
+            
+            vertex vrtx;
+            vrtx.x=nx;
+            vrtx.y=ny;
+            vrtx.z=nz;
+            vrtx.bu=0;
+            vrtx.p=0;
+
+            vrtx.ints=new int[nbOfProbes];              
+            if(vrtx.ints==NULL){
+              printf("\n\nCan't malloc int**\nGoodbye.\n");
+              return(24);
+            }
+            
+            for(i=0; i<nbOfProbes; i++){ vrtx.ints[i]=0; }
+            for(i=0; i<4; i++){ vrtx.grid[i]=0; }
+
+            for(int i=0; i<aa.size(); i++){
+              vrtx.env[aa[i]]=1000.0;
+            }
+            vrtx.id=uID;
+            uID++;
+            GRID.insert(pair<int,vertex>(id,vrtx));
+          }
+        }
+      }
+    }
+  }
+  ifs.close();
+
+  cout<<"Chipping grid..."<<endl;
+  it=GRID.begin();
+  while(it!=GRID.end()){
+    if(it->second.p==1){
+      ++it;
+      continue;
+    }
+    minDist=10000.0;
+    for(pit=protVec.begin(); pit!=protVec.end(); ++pit){
+      if((*pit).h==1) continue;
+      if((*pit).mif==0) continue;
+      dist=((abs(it->second.x-(*pit).x)*abs(it->second.x-(*pit).x))+(abs(it->second.y-(*pit).y)*abs(it->second.y-(*pit).y))+(abs(it->second.z-(*pit).z)*abs(it->second.z-(*pit).z)));
+      if(dist<minDist) minDist=dist;
+    }
+    if(minDist<minGridDist || minDist > maxGridDist){
+      GRID.erase(it++);
+    }else{
+      if(inGridRes(it->second,2.0)==1){
+        it->second.grid[0]=1;
+        vrtx200++;
+      }
+      if(inGridRes(it->second,1.5)==1){
+        it->second.grid[1]=1;
+        vrtx150++;
+      }
+      if(inGridRes(it->second,1.0)==1){
+        it->second.grid[2]=1;
+        vrtx100++;
+      }
+      if(inGridRes(it->second,0.5)==1){
+        it->second.grid[3]=1;
+        vrtx050++;
+      }
+      ++it;
+    }
+  }
+  cout<<"Grid points "<<GRID.size()<<" 2.0 "<<vrtx200<<" 1.5 "<<vrtx150<<" 1.0 "<<vrtx100<<" 0.5 "<<vrtx050<<endl;
+  return(0);
+}
+
 void Grid::getBuriedness(){
   map<int,vertex>::iterator it;
   int id;
+
   //Get buriedness of each grid point
-  for(int i=0; i<vrtxIdList.size(); i++){
-    vertex& m=GRID.at(vrtxIdList.at(i));
-    if(m.p==1){ continue; }
+  cout<<"Getting buriedness..."<<endl;
+  map<int,vertex>::iterator m=GRID.begin();
+  while(m!=GRID.end()){
+    if(m->second.p==1){
+      ++m;
+      continue;
+    }
     int bu=0;
-    int xi=(int)((m.x-min_x)/stepsize)+1;
-    int yi=(int)((m.y-min_y)/stepsize)+1;
-    int zi=(int)((m.z-min_z)/stepsize)+1;
-    int xl=(int)((m.x-min_x)/stepsize);
-    int xr=(int)((max_x-m.x)/stepsize);
-    int yd=(int)((m.y-min_y)/stepsize);
-    int yu=(int)((max_y-m.y)/stepsize);
-    int zb=(int)((m.z-min_z)/stepsize);
-    int zf=(int)((max_z-m.z)/stepsize);
+    int xi=(int)((m->second.x-min_x)/stepsize)+1;
+    int yi=(int)((m->second.y-min_y)/stepsize)+1;
+    int zi=(int)((m->second.z-min_z)/stepsize)+1;
+    int xl=(int)((m->second.x-min_x)/stepsize);
+    int xr=(int)((max_x-m->second.x)/stepsize);
+    int yd=(int)((m->second.y-min_y)/stepsize);
+    int yu=(int)((max_y-m->second.y)/stepsize);
+    int zb=(int)((m->second.z-min_z)/stepsize);
+    int zf=(int)((max_z-m->second.z)/stepsize);
     // cout<<xi<<" "<<yi<<" "<<zi<<endl;
     // cout<<min_x<<" | "<<xl<<" "<<m.x<<" "<<xr<<" | "<<max_x<<" || "<<width<<endl;
     // cout<<min_y<<" | "<<yd<<" "<<m.y<<" "<<yu<<" | "<<max_y<<" || "<<height<<endl;
@@ -900,7 +1114,6 @@ void Grid::getBuriedness(){
     }
 
     //Diagonals
-    // cout<<endl<<"going diag 0"<<endl;
     int tx=xi;
     int ty=yi;
     int tz=zi;
@@ -982,8 +1195,17 @@ void Grid::getBuriedness(){
         bu++;
       }
     }
-    m.bu=bu;
+
+    if(bu<bul){
+      GRID.erase(m++);
+    }else{
+      m->second.bu=bu;
+      id=generateID(width,height,xi,yi,zi);
+      vrtxIdList.push_back(id);
+      ++m;
+    }
   }
+  cout<<"Final Grid points "<<vrtxIdList.size()<<endl;
 }
 
 int Grid::getDiag(int tx, int ty, int tz, int& flag){
@@ -992,15 +1214,12 @@ int Grid::getDiag(int tx, int ty, int tz, int& flag){
   map<int,vertex>::iterator it = GRID.find(id);
   if(it != GRID.end()){
     if(GRID[id].p==1){
-      // cout<<"p"<<endl;
       flag=1;
       return(1);
     }else{
-      // cout<<"p0"<<endl;
       return(0);
     }
   }else{
-    // cout<<"doesn't exist"<<endl;
     flag=1;
     return(0);
   }
@@ -1058,160 +1277,14 @@ void Grid::getMinMax(string filename){
   cout<< "GRID Width "<<width<<" Height "<< height << endl;
 }  
 
-int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& ligVec){
-  ifstream ifs;
-  string line="";
-  string fields[4];
-  map<int,vertex>::iterator it;
-  vector<atom>::iterator pit;
-  vertex* vrtx=NULL;
-  int i=0;
-  int id;
-  int uID=0;
-  float x,y,z,rad,nx,ny,nz;
-  float minx,miny,minz,maxx,maxy,maxz;
-  float dist,minDist;
 
-  ifs.open(filename.c_str());
-
-  if(!ifs.is_open()){ 
-    cout << "could not read "<< filename << endl;
-  }
-
-  while(ifs.good()){
-    getline(ifs,line);
-        
-    if(line.compare(0,6,"ATOM  ") == 0 || line.compare(0,6,"HETATM") == 0){
-      fields[0] = line.substr(30,8);   // x-coord
-      fields[1] = line.substr(38,8);   // y-coord
-      fields[2] = line.substr(46,8);   // z-coord
-      fields[3] = line.substr(60,6);   // bfactor
-      x=atof(fields[0].c_str());
-      y=atof(fields[1].c_str());
-      z=atof(fields[2].c_str());
-      rad=atof(fields[3].c_str());
-      rad+=1.0;
-
-      minx=roundCoord(x-rad,0);
-      miny=roundCoord(y-rad,0);
-      minz=roundCoord(z-rad,0);
-      maxx=roundCoord(x+rad,1);
-      maxy=roundCoord(y+rad,1);
-      maxz=roundCoord(z+rad,1);
-
-      for(nx=minx; nx<=maxx; nx+=stepsize){
-        for(ny=miny; ny<=maxy; ny+=stepsize){
-          for(nz=minz; nz<=maxz; nz+=stepsize){
-
-            //Generate grid vertex ID
-            id=generateID(width,height,(int)((nx-min_x)/stepsize)+1,(int)((ny-min_y)/stepsize)+1,(int)((nz-min_z)/stepsize)+1);
-            it = GRID.find(id);
-            
-            if(it != GRID.end()){
-              continue;
-            }
-
-            //Skip if not within the sphere
-            if(((abs(nx-x)*abs(nx-x))+(abs(ny-y)*abs(ny-y))+(abs(nz-z)*abs(nz-z)))>(rad*rad)){
-              continue;
-            }
-
-            //Skip if too far from the ligand, if necessary
-            if(resnumc.compare("")!=0){
-              //cout<<"entering!"<<endl;
-              minDist=10000.0;
-              for(i=0; i<ligVec.size(); i+=3){
-                dist=((abs(nx-ligVec.at(i))*abs(nx-ligVec.at(i)))+(abs(ny-ligVec.at(i+1))*abs(ny-ligVec.at(i+1)))+(abs(nz-ligVec.at(i+2))*abs(nz-ligVec.at(i+2))));
-                //cout<< ligVec.at(i) << " "<< ligVec.at(i+1) << " "<< ligVec.at(i+2) << " grid: "<<nx<<" "<<ny<<" "<<nz<< " dist:"<< dist<< endl;
-                if(dist<minDist){
-                  minDist=dist;
-                  //cout<< "New mindist: "<< minDist<<endl;
-                }
-              }
-
-              if(minDist>gridLigDist){ //Skip to next grid intersection if too far from the ligand
-                continue;
-              }
-            }
-
-            //Skip if too far/close to the protein
-            minDist=10000.0;
-            for(pit=protVec.begin(); pit!=protVec.end(); ++pit){
-              if((*pit).h==1) continue;
-              if((*pit).mif==0) continue;
-              dist=((abs(nx-(*pit).x)*abs(nx-(*pit).x))+(abs(ny-(*pit).y)*abs(ny-(*pit).y))+(abs(nz-(*pit).z)*abs(nz-(*pit).z)));
-              if(dist<minDist){ minDist=dist; }
-            }
-            if(minDist<minGridDist || minDist > maxGridDist){
-              continue;
-            }
-            
-            if(it == GRID.end()){ //If this grid point doesnt exist
-              vertex vrtx;
-              vrtx.x=nx;
-              vrtx.y=ny;
-              vrtx.z=nz;
-              vrtx.bu=99;
-              vrtx.p=0;
-
-              vrtx.ints=new int[nbOfProbes];              
-              if(vrtx.ints==NULL){
-                printf("\n\nCan't malloc int**\nGoodbye.\n");
-                return(24);
-              }
-              
-              for(i=0; i<nbOfProbes; i++){ vrtx.ints[i]=0; }
-
-              //cout<<"exist "<< vrtx.x << " "<<vrtx.y<<" "<<vrtx.z<<" "<<endl;
-
-              for(int i=0; i<aa.size(); i++){
-                vrtx.env[aa[i]]=1000.0;
-              }
-
-              //Print grid in appropriate file
-              if(inGridRes(vrtx,2.0)==1){
-                vrtx.grid[0]=1;
-                vrtx200++;
-              }else{ vrtx.grid[0]=0; }
-
-              //Print grid in appropriate file
-              if(inGridRes(vrtx,1.5)==1){
-                vrtx.grid[1]=1;
-                vrtx150++;
-              }else{ vrtx.grid[1]=0; }
-              
-              if(inGridRes(vrtx,1.0)==1){
-                vrtx.grid[2]=1;
-                vrtx100++;
-              }else{ vrtx.grid[2]=0; }
-              
-              if(inGridRes(vrtx,0.5)==1){
-                vrtx.grid[3]=1;
-                vrtx050++;               
-              }else{ vrtx.grid[3]=0; }
-              vrtx025++;
-
-              vrtx.id=uID;
-              uID++;
-              GRID.insert(pair<int,vertex>(id,vrtx));
-              vrtxIdList.push_back(id);
-            }
-          }
-        }
-      }
-    }
-  }
-  ifs.close();
-
-  cout<<"Grid volumes "<<vrtx200<<" "<<vrtx150<<" "<<vrtx100<<" "<<vrtx050<<endl;
-  return(0);
-}
 
 void Grid::getProtVrtx(vector<atom>& prot){
   int i=0;
   map<int,vertex>::iterator it;
   int id;
   int uID=0;
+  cout<<"Getting prot vertexes..."<<endl;
   for(float x=min_x; x<=max_x; x+=stepsize){
     for(float y=min_y; y<=max_y; y+=stepsize){
       for(float z=min_z; z<=max_z; z+=stepsize){
@@ -1254,6 +1327,8 @@ void Grid::getProtVrtx(vector<atom>& prot){
             if(inGridRes(vrtx,0.5)==1){
               vrtx.grid[3]=1;          
             }else{ vrtx.grid[3]=0; }
+
+            cout<<x<<" "<<y<<" "<<z<<endl;
             
             GRID.insert(pair<int,vertex>(id,vrtx));
             vrtxIdList.push_back(id);
@@ -1274,12 +1349,12 @@ float roundCoord(float number, int min_or_max){
   new_coord=rounded*stepsize;
 
   if(min_or_max==1){ // max value
-    if(new_coord<=number){
+    if(new_coord<number || fabs(new_coord-number)<0.0001){
       rounded+=1;
       new_coord=rounded*stepsize;
     }
   }else if(min_or_max==0){ // min value
-    if(new_coord>=number){
+    if(new_coord>number || fabs(new_coord-number)<0.0001){
       rounded-=1;
       new_coord=rounded*stepsize;
     }
@@ -1506,21 +1581,25 @@ void Grid::writeMif(vector<atom>& prot){
       if(prot[i].bs==1) continue;
       bsFlag=0;
       for(it=GRID.begin();it!=GRID.end();it++){
+        if(it->second.p==1) continue;
+        if(it->second.grid[0]!=1) continue;
         d=dist_3d(prot[i].x,prot[i].y,prot[i].z,it->second.x,it->second.y,it->second.z);
         if(d<caT || fabs(d-caT)<0.001){
           bsFlag=1;
           break;
         }
       }
-      if(bsFlag==1){
-        // cout<<endl<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].atomn<<" "<<prot[i].chain;
-        for(j=0; j<prot.size(); j++){
-            if(prot[j].resn.compare(prot[i].resn)==0 && prot[j].resnb==prot[i].resnb && prot[j].chain.compare(prot[i].chain)==0){
-              // cout<<" found "<<prot[j].resn<<" "<<prot[j].resnb<<" "<<prot[j].atomn<<" "<<prot[j].chain;
-              prot[j].bs=1;
-            }
-        }
-      }
+      prot[i].bs=1;
+      cout<<i<<endl;
+      // if(bsFlag==1){
+      //   // cout<<endl<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].atomn<<" "<<prot[i].chain;
+      //   for(j=0; j<prot.size(); j++){
+      //       if(prot[j].resn.compare(prot[i].resn)==0 && prot[j].resnb==prot[i].resnb && prot[j].chain.compare(prot[i].chain)==0){
+      //         // cout<<" found "<<prot[j].resn<<" "<<prot[j].resnb<<" "<<prot[j].atomn<<" "<<prot[j].chain;
+      //         prot[j].bs=1;
+      //       }
+      //   }
+      // }
     }  
     for(j=0; j<prot.size(); j++){
       fprintf(fpNew,"#ATOM %3s %4d %4s %5d %s %8.3f %8.3f %8.3f %d %d\n",prot[j].resn.c_str(),prot[j].resnb,prot[j].atomn.c_str(),prot[j].atomnb,prot[j].chain.c_str(),prot[j].x,prot[j].y,prot[j].z,prot[j].mif,prot[j].bs);
@@ -1657,7 +1736,8 @@ void getMif(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
   cout<<endl<< "Searching for potential interactions at each grid intersection"<< endl;
 
   for(int i=0; i<vrtxList.size(); i++){
-    vertex& m=grid.at(vrtxList.at(i));
+    map<int,vertex>::iterator it=grid.find(vrtxList[i]);
+    vertex& m=it->second;
     
     if(m.p==1){ continue; }
     // if(m.bu<bul){ continue; }

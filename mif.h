@@ -28,7 +28,6 @@ using namespace std;
 typedef struct atoms atom;
 struct atoms{
   float x,y,z,xr,yr,zr;
-  int atomId; //unique atom Id it represents
   string resn;
   string atomn;
   string chain;
@@ -106,7 +105,7 @@ float maxGridDist=4.5;
 float minGridDist=1.5;
 float atmPbMaxDist=8.0;
 float gridLigDist=2.0;
-float caT=5.0;
+float caT=25.0;
 int smoothDist=0;
 int printDetails=0;
 int printAtoms=1;
@@ -117,7 +116,7 @@ int nbOfAts=0;
 int nbOfAtoms=0;
 int nbOfProbes=0;
 int ss[4];
-int bul=99;
+int bul=0;
 float* epsilons;
 map<string,string> atomTypes;
 map<string,string> pseudoC;
@@ -160,6 +159,7 @@ class  Grid{
   	int generateID(int, int, int, int, int);
     int buildGrid(vector<atom>&);
     void getProtVrtx(vector<atom>&);
+    void createProtVrtx(vector<atom>&);
   	void getMinMax(string);
     void getBuriedness();
     int getDiag(int, int, int, int&);
