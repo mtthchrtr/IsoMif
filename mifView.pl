@@ -58,8 +58,9 @@ open IN, "<".$mifFile or die "cant open mif file $mifFile";
 while(my $line=<IN>){
   if($line=~/^#ATOM/){
     if($line=~/#ATOM\s+([a-z0-9]+)\s+([0-9]+)\s+([a-z0-9]+)\s+([0-9]+)\s+([a-z0-9]{1})\s+([\.0-9-]+)\s+([\.0-9-]+)\s+([\.0-9-]+)\s+([0-9]{1})\s+([0-9]{1})$/i){
-      push @ca, "$1 $2 $3 $4 $5 $6 $7 $8" if($10==1 && $3 eq "CA");
-      # print "$1 $2 $3 $4 $5 $6 $7 $8\n";
+      if($10==1 && $3 eq "CA"){
+        push @ca, "$1 $2 $3 $4 $5 $6 $7 $8";
+      }
     }
     next;
   }elsif($line=~/^#PSEUDO/){
@@ -186,19 +187,19 @@ for(my $i=0; $i<3; $i++){
   }
 }
 
-#Print Ca atoms
-# if(@ca){
-#   print NPML "create ca, id ";
-#   for(my $i=0; $i<@ca; $i++){
-#     my @s=split(/\s+/,$ca[$i]);
-#     print NPML "$s[3]";
-#     print NPML "+" unless($i==$#ca);
-#   }
-#   print NPML " & ".$mifName."\n";
-# }
+# Print Ca atoms
+if(@ca){
+  print NPML "create ca, id ";
+  for(my $i=0; $i<@ca; $i++){
+    my @s=split(/\s+/,$ca[$i]);
+    print NPML "$s[3]";
+    print NPML "+" unless($i==$#ca);
+  }
+  print NPML " & ".$mifName."\n";
+}
 
 # my @pbColors=("aquamarine","brightorange","blue","red","limegreen","lightmagenta");
-# print NPML "color deepteal, ca\nset sphere_scale, 0.3, ca\nshow spheres, ca\n";
+print NPML "color deepteal, ca\nset sphere_scale, 0.3, ca\nshow spheres, ca\n";
 print NPML "set sphere_scale, 0.3, pseudocenter\ncolor aquamarine, resn HYD & pseudocenters\ncolor brightorange, resn ARM & pseudocenters\n";
 print NPML "color blue, resn DON & pseudocenters\ncolor red, resn ACC & pseudocenters\ncolor limegreen, resn DOA & pseudocenters\nshow spheres, pseudocenters\n";
 

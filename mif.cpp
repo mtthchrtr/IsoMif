@@ -1595,22 +1595,34 @@ void Grid::writeMif(vector<atom>& prot){
   }
 
   if(printAtoms==1){
-    int step=(int)caT/stepsize;
+    int step=(int)(caT/stepsize);
+
     for(i=0; i<prot.size(); i++){
+      if(prot[i].mif!=1) continue;
       int xi=(int)((prot[i].x-min_x)/stepsize)+1;
       int yi=(int)((prot[i].y-min_y)/stepsize)+1;
       int zi=(int)((prot[i].z-min_z)/stepsize)+1;
 
       int flag=0;
+      // cout<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].chain<<" "<<prot[i].atomn<<" "<<prot[i].bs<<endl;
       for(int tx=xi-step; tx<=xi+step; tx++){
         for(int ty=yi-step; ty<=yi+step; ty++){
           for(int tz=zi-step; tz<=zi+step; tz++){
-            int id=generateID(width,height,tx,ty,tz);
-            it = this->GRID.find(id);
-            if(it != this->GRID.end()){
-              if(this->GRID[id].p!=1) continue;
+            int tid=generateID(width,height,tx,ty,tz);
+            it = GRID.find(tid);
+            if(it != GRID.end()){
+              if(it->second.p==1) continue;
+              if(it->second.grid[0]!=1) continue;
+              // cout<<"exist "<<it->second.x<<" "<<it->second.y<<" "<<it->second.z<<endl;
+              float d=sqrt(dist_3d(prot[i].x,prot[i].y,prot[i].z,it->second.x,it->second.y,it->second.z));
+              // cout<<d<<endl;
+              // cout<<it->second.x<<" "<<it->second.y<<" "<<it->second.z<<" "<<it->second.grid[0]<<" "<<it->second.grid[1]<<" "<<it->second.grid[2]<<" "<<it->second.grid[3]<< endl;
+              if(d<caT || fabs(d-caT)<0.001){
                 prot[i].bs=1;
+                // cout<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].chain<<endl;
                 flag=1;
+                break;
+              }
             }
             if(flag==1) break;
           }
@@ -1618,27 +1630,7 @@ void Grid::writeMif(vector<atom>& prot){
         }
         if(flag==1) break;
       }
-
-      // bsFlag=0;
-      // for(it=GRID.begin();it!=GRID.end();it++){
-      //   if(it->second.p==1) continue;
-      //   if(it->second.grid[0]!=1) continue;
-      //   d=dist_3d(prot[i].x,prot[i].y,prot[i].z,it->second.x,it->second.y,it->second.z);
-      //   if(d<caT || fabs(d-caT)<0.001){
-      //     bsFlag=1;
-      //     break;
-      //   }
-      // }
-      // prot[i].bs=1;
-      // if(bsFlag==1){
-      //   // cout<<endl<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].atomn<<" "<<prot[i].chain;
-      //   for(j=0; j<prot.size(); j++){
-      //       if(prot[j].resn.compare(prot[i].resn)==0 && prot[j].resnb==prot[i].resnb && prot[j].chain.compare(prot[i].chain)==0){
-      //         // cout<<" found "<<prot[j].resn<<" "<<prot[j].resnb<<" "<<prot[j].atomn<<" "<<prot[j].chain;
-      //         prot[j].bs=1;
-      //       }
-      //   }
-      // }
+      // cout<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].chain<<" "<<prot[i].atomn<<" "<<prot[i].bs<<endl;
     }  
     for(j=0; j<prot.size(); j++){
       fprintf(fpNew,"#ATOM %3s %4d %4s %5d %s %8.3f %8.3f %8.3f %d %d\n",prot[j].resn.c_str(),prot[j].resnb,prot[j].atomn.c_str(),prot[j].atomnb,prot[j].chain.c_str(),prot[j].x,prot[j].y,prot[j].z,prot[j].mif,prot[j].bs);
