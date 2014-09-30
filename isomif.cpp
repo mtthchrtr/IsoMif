@@ -292,8 +292,6 @@ int main(int argc, char *argv[]){
       //Print nodes in the output file
       clearStep(cg);
 
-      cout<<"top clique of "<<cg<<" "<<topCliques[cg]<<" size "<<cliques[topCliques[cg]].nbNodes<<" envD "<<cliques[topCliques[cg]].envD<<endl;
-
       //Delete graph and adjacency matrix
       delete[] conn;
       conn=NULL;
@@ -688,51 +686,54 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   //Calculate RMSD
   //Calculate envD
   //Calculate buD
-  float rmsd=0.0;
-  float envD=0.0;
-  float bud=0.0;
-  for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
-    float ncoor[3];
-    for(int i=0; i<3; i++){
-      ncoor[i]=cliques.back().cen_b[i];
-      for(int j=0; j<3; j++){
-        if(cg==-1){
-          ncoor[i]+=((*it).ca->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
-        }else if(cg==-3){
-          ncoor[i]+=((*it).pa->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
-        }else{
-          ncoor[i]+=((*it).a->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
+  if(0){
+    float rmsd=0.0;
+    float envD=0.0;
+    float bud=0.0;
+    for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
+      float ncoor[3];
+      for(int i=0; i<3; i++){
+        ncoor[i]=cliques.back().cen_b[i];
+        for(int j=0; j<3; j++){
+          if(cg==-1){
+            ncoor[i]+=((*it).ca->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
+          }else if(cg==-3){
+            ncoor[i]+=((*it).pa->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
+          }else{
+            ncoor[i]+=((*it).a->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
+          }
         }
       }
-    }
-    if(cg==-1){
-      rmsd+=dist3d(ncoor,(*it).cb->coor);
-    }else if(cg==-3){
-      rmsd+=dist3d(ncoor,(*it).pb->coor);
-    }else{
-      rmsd+=dist3d(ncoor,(*it).b->coor);
-    }
-    // cout<<(*it).a->bu<<" "<<(*it).b->bu<<endl;
-    bud+=pow(((*it).a->bu)-((*it).b->bu),2);
-    if(cg!=-1 && cg!=-3){
-      float num=0.0;
-      float d1=0.0;
-      float d2=0.0;
-      for(int i=0; i<20; ++i){
-        // cout <<(*it).a->env[i]<<" "<<(*it).b->env[i]<<" | ";
-        num+=(*it).a->env[i]*(*it).b->env[i];
-        d1+=pow((*it).a->env[i],2);
-        d2+=pow((*it).b->env[i],2);
+      if(cg==-1){
+        rmsd+=dist3d(ncoor,(*it).cb->coor);
+      }else if(cg==-3){
+        rmsd+=dist3d(ncoor,(*it).pb->coor);
+      }else{
+        rmsd+=dist3d(ncoor,(*it).b->coor);
       }
-      float cosd=num/(sqrt(d1)*sqrt(d2));
-      envD+=cosd;
+      // cout<<(*it).a->bu<<" "<<(*it).b->bu<<endl;
+      bud+=pow(((*it).a->bu)-((*it).b->bu),2);
+      if(cg!=-1 && cg!=-3){
+        float num=0.0;
+        float d1=0.0;
+        float d2=0.0;
+        for(int i=0; i<20; ++i){
+          // cout <<(*it).a->env[i]<<" "<<(*it).b->env[i]<<" | ";
+          num+=(*it).a->env[i]*(*it).b->env[i];
+          d1+=pow((*it).a->env[i],2);
+          d2+=pow((*it).b->env[i],2);
+        }
+        float cosd=num/(sqrt(d1)*sqrt(d2));
+        envD+=cosd;
+      }
     }
+    rmsd=sqrt(rmsd/(float)cliques.back().nbNodes);
+    cliques.back().rmsd=rmsd;
+    cliques.back().envD=envD/(float)cliques.back().nbNodes;
+    cliques.back().buD=sqrt(bud/(float)cliques.back().nbNodes);
+  
   }
-  rmsd=sqrt(rmsd/(float)cliques.back().nbNodes);
-  cliques.back().rmsd=rmsd;
-  cliques.back().envD=envD/(float)cliques.back().nbNodes;
-  cliques.back().buD=sqrt(bud/(float)cliques.back().nbNodes);
-
+  
   // cout<<"Finding corresponding vertexes..."<<endl;
   // float dist=0.0;
   // for(int u=0; u<mif1.size(); u++){
@@ -784,7 +785,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     topN=cliques.back().nbNodes;
     topCliques[cg]=cliques.size()-1;
   }else{
-    cout<<"NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" envD: "<<cliques.back().envD<<" buD: "<<cliques.back().buD<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
+    // cout<<"NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" envD: "<<cliques.back().envD<<" buD: "<<cliques.back().buD<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
   }
 
   return;
