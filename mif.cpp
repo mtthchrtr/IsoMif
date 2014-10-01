@@ -48,7 +48,7 @@ int main(int argc, char **argv)
 
   // getPseudo(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
 
-  grid.writeMif(protein.PROTEIN);
+  grid.writeMif(protein.PROTEIN,protein.LIGATOMS);
 
 	return(0);
 }
@@ -90,6 +90,7 @@ int readCmdLine(int argc, char **argv){
   usage << "-l                   : \t RESNUMC of the ligand from which to crop the grid\n";
   usage << "-r                   : \t maximum distance between the grid and the ligand\n";
   usage << "-x                   : \t do not write atoms in mif file\n";
+  usage << "-z                   : \t small output files, only with 2.0 and 1.5 angstrom and lig atoms\n";
   usage << "-h                   : \t help menu\n";
 
   if(argc<5){
@@ -144,6 +145,9 @@ int readCmdLine(int argc, char **argv){
     }
     if(strcmp(argv[nb_arg],"-b")==0){
       sscanf(argv[nb_arg+1], "%d", &bul);
+    }
+    if(strcmp(argv[nb_arg],"-z")==0){
+      zip=1;
     }
     if(strcmp(argv[nb_arg],"-pr")==0){
       printDetails=1;
@@ -223,17 +227,17 @@ void Protein::readPDB(string filename){
     if(line.compare(0,3,"END") == 0){ break; }
 
     //Store ligand coords if necessary using resnumc
-    if(line.compare(0,6,"HETATM") == 0 && resnumc.compare("")!=0){
-      thisresnumc = line.substr(17,3) + line.substr(22,4) + line.substr(21,1);
-      stripSpace(thisresnumc);
-      // cout<<endl<<thisresnumc;
-      if(resnumc.compare(thisresnumc)==0){
-        LIGAND.push_back(atof((line.substr(30,8).c_str())));
-        LIGAND.push_back(atof((line.substr(38,8).c_str())));
-        LIGAND.push_back(atof((line.substr(46,8).c_str())));
-        // cout<< resnumc<< " to "<< thisresnumc << " "<< atof((line.substr(30,8).c_str()))<<" "<< atof((line.substr(38,8).c_str()))<<" "<<atof((line.substr(46,8).c_str()))<<endl;
-      }
-    }
+    // if(line.compare(0,6,"HETATM") == 0 && resnumc.compare("")!=0){
+    //   thisresnumc = line.substr(17,3) + line.substr(22,4) + line.substr(21,1);
+    //   stripSpace(thisresnumc);
+    //   // cout<<endl<<thisresnumc;
+    //   if(resnumc.compare(thisresnumc)==0){
+    //     LIGAND.push_back(atof((line.substr(30,8).c_str())));
+    //     LIGAND.push_back(atof((line.substr(38,8).c_str())));
+    //     LIGAND.push_back(atof((line.substr(46,8).c_str())));
+    //     // cout<< resnumc<< " to "<< thisresnumc << " "<< atof((line.substr(30,8).c_str()))<<" "<< atof((line.substr(38,8).c_str()))<<" "<<atof((line.substr(46,8).c_str()))<<endl;
+    //   }
+    // }
 
     //Print copy of the PDB
     ofs << line << endl; 
@@ -263,19 +267,6 @@ void Protein::readPDB(string filename){
       y=atof(fields[9].c_str());
       z=atof(fields[10].c_str());
 
-      found = fields[2].find("H");
-
-      if(resnumc.compare("")!=0){
-        thisresnumc = line.substr(17,3) + line.substr(22,4) + line.substr(21,1);
-        stripSpace(thisresnumc);
-        if(resnumc.compare(thisresnumc)==0 && found==string::npos){
-          LIGAND.push_back(atof((line.substr(30,8).c_str())));
-          LIGAND.push_back(atof((line.substr(38,8).c_str())));
-          LIGAND.push_back(atof((line.substr(46,8).c_str())));
-          // cout<< resnumc<< " to "<< thisresnumc << " "<< atof((line.substr(30,8).c_str()))<<" "<< atof((line.substr(38,8).c_str()))<<" "<<atof((line.substr(46,8).c_str()))<<endl;
-        }
-      }
-
       if((fields[3].compare("A")!=0) && (fields[3].compare("")!=0)){ continue; }
       if(fields[4].compare("HOH")==0){ continue; }
 
@@ -291,6 +282,7 @@ void Protein::readPDB(string filename){
       atm.bs=0;
       atm.mif=1;
 
+      found = fields[2].find("H");
       if(found!=string::npos){
         atm.h=1;
       }else{
@@ -300,6 +292,18 @@ void Protein::readPDB(string filename){
       if(atomTypes.find(atm.resn+"_"+atm.atomn) == atomTypes.end()){ atm.mif=0; }
       if(fields[5].compare(chain)!=0 && chain.compare("none")!=0){ atm.mif=0; }
       if(line.compare(0,6,"HETATM") == 0){ atm.mif=0; }
+
+      if(resnumc.compare("")!=0){
+        thisresnumc = line.substr(17,3) + line.substr(22,4) + line.substr(21,1);
+        stripSpace(thisresnumc);
+        if(resnumc.compare(thisresnumc)==0 && found==string::npos){
+          LIGAND.push_back(atof((line.substr(30,8).c_str())));
+          LIGAND.push_back(atof((line.substr(38,8).c_str())));
+          LIGAND.push_back(atof((line.substr(46,8).c_str())));
+          // cout<< resnumc<< " to "<< thisresnumc << " "<< atof((line.substr(30,8).c_str()))<<" "<< atof((line.substr(38,8).c_str()))<<" "<<atof((line.substr(46,8).c_str()))<<endl;
+          LIGATOMS.push_back(atm);
+        }
+      }
 
       if(atm.mif==1){
         minx=roundCoord(x-0.5,0);
@@ -1003,16 +1007,13 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
       if(inGridRes(it->second,2.0)==1){
         it->second.grid[0]=1;
         vrtx200++;
-      }
-      if(inGridRes(it->second,1.5)==1){
+      }else if(inGridRes(it->second,1.5)==1){
         it->second.grid[1]=1;
         vrtx150++;
-      }
-      if(inGridRes(it->second,1.0)==1){
+      }else if(inGridRes(it->second,1.0)==1){
         it->second.grid[2]=1;
         vrtx100++;
-      }
-      if(inGridRes(it->second,0.5)==1){
+      }else if(inGridRes(it->second,0.5)==1){
         it->second.grid[3]=1;
         vrtx050++;
       }
@@ -1530,7 +1531,7 @@ int is_coord_in_cube(float x, float y, float z, float center_x, float center_y, 
   }else{return(0);}
 }
 
-void Grid::writeMif(vector<atom>& prot){
+void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
   map<int,vertex>::iterator it;
 
   FILE* fpNew;
@@ -1567,26 +1568,29 @@ void Grid::writeMif(vector<atom>& prot){
   fprintf(fpNew,"#ss %d %d %d %d\n",ss[0],ss[1],ss[2],ss[3]);
 
   for(it=GRID.begin();it!=GRID.end();it++){
+
     if(it->second.p==1){
       // if(it->second.grid[2]==1){
       //   fprintf(fpNew, "#PG %7.2f %7.2f %7.2f\n",it->second.x,it->second.y,it->second.z);  
       // }
     }else{
-      fprintf(fpNew, "%7.2f %7.2f %7.2f",it->second.x,it->second.y,it->second.z);
-      for(probe=0; probe<nbOfProbes; probe++){
-        fprintf(fpNew, " %1d",it->second.ints[probe]);
-      }
-      for(i=0; i<4; i++){
-        fprintf(fpNew, " %1d",it->second.grid[i]);
-      }
-      for(i=0; i<aa.size(); i++){
-        if(it->second.env[aa[i]]>5.0){
-          fprintf(fpNew, " %d",0);
-        }else{
-          fprintf(fpNew, " %d",(int)round(it->second.env[aa[i]]));
+      if(zip==1 && (it->second.grid[0]==1 || it->second.grid[1]==1)){
+        fprintf(fpNew, "%7.2f %7.2f %7.2f",it->second.x,it->second.y,it->second.z);
+        for(probe=0; probe<nbOfProbes; probe++){
+          fprintf(fpNew, " %1d",it->second.ints[probe]);
         }
+        for(i=0; i<4; i++){
+          fprintf(fpNew, " %1d",it->second.grid[i]);
+        }
+        for(i=0; i<aa.size(); i++){
+          if(it->second.env[aa[i]]>5.0){
+            fprintf(fpNew, " %d",0);
+          }else{
+            fprintf(fpNew, " %d",(int)round(it->second.env[aa[i]]));
+          }
+        }
+        fprintf(fpNew, " %d\n",it->second.bu);        
       }
-      fprintf(fpNew, " %d\n",it->second.bu);
     }
   }
 
@@ -1595,48 +1599,53 @@ void Grid::writeMif(vector<atom>& prot){
   }
 
   if(printAtoms==1){
-    int step=(int)(caT/stepsize);
 
-    for(i=0; i<prot.size(); i++){
-      if(prot[i].mif!=1) continue;
-      int xi=(int)((prot[i].x-min_x)/stepsize)+1;
-      int yi=(int)((prot[i].y-min_y)/stepsize)+1;
-      int zi=(int)((prot[i].z-min_z)/stepsize)+1;
+    if(zip==1){
+      for(i=0; i<lig.size(); i++){
+        fprintf(fpNew,"#ATOM %3s %4d %4s %5d %s %8.3f %8.3f %8.3f %d %d\n",lig[i].resn.c_str(),lig[i].resnb,lig[i].atomn.c_str(),lig[i].atomnb,lig[i].chain.c_str(),lig[i].x,lig[i].y,lig[i].z,lig[i].mif,lig[i].bs);
+      }
+    }else{
+      int step=(int)(caT/stepsize);
+      for(i=0; i<prot.size(); i++){
+        if(prot[i].mif!=1) continue;
+        int xi=(int)((prot[i].x-min_x)/stepsize)+1;
+        int yi=(int)((prot[i].y-min_y)/stepsize)+1;
+        int zi=(int)((prot[i].z-min_z)/stepsize)+1;
 
-      int flag=0;
-      // cout<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].chain<<" "<<prot[i].atomn<<" "<<prot[i].bs<<endl;
-      for(int tx=xi-step; tx<=xi+step; tx++){
-        for(int ty=yi-step; ty<=yi+step; ty++){
-          for(int tz=zi-step; tz<=zi+step; tz++){
-            int tid=generateID(width,height,tx,ty,tz);
-            it = GRID.find(tid);
-            if(it != GRID.end()){
-              if(it->second.p==1) continue;
-              if(it->second.grid[0]!=1) continue;
-              // cout<<"exist "<<it->second.x<<" "<<it->second.y<<" "<<it->second.z<<endl;
-              float d=sqrt(dist_3d(prot[i].x,prot[i].y,prot[i].z,it->second.x,it->second.y,it->second.z));
-              // cout<<d<<endl;
-              // cout<<it->second.x<<" "<<it->second.y<<" "<<it->second.z<<" "<<it->second.grid[0]<<" "<<it->second.grid[1]<<" "<<it->second.grid[2]<<" "<<it->second.grid[3]<< endl;
-              if(d<caT || fabs(d-caT)<0.001){
-                prot[i].bs=1;
-                // cout<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].chain<<endl;
-                flag=1;
-                break;
+        int flag=0;
+        // cout<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].chain<<" "<<prot[i].atomn<<" "<<prot[i].bs<<endl;
+        for(int tx=xi-step; tx<=xi+step; tx++){
+          for(int ty=yi-step; ty<=yi+step; ty++){
+            for(int tz=zi-step; tz<=zi+step; tz++){
+              int tid=generateID(width,height,tx,ty,tz);
+              it = GRID.find(tid);
+              if(it != GRID.end()){
+                if(it->second.p==1) continue;
+                if(it->second.grid[0]!=1) continue;
+                // cout<<"exist "<<it->second.x<<" "<<it->second.y<<" "<<it->second.z<<endl;
+                float d=sqrt(dist_3d(prot[i].x,prot[i].y,prot[i].z,it->second.x,it->second.y,it->second.z));
+                // cout<<d<<endl;
+                // cout<<it->second.x<<" "<<it->second.y<<" "<<it->second.z<<" "<<it->second.grid[0]<<" "<<it->second.grid[1]<<" "<<it->second.grid[2]<<" "<<it->second.grid[3]<< endl;
+                if(d<caT || fabs(d-caT)<0.001){
+                  prot[i].bs=1;
+                  // cout<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].chain<<endl;
+                  flag=1;
+                  break;
+                }
               }
+              if(flag==1) break;
             }
             if(flag==1) break;
           }
           if(flag==1) break;
         }
-        if(flag==1) break;
+        // cout<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].chain<<" "<<prot[i].atomn<<" "<<prot[i].bs<<endl;
+      }  
+      for(j=0; j<prot.size(); j++){
+        fprintf(fpNew,"#ATOM %3s %4d %4s %5d %s %8.3f %8.3f %8.3f %d %d\n",prot[j].resn.c_str(),prot[j].resnb,prot[j].atomn.c_str(),prot[j].atomnb,prot[j].chain.c_str(),prot[j].x,prot[j].y,prot[j].z,prot[j].mif,prot[j].bs);
       }
-      // cout<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].chain<<" "<<prot[i].atomn<<" "<<prot[i].bs<<endl;
-    }  
-    for(j=0; j<prot.size(); j++){
-      fprintf(fpNew,"#ATOM %3s %4d %4s %5d %s %8.3f %8.3f %8.3f %d %d\n",prot[j].resn.c_str(),prot[j].resnb,prot[j].atomn.c_str(),prot[j].atomnb,prot[j].chain.c_str(),prot[j].x,prot[j].y,prot[j].z,prot[j].mif,prot[j].bs);
     }   
   }
-
   fclose(fpNew);
 }
 

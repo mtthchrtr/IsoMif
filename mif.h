@@ -116,6 +116,7 @@ int nbOfAts=0;
 int nbOfAtoms=0;
 int nbOfProbes=0;
 int ss[4];
+int zip;
 int bul=0;
 float* epsilons;
 map<string,string> atomTypes;
@@ -145,6 +146,7 @@ class  Protein{
     int getRefAtom(float&, float&, float&, string, int, string, string, int, float, float, float, string);
     vector<atom> PROTEIN;
     vector<float> LIGAND;
+    vector<atom> LIGATOMS;
 
   private:
 
@@ -165,7 +167,7 @@ class  Grid{
     int getDiag(int, int, int, int&);
   	int inGridRes(vertex&, float);
     void smooth();
-    void writeMif(vector<atom>&);
+    void writeMif(vector<atom>&,vector<atom>&);
     map<int,vertex> GRID;
     vector<int> vrtxIdList;
 
