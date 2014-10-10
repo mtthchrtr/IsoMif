@@ -86,6 +86,7 @@ int readCmdLine(int argc, char **argv){
   usage << "-o                   : \t output directory\n";
   usage << "-b                   : \t burriedness level (0-14) [8]\n";
   usage << "-m                   : \t smooth\n";
+  usage << "-mat                 : \t epsilon matrix to use\n";
   usage << "-t                   : \t filename (tag) [pdb name by default]\n";
   usage << "-l                   : \t RESNUMC of the ligand from which to crop the grid\n";
   usage << "-r                   : \t maximum distance between the grid and the ligand\n";
@@ -124,6 +125,9 @@ int readCmdLine(int argc, char **argv){
     }
     if(strcmp(argv[nb_arg],"-l")==0){
       resnumc=string(argv[nb_arg+1]);
+    }
+    if(strcmp(argv[nb_arg],"-mat")==0){
+      matrixF=string(argv[nb_arg+1]);
     }
     if(strcmp(argv[nb_arg],"-m")==0){
       sscanf(argv[nb_arg+1], "%d", &smoothDist);
@@ -1053,9 +1057,11 @@ void Grid::getBuriedness(){
     // cout<<min_z<<" | "<<zb<<" "<<m.z<<" "<<zf<<" | "<<max_z<<" || "<<depth<<endl;
 
     // cout<<endl<<"going xl"<<endl;
+    int move=0;
     for(int tx=xi-1; tx>=1; tx--){
+      move++;
+      if(move>buD) break;
       id=generateID(width,height,tx,yi,zi);
-      // cout<<tx<<" "<<yi<<" "<<zi<<endl;
       it = GRID.find(id);
       if(it != GRID.end()){
         if(GRID[id].p==1){
@@ -1064,10 +1070,13 @@ void Grid::getBuriedness(){
         }
       }
     }
+
     // cout<<endl<<"going xr"<<endl;
+    move=0;
     for(int tx=xi+1; tx<=width; tx++){
+      move++;
+      if(move>buD) break;
       id=generateID(width,height,tx,yi,zi);
-      // cout<<tx<<" "<<yi<<" "<<zi<<endl;
       it = GRID.find(id);
       if(it != GRID.end()){
         if(GRID[id].p==1){
@@ -1076,8 +1085,12 @@ void Grid::getBuriedness(){
         }
       }
     }
+
     // cout<<endl<<"going yd"<<endl;
+    move=0;
     for(int ty=yi-1; ty>=1; ty--){
+      move++;
+      if(move>buD) break;
       id=generateID(width,height,xi,ty,zi);
       // cout<<xi<<" "<<ty<<" "<<zi<<endl;
       it = GRID.find(id);
@@ -1089,7 +1102,10 @@ void Grid::getBuriedness(){
       }
     }
     // cout<<endl<<"going yu"<<endl;
+    move=0;
     for(int ty=yi+1; ty<=height; ty++){
+      move++;
+      if(move>buD) break;
       id=generateID(width,height,xi,ty,zi);
       // cout<<xi<<" "<<ty<<" "<<zi<<endl;
       it = GRID.find(id);
@@ -1101,7 +1117,10 @@ void Grid::getBuriedness(){
       }
     }
     // cout<<endl<<"going zb"<<endl;
+    move=0;
     for(int tz=zi-1; tz>=1; tz--){
+      move++;
+      if(move>buD) break;
       // cout<<xi<<" "<<yi<<" "<<tz<<endl;
       id=generateID(width,height,xi,yi,tz);
       it = GRID.find(id);
@@ -1113,7 +1132,10 @@ void Grid::getBuriedness(){
       }
     }
     // cout<<endl<<"going zf"<<endl;
+    move=0;
     for(int tz=zi+1; tz<=depth; tz++){
+      move++;
+      if(move>buD) break;
       // cout<<xi<<" "<<yi<<" "<<tz<<endl;
       id=generateID(width,height,xi,yi,tz);
       it = GRID.find(id);
@@ -1130,7 +1152,10 @@ void Grid::getBuriedness(){
     int ty=yi;
     int tz=zi;
     int flag=0;
+    move=0;
     while(flag==0){
+      move++;
+      if(move>buD) break;
       tx--; ty++; tz++;
       int diag=getDiag(tx,ty,tz,flag);
       if(diag){
@@ -1140,7 +1165,10 @@ void Grid::getBuriedness(){
 
     flag=0;
     tx=xi; ty=yi; tz=zi;
+    move=0;
     while(flag==0){
+      move++;
+      if(move>buD) break;
       tx--; ty++; tz--; 
       int diag=getDiag(tx,ty,tz,flag);
       if(diag){
@@ -1150,7 +1178,10 @@ void Grid::getBuriedness(){
 
     flag=0;
     tx=xi; ty=yi; tz=zi;
+    move=0;
     while(flag==0){
+      move++;
+      if(move>buD) break;
       tx++; ty++; tz--; 
       int diag=getDiag(tx,ty,tz,flag);
       if(diag){
@@ -1160,7 +1191,10 @@ void Grid::getBuriedness(){
 
     flag=0;
     tx=xi; ty=yi; tz=zi;
+    move=0;
     while(flag==0){
+      move++;
+      if(move>buD) break;
       tx++; ty++; tz++; 
       int diag=getDiag(tx,ty,tz,flag);
       if(diag){
@@ -1170,7 +1204,10 @@ void Grid::getBuriedness(){
 
     flag=0;
     tx=xi; ty=yi; tz=zi;
+    move=0;
     while(flag==0){
+      move++;
+      if(move>buD) break;
       tx--; ty--; tz++; 
       int diag=getDiag(tx,ty,tz,flag);
       if(diag){
@@ -1180,7 +1217,10 @@ void Grid::getBuriedness(){
 
     flag=0;
     tx=xi; ty=yi; tz=zi;
+    move=0;
     while(flag==0){
+      move++;
+      if(move>buD) break;
       tx--; ty--; tz--; 
       int diag=getDiag(tx,ty,tz,flag);
       if(diag){
@@ -1190,7 +1230,10 @@ void Grid::getBuriedness(){
 
     flag=0;
     tx=xi; ty=yi; tz=zi;
+    move=0;
     while(flag==0){
+      move++;
+      if(move>buD) break;
       tx++; ty--; tz--; 
       int diag=getDiag(tx,ty,tz,flag);
       if(diag){
@@ -1200,7 +1243,10 @@ void Grid::getBuriedness(){
 
     flag=0;
     tx=xi; ty=yi; tz=zi;
+    move=0;
     while(flag==0){
+      move++;
+      if(move>buD) break;
       tx++; ty--; tz++;
       int diag=getDiag(tx,ty,tz,flag);
       if(diag){
@@ -1688,7 +1734,12 @@ void getPseudoC(){
 }
 
 void getEpsilons(){
-  string fn=basePath + "/forcefield_files/epsilons";
+  string fn;
+  if(matrixF.compare("")!=0){
+    fn=matrixF;
+  }else{
+    fn=basePath + "/forcefield_files/epsilons";
+  }
   ifstream infile(fn.c_str());
   string s;
   int row=0;
