@@ -1574,7 +1574,7 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
       //   fprintf(fpNew, "#PG %7.2f %7.2f %7.2f\n",it->second.x,it->second.y,it->second.z);  
       // }
     }else{
-      if(zip==1 && (it->second.grid[0]==1 || it->second.grid[1]==1)){
+      if((zip==1 && (it->second.grid[0]==1 || it->second.grid[1]==1)) || zip==0){
         fprintf(fpNew, "%7.2f %7.2f %7.2f",it->second.x,it->second.y,it->second.z);
         for(probe=0; probe<nbOfProbes; probe++){
           fprintf(fpNew, " %1d",it->second.ints[probe]);

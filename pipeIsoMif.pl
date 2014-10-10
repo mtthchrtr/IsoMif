@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+ #!/usr/bin/perl
 use strict;
 use warnings;
 #use Parallel::ForkManager; #Call the package to use for forks.
@@ -98,6 +98,11 @@ sub runCmds{
       $fork->finish; # do the exit in the child process.
     }
     $fork->wait_all_children; # Wait for all forks to exit.
+  }elsif($cmdMode eq "localnrg"){
+    for(my $i=0; $i<@cmds; $i++){
+      print "$cmds[$i]\n";
+      system($cmds[$i]." > /dev/null 2>&1");
+    }
   }elsif($cmdMode eq "mammouth"){
     my $filenb=0;
     my $count=0;

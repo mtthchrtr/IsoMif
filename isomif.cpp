@@ -609,6 +609,10 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   newClique.nbNodes=n;
   newClique.envD=0.0;
   newClique.taniX=0.0;
+  newClique.rmsd=0.0;
+  newClique.envD=0.0;
+  newClique.buD=0.0;
+
   for(int i=0; i<n; i++){ newClique.nodes.push_back(graph.at(list[i])); }
   cliques.push_back(newClique);
 
@@ -672,7 +676,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
       for(int w=0; w<lig2.size(); w++){
         if(lig2[w].atomn.compare(lig1[v].atomn)==0){
           ligRMSD+=dist3d(lig1[v].ncoor,lig2[w].coor);
-          // cout<<lig1[v].atomn<<" "<<lig2[w].atomn<<" "<<dist3d(lig1[v].ncoor,lig2[w].coor)<<endl;
+          cout<<lig1[v].atomn<<" "<<lig2[w].atomn<<" "<<dist3d(lig1[v].ncoor,lig2[w].coor)<<endl;
           ligRMSDc++;
           break;
         }
@@ -801,7 +805,7 @@ void printNodes(){
   char suffix[50];
 
   if(wrfn==1){ //Add similarity score to filename
-    if(cliques[topCliques[steps.back()]].ligRMSD!=0){
+    if(rnc1.compare("")!=0 && rnc2.compare("")!=0){
       sprintf(suffix,"_%d_%5.4f_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].tani,cliques[topCliques[steps.back()]].ligRMSD);
     }else{
       sprintf(suffix,"_%d_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].tani);
