@@ -87,6 +87,7 @@ int readCmdLine(int argc, char **argv){
   usage << "-b                   : \t burriedness level (0-14) [8]\n";
   usage << "-m                   : \t smooth\n";
   usage << "-mat                 : \t epsilon matrix to use\n";
+  usage << "-pb                  : \t probes threshold file to use\n";
   usage << "-t                   : \t filename (tag) [pdb name by default]\n";
   usage << "-l                   : \t RESNUMC of the ligand from which to crop the grid\n";
   usage << "-r                   : \t maximum distance between the grid and the ligand\n";
@@ -128,6 +129,9 @@ int readCmdLine(int argc, char **argv){
     }
     if(strcmp(argv[nb_arg],"-mat")==0){
       matrixF=string(argv[nb_arg+1]);
+    }
+    if(strcmp(argv[nb_arg],"-pb")==0){
+      probesF=string(argv[nb_arg+1]);
     }
     if(strcmp(argv[nb_arg],"-m")==0){
       sscanf(argv[nb_arg+1], "%d", &smoothDist);
@@ -1788,7 +1792,12 @@ void getAtomTypes(){
 }
 
 void getProbes(){
-  string fn=basePath + "/forcefield_files/probes";
+  string fn;
+  if(probesF.compare("")!=0){
+    fn=probesF;
+  }else{
+    fn=basePath + "/forcefield_files/probes";
+  }
   ifstream infile(fn.c_str());
   string line;
   string pbn;
@@ -1797,6 +1806,7 @@ void getProbes(){
   float thresh;
 
   while(getline(infile,line)){
+    cout<<line<<endl;
     stringstream test(line);
     test >> pbn >> min >> max >> thresh;
     minD[pbn]=min;

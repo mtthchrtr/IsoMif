@@ -32,7 +32,7 @@ int main(int argc, char *argv[]){
   //   cout << probesList[i]<<endl;
   // }
 
-  sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK nb_of_probes: %d\nREMARK C-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nREMARK dDist: %5.2f\nREMARK jtt_threshold: %d\nREMARK max_nodes: %d\nREMARK commonInt: %d\n",cmdLine,nrg_file1,nrg_file2,nb_of_probes,ca_dDist,ps_dDist,dDist,jttt,maxNodes,commonInt);
+  sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK nb_of_probes: %d\nREMARK C-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nREMARK dDist: %5.2f\nREMARK jtt_threshold: %d\nREMARK max_nodes: %d\nREMARK : %d\n",cmdLine,nrg_file1,nrg_file2,nb_of_probes,ca_dDist,ps_dDist,dDist,jttt,maxNodes,commonInt);
   strcpy(outH,tmp);
 
   //Print info to User
@@ -676,7 +676,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
       for(int w=0; w<lig2.size(); w++){
         if(lig2[w].atomn.compare(lig1[v].atomn)==0){
           ligRMSD+=dist3d(lig1[v].ncoor,lig2[w].coor);
-          cout<<lig1[v].atomn<<" "<<lig2[w].atomn<<" "<<dist3d(lig1[v].ncoor,lig2[w].coor)<<endl;
+          // cout<<lig1[v].atomn<<" "<<lig2[w].atomn<<" "<<dist3d(lig1[v].ncoor,lig2[w].coor)<<endl;
           ligRMSDc++;
           break;
         }
@@ -1084,14 +1084,13 @@ void createNodes(int cg, vector<node> &graph, int s){
         if(mif2.at(j).grid[cg]!=1) continue;
 
           int flag=0;
+          int cints=0;
           for(int pb=0; pb<nb_of_probes; pb++){
-            if(mif1.at(i).pb[pb]==1 && mif2.at(j).pb[pb]==1){
-              flag=1;
-              break;
-            }
+            if(mif1.at(i).pb[pb]==1 && mif2.at(j).pb[pb]==1) flag=1;
+            if(mif1.at(i).pb[pb]==mif2.at(j).pb[pb]) cints++;
           }
 
-          if(flag==1){
+          if(cints>=commonInt && flag==1){
             if(s==1){
               // cout<<mif1.at(i).ncoor[0]<<" "<<mif1.at(i).ncoor[1]<<" "<<mif1.at(i).ncoor[2]<<" | "<<mif2.at(j).coor[0]<<" "<<mif2.at(j).coor[1]<<" "<<mif2.at(j).coor[2];
             
@@ -1326,7 +1325,6 @@ int read_commandline(int argc, char *argv[]){
   int nb_arg;
 
   // assignment of default values to optional parameters
-  commonInt=1;
   rnc1="";
   rnc2="";
 
@@ -1541,10 +1539,6 @@ int storeProbesList(){
       count++;
     }
     fclose(fp);
-  }
-
-  if(commonInt==0){
-    commonInt=probesListNb;
   }
 
   return(0);

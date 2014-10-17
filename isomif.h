@@ -114,7 +114,7 @@ char outbase[200];
 char probesListFile[150];
 int* probesList=NULL;
 int probesListNb;
-int commonInt;
+int commonInt=1;
 
 int jttt=5;
 int jtt[20][20];

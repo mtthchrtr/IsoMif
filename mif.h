@@ -101,6 +101,7 @@ string chain="";
 string basePath="";
 string resnumc="";
 string matrixF="";
+string probesF="";
 float stepsize=0.5;
 float maxGridDist=4.5;
 float minGridDist=1.5;
