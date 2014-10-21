@@ -23,20 +23,37 @@ int main(int argc, char *argv[]){
 
   setJTT(jttt);
 
-  if(get_info(nrg_file1,nrg_file2)==24){ return(24); }
-
   storeProbesList();
 
-  // cout<< "Probes List"<< endl;
-  // for(i=0; i<probesListNb; ++i){
-  //   cout << probesList[i]<<endl;
-  // }
+  if(pairwiseF.compare("")!=0){
+    getPairwise();
+  }else{
+    pwRun npw;
+    npw.mif1= nrg_file1;
+    npw.mif2= nrg_file2;
+    npw.rnc1=rnc1;
+    npw.rnc2=rnc2;
+    pw.push_back(npw);
+  }
 
-  sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK nb_of_probes: %d\nREMARK C-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nREMARK dDist: %5.2f\nREMARK jtt_threshold: %d\nREMARK max_nodes: %d\nREMARK : %d\n",cmdLine,nrg_file1,nrg_file2,nb_of_probes,ca_dDist,ps_dDist,dDist,jttt,maxNodes,commonInt);
+  for(int i=0; i<pw.size(); i++){
+  
+  cout<<i<<" mif1 "<<pw[i].mif1<<" mif2 "<<pw[i].mif2<<" rnc1 "<<pw[i].rnc1<<" rnc2 "<<pw[i].rnc2<<endl;
+  nrg_file1=pw[i].mif1;
+  nrg_file2=pw[i].mif2;
+  rnc1=pw[i].rnc1;
+  rnc2=pw[i].rnc2;
+
+  if(get_info(nrg_file1,nrg_file2)==24){ return(24); }
+
+  printf("outfile: %s\n",out_file);
+  continue;
+
+  sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK nb_of_probes: %d\nREMARK C-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nREMARK dDist: %5.2f\nREMARK jtt_threshold: %d\nREMARK max_nodes: %d\nREMARK : %d\n",cmdLine,nrg_file1.c_str(),nrg_file2.c_str(),nb_of_probes,ca_dDist,ps_dDist,dDist,jttt,maxNodes,commonInt);
   strcpy(outH,tmp);
 
   //Print info to User
-  printf("--# Get Info #--\n\nEnergy file 1: %s\nEnergy file 2: %s\nOutfile: %s\nNumber of probes: %d\n\n--# Parameter Values #--\n\nC-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nNode dDist: %5.2f\nneibr dDist: %5.2f\nJTT threshold: %d\nMaximum nodes: %d\nGet all C-alpha cliques: %d\nMinimum number of Common interaction: %d\nPrint details: %d\n",nrg_file1,nrg_file2,out_file,nb_of_probes,ca_dDist,ps_dDist,dDist,neibr_dDist,jttt,maxNodes,bkAll,commonInt,printDetails);
+  printf("--# Get Info #--\n\nEnergy file 1: %s\nEnergy file 2: %s\nOutfile: %s\nNumber of probes: %d\n\n--# Parameter Values #--\n\nC-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nNode dDist: %5.2f\nneibr dDist: %5.2f\nJTT threshold: %d\nMaximum nodes: %d\nGet all C-alpha cliques: %d\nMinimum number of Common interaction: %d\nPrint details: %d\n",nrg_file1.c_str(),nrg_file2.c_str(),out_file,nb_of_probes,ca_dDist,ps_dDist,dDist,neibr_dDist,jttt,maxNodes,bkAll,commonInt,printDetails);
   cout<<"CG begin "<<steps.front()<<" cg_start "<<cg_start<<" end "<<steps.back()<<endl<<endl;
   cout<<rnc1<<" "<<rnc2<<endl;
   createVrtxVec(nrg_file1,mif1,prot1,ss1,caSize1,pseudoL1,rnc1,lig1);
@@ -217,31 +234,15 @@ int main(int argc, char *argv[]){
         //   }
         // }
 
-        // open_file_ptr(&fp,outPDB,1);
         cout<<"Rotating Mif 1 onto Mif 2 using previous stage..."<<endl;
         for(int v=0; v<mif1.size(); v++){
-          // if(mif1[v].grid[1]!=1){
-          //   continue;
-          // }
-          // fprintf(fp,"HETATM%5d  CA  NRG A        ",mif1[v].id);
           for(int i=0; i<3; i++){
             mif1[v].ncoor[i]=cliques.back().cen_b[i];
             for(int j=0; j<3; j++){
               mif1[v].ncoor[i]+=(mif1[v].coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
             }
-            // fprintf(fp,"%8.3f",mif1[v].ncoor[i]);
           }
-          // fprintf(fp,"  0.00 10.00           C  \n");
         }
-        // fclose(fp);
-
-        //print nodes of mif2
-        // open_file_ptr(&fp,outPDB2,1);
-        // for(int v=0; v<mif2.size(); v++){
-        //   if(mif2[v].grid[1]!=1){ continue; }
-        //   fprintf(fp,"HETATM%5d  CA  NRG A        %8.3f%8.3f%8.3f  0.00 10.00           C  \n",mif2[v].id,mif2[v].coor[0],mif2[v].coor[1],mif2[v].coor[2]);
-        // }
-        // fclose(fp);
         cgs=1; //Wee need to check distance between rotated vertex and remaining vrtx     
       }else{
         cgs=0;
@@ -303,6 +304,28 @@ int main(int argc, char *argv[]){
 
   printNodes();
 
+  mif1.clear();
+  vector<vertex>().swap(mif1);
+  mif2.clear();
+  vector<vertex>().swap(mif2);
+  prot1.clear();
+  vector<atom>().swap(prot1);
+  prot2.clear();
+  vector<atom>().swap(prot2);
+  caSize1=0;
+  caSize2=0;
+  pseudoL1.clear();
+  vector<pseudoC>().swap(pseudoL1);
+  pseudoL2.clear();
+  vector<pseudoC>().swap(pseudoL2);
+  lig1.clear();
+  vector<atom>().swap(lig1);
+  lig2.clear();
+  vector<atom>().swap(lig2);
+  cliques.clear();
+  vector<Clique>().swap(cliques);
+
+  }
   return(0);
 }/***********************************************************************/
 /*        1         2         3         4         5         6         7*/
@@ -802,19 +825,22 @@ void printNodes(){
   FILE* fp;
   vector<nodes>::iterator it;
   char suffix[50];
+  int fileout=2;
 
-  if(wrfn==1){ //Add similarity score to filename
-    if(rnc1.compare("")!=0 && rnc2.compare("")!=0){
-      sprintf(suffix,"_%d_%5.4f_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].tani,cliques[topCliques[steps.back()]].ligRMSD);
-    }else{
-      sprintf(suffix,"_%d_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].tani);
+  if(pairwiseF.compare("")==0){
+    fileout=1;
+    if(wrfn==1){ //Add similarity score to filename
+      if(rnc1.compare("")!=0 && rnc2.compare("")!=0){
+        sprintf(suffix,"_%d_%5.4f_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].tani,cliques[topCliques[steps.back()]].ligRMSD);
+      }else{
+        sprintf(suffix,"_%d_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].tani);
+      }
+      strcat(out_file,suffix);
     }
-    
-    strcat(out_file,suffix);
+    strcat(out_file,".isomif");
   }
-  strcat(out_file,".isomif");
 
-  open_file_ptr(&fp,out_file,1);
+  open_file_ptr(&fp,out_file,fileout);
   if(emptOut!=1){
     fprintf(fp,"%s",outH);
     for(int cs=0; cs<steps.size(); cs++){
@@ -1145,7 +1171,39 @@ int samePseudo(pseudoC& ps1,pseudoC& ps2){
 /*234567890123456789012345678901234567890123456789012345678901234567890*/
 /*        1         2         3         4         5         6         7*/
 /***********************************************************************/
-int createVrtxVec(char mifFile[], vector<vertex>& p, vector<atom>& a, int* ss, int &caSize, vector<pseudoC>& pl, string rnc, vector<atom>& llist){
+void getPairwise(){
+  string line;
+  ifstream infile(pairwiseF);
+  while(getline(infile,line)){
+    if(line.compare("")!=0){
+      istringstream ss(line);
+      istream_iterator<string> begin(ss), end;
+      vector<string> vec(begin, end);
+      string mif1F="";
+      string mif2F="";
+      string rnc1id="";
+      string rnc2id="";
+      for(int i=0; i<vec.size(); i+=2){
+        if(vec[i].compare("-p1")==0) mif1F=vec[i+1];
+        if(vec[i].compare("-p2")==0) mif2F=vec[i+1];
+        if(vec[i].compare("-l1")==0) rnc1id=vec[i+1];
+        if(vec[i].compare("-l2")==0) rnc2id=vec[i+1];
+      }
+      pwRun npw;
+      npw.mif1=mif1F;
+      npw.mif2=mif2F;
+      npw.rnc1=rnc1id;
+      npw.rnc2=rnc2id;
+      pw.push_back(npw);
+    }
+  }
+}
+/***********************************************************************/
+/*        1         2         3         4         5         6         7*/
+/*234567890123456789012345678901234567890123456789012345678901234567890*/
+/*        1         2         3         4         5         6         7*/
+/***********************************************************************/
+int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, int* ss, int &caSize, vector<pseudoC>& pl, string rnc, vector<atom>& llist){
   string line;
   vertex* nvrtx;
   atom* natom;
@@ -1183,9 +1241,9 @@ int createVrtxVec(char mifFile[], vector<vertex>& p, vector<atom>& a, int* ss, i
       natom->id=atmC;
       natom->mif=mif;
       natom->bs=bs;
-      stringstream ss;
-      ss << resnb;
-      thisresnumc = resn + ss.str() + chain;
+      stringstream sss;
+      sss << resnb;
+      thisresnumc = resn + sss.str() + chain;
       if(rnc.compare(thisresnumc)==0){
         size_t found;
         found = atomn.find("H");
@@ -1334,6 +1392,8 @@ int read_commandline(int argc, char *argv[]){
   strcat(usage,tmp_line);
   sprintf(tmp_line,"-p2          : \t Isomif energy filename of Protein 2\n");
   strcat(usage,tmp_line);
+  sprintf(tmp_line,"-pp          : \t File with highthroughput comparions\n");
+  strcat(usage,tmp_line);
   strcat(usage,"\nOptional Arguments:\n");
   sprintf(tmp_line,"-h          : \t Print help menu\n");
   strcat(usage,tmp_line);
@@ -1393,11 +1453,15 @@ int read_commandline(int argc, char *argv[]){
     }
 
     if(strcmp(argv[nb_arg],"-p1")==0){
-      sprintf(nrg_file1,"%s",argv[nb_arg+1]);
+      nrg_file1=argv[nb_arg+1];
     }
 
     if(strcmp(argv[nb_arg],"-p2")==0){
-      sprintf(nrg_file2,"%s",argv[nb_arg+1]);
+      nrg_file2=argv[nb_arg+1];
+    }
+
+    if(strcmp(argv[nb_arg],"-pp")==0){
+      pairwiseF=argv[nb_arg+1];
     }
 
     if(strcmp(argv[nb_arg],"-l")==0){
@@ -1551,16 +1615,16 @@ int storeProbesList(){
 
 //This Function opens the two mif file and gets the two prefix of the proteins
 //and also looks if they have the same number of probes
-int get_info(char nrg_file1[], char nrg_file2[]){
+int get_info(string str1, string str2){
   int i;
   const char* prefix1; //Mif file 1 prefix
   const char* prefix2; //Mif file 2 prefix
+  const char* prefix3; //Pairwise prefix
   const char* p1_pre; //Protein file 1 prefix
   const char* p2_pre; //Protein file 2 prefix
 
   //Store Mif 1 filename without the .isomif in prefix1
   string empt ("");
-  string str1 (nrg_file1);
   string pre1;
   size_t found1;
   found1=str1.find(".mif");
@@ -1577,9 +1641,7 @@ int get_info(char nrg_file1[], char nrg_file2[]){
   }
   prefix1 = pre1.c_str(); 
 
-
   //Store Mif 2 filename without the .isomif in prefix1
-  string str2 (nrg_file2);
   string pre2;
   size_t found2;
   found2=str2.find(".mif");
@@ -1594,20 +1656,38 @@ int get_info(char nrg_file1[], char nrg_file2[]){
   if(pre2.compare(empt)==0){
     pre2=str2.substr(0,found2-i-1);
   }
-  prefix2 = pre2.c_str(); 
+  prefix2 = pre2.c_str();
 
   //Create output file
-  if(!strcmp(outbase,"")){ //If no outbase name is defined, create one
-    // sprintf(out_file,"./%s_match_%s.pdb",prefix1,prefix2);
-    sprintf(out_file,"./%s_match_%s",prefix1,prefix2);
-    sprintf(outPDB,"./%s_match_%s.pdb",prefix1,prefix2);
-    sprintf(outPDB2,"./%s_match_%s2.pdb",prefix1,prefix2);
+  if(pairwiseF.compare("")!=0){
+    //Store pairwise filename
+    string pwpre;
+    for(i=pairwiseF.length()-1; i>=0; i--){
+        if(pairwiseF.at(i)=='/'){
+         pwpre=pairwiseF.substr(i+1,pairwiseF.length()-i-1);
+         break;
+       }
+     }
+    if(pwpre.compare(empt)==0){
+      pwpre=pairwiseF.substr(0,pairwiseF.length()-i-1);
+    }
+    prefix3 = pwpre.c_str();
+
+    if(!strcmp(outbase,"")){ //If no outbase name is defined, create one
+      sprintf(out_file,"./pw_%s",prefix3);
+    }else{
+      sprintf(out_file,"%spw_%s",outbase,prefix3);
+    }
   }else{
-    // sprintf(out_file,"%s%s_match_%s.pdb",outbase,prefix1,prefix2);
-    sprintf(out_file,"%s%s_match_%s",outbase,prefix1,prefix2);
-    sprintf(outPDB,"%s%s_match_%s.pdb",outbase,prefix1,prefix2);
-    sprintf(outPDB2,"%s%s_match_%s2.pdb",outbase,prefix1,prefix2);
+    if(!strcmp(outbase,"")){ //If no outbase name is defined, create one
+      // sprintf(out_file,"./%s_match_%s.pdb",prefix1,prefix2);
+      sprintf(out_file,"./%s_match_%s",prefix1,prefix2);
+    }else{
+      // sprintf(out_file,"%s%s_match_%s.pdb",outbase,prefix1,prefix2);
+      sprintf(out_file,"%s%s_match_%s",outbase,prefix1,prefix2);
+    }  
   }
+
 
   return(0);
 }

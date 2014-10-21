@@ -25,6 +25,13 @@ struct nodeI{
   int neibrs;
 };
 
+struct pwRun{
+  string mif1;
+  string mif2;
+  string rnc1;
+  string rnc2;
+};
+
 struct vertex {
   float coor[3];
   float ncoor[3];
@@ -107,8 +114,9 @@ vector<Clique> cliques;
 int emptOut=0;
 char outH[4000];
 int printDetails=0;
-char nrg_file1[200];
-char nrg_file2[200];
+string pairwiseF;
+string nrg_file1;
+string nrg_file2;
 char cmdLine[550];
 char outbase[200];
 char probesListFile[150];
@@ -149,7 +157,9 @@ vector<atom> lig1;
 vector<atom> lig2;
 string rnc1;
 string rnc2;
+vector<pwRun> pw;
 
+void getPairwise();
 void sortArray(int *&, int nn, bool*&);
 bool myfunction (nodeI,nodeI);
 void AddNewClique(int, int*, int, vector<node>&);
@@ -163,10 +173,10 @@ float dist3d(float[], float[]);
 void clearStep(int);
 void printNodes();
 int read_commandline(int, char*[]);
-int createVrtxVec(char[], vector<vertex>&, vector<atom>&, int*, int&, vector<pseudoC>&, string, vector<atom>&);
+int createVrtxVec(string, vector<vertex>&, vector<atom>&, int*, int&, vector<pseudoC>&, string, vector<atom>&);
 void createNodes(int, vector<node>&, int);
 void rem_spaces(char*);
-int get_info(char[], char[]);
+int get_info(string, string);
 double calcRot(vector<float>, vector<float>, float*, float*, gsl_matrix *);
 double SupSVD(gsl_matrix *);
 double gsl_matrix_Det3D(gsl_matrix *);
