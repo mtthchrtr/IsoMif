@@ -135,7 +135,7 @@ for(my $i=0; $i<6; $i++){ #Loop each probe
   }
 }
 for(my $i=0; $i<3; $i++){
-  if(defined @{$grid[$i]}){
+  if(scalar @{$grid[$i]} > 0){
     $gridInt[$i][0]=$it;
     print NPML "cmd.read_pdbstr(\"\"\"";
     for(my $j=0; $j<@{$grid[$i]}; $j+=4){       
@@ -188,18 +188,18 @@ for(my $i=0; $i<3; $i++){
 }
 
 # Print Ca atoms
-if(@ca){
-  print NPML "create ca, id ";
-  for(my $i=0; $i<@ca; $i++){
-    my @s=split(/\s+/,$ca[$i]);
-    print NPML "$s[3]";
-    print NPML "+" unless($i==$#ca);
-  }
-  print NPML " & ".$mifName."\n";
-}
+# if(@ca){
+#   print NPML "create ca, id ";
+#   for(my $i=0; $i<@ca; $i++){
+#     my @s=split(/\s+/,$ca[$i]);
+#     print NPML "$s[3]";
+#     print NPML "+" unless($i==$#ca);
+#   }
+#   print NPML " & ".$mifName."\n";
+# }
 
 # my @pbColors=("aquamarine","brightorange","blue","red","limegreen","lightmagenta");
-print NPML "color deepteal, ca\nset sphere_scale, 0.3, ca\nshow spheres, ca\n";
+# print NPML "color deepteal, ca\nset sphere_scale, 0.3, ca\nshow spheres, ca\n";
 print NPML "set sphere_scale, 0.3, pseudocenter\ncolor aquamarine, resn HYD & pseudocenters\ncolor brightorange, resn ARM & pseudocenters\n";
 print NPML "color blue, resn DON & pseudocenters\ncolor red, resn ACC & pseudocenters\ncolor limegreen, resn DOA & pseudocenters\nshow spheres, pseudocenters\n";
 

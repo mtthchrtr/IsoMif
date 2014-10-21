@@ -690,7 +690,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   //Calculate RMSD
   //Calculate envD
   //Calculate buD
-  if(0){
+  // if(0){
     float rmsd=0.0;
     float envD=0.0;
     float bud=0.0;
@@ -714,29 +714,28 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
         rmsd+=dist3d(ncoor,(*it).pb->coor);
       }else{
         rmsd+=dist3d(ncoor,(*it).b->coor);
-      }
-      // cout<<(*it).a->bu<<" "<<(*it).b->bu<<endl;
-      bud+=pow(((*it).a->bu)-((*it).b->bu),2);
-      if(cg!=-1 && cg!=-3){
-        float num=0.0;
-        float d1=0.0;
-        float d2=0.0;
-        for(int i=0; i<20; ++i){
-          // cout <<(*it).a->env[i]<<" "<<(*it).b->env[i]<<" | ";
-          num+=(*it).a->env[i]*(*it).b->env[i];
-          d1+=pow((*it).a->env[i],2);
-          d2+=pow((*it).b->env[i],2);
+        cout<<(*it).a->bu<<" "<<(*it).b->bu<<endl;
+        bud+=pow(((*it).a->bu)-((*it).b->bu),2);
+        if(cg!=-1 && cg!=-3){
+          float num=0.0;
+          float d1=0.0;
+          float d2=0.0;
+          for(int i=0; i<20; ++i){
+            // cout <<(*it).a->env[i]<<" "<<(*it).b->env[i]<<" | ";
+            num+=(*it).a->env[i]*(*it).b->env[i];
+            d1+=pow((*it).a->env[i],2);
+            d2+=pow((*it).b->env[i],2);
+          }
+          float cosd=num/(sqrt(d1)*sqrt(d2));
+          envD+=cosd;
         }
-        float cosd=num/(sqrt(d1)*sqrt(d2));
-        envD+=cosd;
       }
     }
     rmsd=sqrt(rmsd/(float)cliques.back().nbNodes);
     cliques.back().rmsd=rmsd;
     cliques.back().envD=envD/(float)cliques.back().nbNodes;
     cliques.back().buD=sqrt(bud/(float)cliques.back().nbNodes);
-  
-  }
+  // }
   
   // cout<<"Finding corresponding vertexes..."<<endl;
   // float dist=0.0;
@@ -763,7 +762,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   if(cg==-1){
     cliques.back().tani=(float)n/((float)caSize1+(float)caSize2-(float)n);
   }else if(cg==-3){
-    cliques.back().tani=(float)n/((float)pseudoL1.size()+(float)pseudoL2.size()-(float)n);
+    cliques.back().tani=(float)n/((float)cliques.back().rmsd);
   }else{
     cliques.back().tani=(float)n/((float)ss1[cg]+(float)ss2[cg]-(float)n);
   }
@@ -789,7 +788,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     topN=cliques.back().nbNodes;
     topCliques[cg]=cliques.size()-1;
   }else{
-    // cout<<"NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" envD: "<<cliques.back().envD<<" buD: "<<cliques.back().buD<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
+    cout<<"NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" envD: "<<cliques.back().envD<<" buD: "<<cliques.back().buD<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
   }
 
   return;
@@ -1066,13 +1065,10 @@ void createNodes(int cg, vector<node> &graph, int s){
     for(int i=0; i<pseudoL1.size(); i++){
       for(int j=0; j<pseudoL2.size(); j++){
         if(samePseudo(pseudoL1.at(i),pseudoL2.at(j))==1){ //They are similar based on the JTT matrix and JTT threshold
-
           node newNode;
           newNode.pa=&pseudoL1.at(i);
           newNode.pb=&pseudoL2.at(j);
           graph.push_back(newNode);
-        }else{
-
         }
       }
     }
@@ -1130,6 +1126,10 @@ int samePseudo(pseudoC& ps1,pseudoC& ps2){
   }else if(ps1.type.compare("doa")==0 && ps2.type.compare("acc")==0){
     return(1);
   }else if(ps1.type.compare("doa")==0 && ps2.type.compare("don")==0){
+    return(1);
+  }else if(ps1.type.compare("acc")==0 && ps2.type.compare("doa")==0){
+    return(1);
+  }else if(ps1.type.compare("don")==0 && ps2.type.compare("doa")==0){
     return(1);
   }else if(ps1.type.compare("doa")==0 && ps2.type.compare("doa")==0){
     return(1);

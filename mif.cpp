@@ -46,7 +46,7 @@ int main(int argc, char **argv)
 
   if(smoothDist!=0) grid.smooth();
 
-  // getPseudo(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
+  getPseudo(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
 
   grid.writeMif(protein.PROTEIN,protein.LIGATOMS);
 
@@ -1592,8 +1592,6 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
   string na="NA";
   string mifFileNew=outBase + tag + ".mif";
 
-  cout<<endl<< "Writing Mif File"<<endl;
-
   fpNew = fopen(mifFileNew.c_str(),"w");
   fprintf(fpNew,"#cmd %s\n",cmdLine.c_str());
   fprintf(fpNew,"#proteinFile %s\n",proteinFile.c_str());
@@ -1617,6 +1615,7 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
   fprintf(fpNew,"#gs %d %d %d %d\n",vrtx200,vrtx150,vrtx100,vrtx050);
   fprintf(fpNew,"#ss %d %d %d %d\n",ss[0],ss[1],ss[2],ss[3]);
 
+  cout<<endl<< "Writing Mif File"<<endl;
   for(it=GRID.begin();it!=GRID.end();it++){
 
     if(it->second.p==1){
@@ -1644,12 +1643,13 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
     }
   }
 
+  cout<<endl<< "Writing Pseudo"<<endl;
   for(int i=0; i<pseudoList.size(); i++){
     fprintf(fpNew,"#PSEUDO %s %8.3f %8.3f %8.3f\n",pseudoList[i].type.c_str(),pseudoList[i].x,pseudoList[i].y,pseudoList[i].z);
   }
 
   if(printAtoms==1){
-
+    cout<<endl<< "Writing atoms"<<endl;
     if(zip==1){
       for(i=0; i<lig.size(); i++){
         fprintf(fpNew,"#ATOM %3s %4d %4s %5d %s %8.3f %8.3f %8.3f %d %d\n",lig[i].resn.c_str(),lig[i].resnb,lig[i].atomn.c_str(),lig[i].atomnb,lig[i].chain.c_str(),lig[i].x,lig[i].y,lig[i].z,lig[i].mif,lig[i].bs);
@@ -1806,7 +1806,6 @@ void getProbes(){
   float thresh;
 
   while(getline(infile,line)){
-    cout<<line<<endl;
     stringstream test(line);
     test >> pbn >> min >> max >> thresh;
     minD[pbn]=min;
