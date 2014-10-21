@@ -1173,7 +1173,7 @@ int samePseudo(pseudoC& ps1,pseudoC& ps2){
 /***********************************************************************/
 void getPairwise(){
   string line;
-  ifstream infile(pairwiseF);
+  ifstream infile(pairwiseF.c_str());
   while(getline(infile,line)){
     if(line.compare("")!=0){
       istringstream ss(line);
@@ -1222,7 +1222,7 @@ int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, int* ss, i
   int pb0,pb1,pb2,pb3,pb4,pb5,gr0,gr1,gr2,gr3;
   int e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12,e13,e14,e15,e16,e17,e18,e19;
 
-  ifstream infile(mifFile);
+  ifstream infile(mifFile.c_str());
   while(getline(infile,line)){
     if(line.compare("")==0){
       continue;
