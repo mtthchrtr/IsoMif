@@ -47,7 +47,6 @@ int main(int argc, char *argv[]){
   if(get_info(nrg_file1,nrg_file2)==24){ return(24); }
 
   printf("outfile: %s\n",out_file);
-  continue;
 
   sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK nb_of_probes: %d\nREMARK C-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nREMARK dDist: %5.2f\nREMARK jtt_threshold: %d\nREMARK max_nodes: %d\nREMARK : %d\n",cmdLine,nrg_file1.c_str(),nrg_file2.c_str(),nb_of_probes,ca_dDist,ps_dDist,dDist,jttt,maxNodes,commonInt);
   strcpy(outH,tmp);
