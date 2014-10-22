@@ -144,6 +144,8 @@ vector<atom> prot1;
 vector<atom> prot2;
 vector<pseudoC> pseudoL1;
 vector<pseudoC> pseudoL2;
+string tag1;
+string tag2;
 int caSize1=0;
 int caSize2=0;
 vector<int> list1;
@@ -159,6 +161,7 @@ vector<atom> lig2;
 string rnc1;
 string rnc2;
 vector<pwRun> pw;
+FILE* fpout;
 
 void getPairwise();
 void sortArray(int *&, int nn, bool*&);

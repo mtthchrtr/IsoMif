@@ -27,6 +27,7 @@ int main(int argc, char *argv[]){
 
   if(pairwiseF.compare("")!=0){
     getPairwise();
+    open_file_ptr(&fpout,out_file,1);
   }else{
     pwRun npw;
     npw.mif1= nrg_file1;
@@ -36,25 +37,25 @@ int main(int argc, char *argv[]){
     pw.push_back(npw);
   }
 
-  for(int i=0; i<pw.size(); i++){
+  for(int pwr=0; pwr<pw.size(); pwr++){
   
-  cout<<i<<" mif1 "<<pw[i].mif1<<" mif2 "<<pw[i].mif2<<" rnc1 "<<pw[i].rnc1<<" rnc2 "<<pw[i].rnc2<<endl;
-  nrg_file1=pw[i].mif1;
-  nrg_file2=pw[i].mif2;
-  rnc1=pw[i].rnc1;
-  rnc2=pw[i].rnc2;
+  cout<<pwr<<" mif1 "<<pw[pwr].mif1<<" mif2 "<<pw[pwr].mif2<<" rnc1 "<<pw[pwr].rnc1<<" rnc2 "<<pw[pwr].rnc2<<endl;
+  nrg_file1=pw[pwr].mif1;
+  nrg_file2=pw[pwr].mif2;
+  rnc1=pw[pwr].rnc1;
+  rnc2=pw[pwr].rnc2;
+  topT=-1.0;
+  topN=-1;
 
   if(get_info(nrg_file1,nrg_file2)==24){ return(24); }
 
-  printf("outfile: %s\n",out_file);
-
-  sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK nb_of_probes: %d\nREMARK C-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nREMARK dDist: %5.2f\nREMARK jtt_threshold: %d\nREMARK max_nodes: %d\nREMARK : %d\n",cmdLine,nrg_file1.c_str(),nrg_file2.c_str(),nb_of_probes,ca_dDist,ps_dDist,dDist,jttt,maxNodes,commonInt);
+  sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK nb_of_probes: %d\nREMARK C-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nREMARK dDist: %5.2f\nREMARK jtt_threshold: %d\nREMARK max_nodes: %d\nREMARK commont int : %d\nREMARK wsimfn: %d\nREMARK tag1: %s\nREMARK tag2: %s\nREMARK rnc1: %s\nREMARK rnc2: %s\n",cmdLine,nrg_file1.c_str(),nrg_file2.c_str(),nb_of_probes,ca_dDist,ps_dDist,dDist,jttt,maxNodes,commonInt,wrfn,tag1.c_str(),tag2.c_str(),rnc1.c_str(),rnc2.c_str());
   strcpy(outH,tmp);
 
   //Print info to User
-  printf("--# Get Info #--\n\nEnergy file 1: %s\nEnergy file 2: %s\nOutfile: %s\nNumber of probes: %d\n\n--# Parameter Values #--\n\nC-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nNode dDist: %5.2f\nneibr dDist: %5.2f\nJTT threshold: %d\nMaximum nodes: %d\nGet all C-alpha cliques: %d\nMinimum number of Common interaction: %d\nPrint details: %d\n",nrg_file1.c_str(),nrg_file2.c_str(),out_file,nb_of_probes,ca_dDist,ps_dDist,dDist,neibr_dDist,jttt,maxNodes,bkAll,commonInt,printDetails);
-  cout<<"CG begin "<<steps.front()<<" cg_start "<<cg_start<<" end "<<steps.back()<<endl<<endl;
-  cout<<rnc1<<" "<<rnc2<<endl;
+  // printf("--# Get Info #--\n\nEnergy file 1: %s\nEnergy file 2: %s\nOutfile: %s\nNumber of probes: %d\n\n--# Parameter Values #--\n\nC-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nNode dDist: %5.2f\nneibr dDist: %5.2f\nJTT threshold: %d\nMaximum nodes: %d\nGet all C-alpha cliques: %d\nMinimum number of Common interaction: %d\nPrint details: %d\n",nrg_file1.c_str(),nrg_file2.c_str(),out_file,nb_of_probes,ca_dDist,ps_dDist,dDist,neibr_dDist,jttt,maxNodes,bkAll,commonInt,printDetails);
+  // cout<<"CG begin "<<steps.front()<<" cg_start "<<cg_start<<" end "<<steps.back()<<endl<<endl;
+  // cout<<rnc1<<" "<<rnc2<<endl;
   createVrtxVec(nrg_file1,mif1,prot1,ss1,caSize1,pseudoL1,rnc1,lig1);
   createVrtxVec(nrg_file2,mif2,prot2,ss2,caSize2,pseudoL2,rnc2,lig2);
 
@@ -324,7 +325,10 @@ int main(int argc, char *argv[]){
   cliques.clear();
   vector<Clique>().swap(cliques);
 
+  cout<< "Finished printing nodes and clearing"<<endl;
+
   }
+  fclose(fpout);
   return(0);
 }/***********************************************************************/
 /*        1         2         3         4         5         6         7*/
@@ -400,6 +404,9 @@ void bk(int cg, vector<node> &graph, bool* &conn){
   // sortArray(all, numNodes, conn);
 
   Extend(all,0,numNodes,cg,graph,conn,0);
+
+  delete[] compsub;
+  compsub=NULL;
   
   return;
 }
@@ -736,7 +743,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
         rmsd+=dist3d(ncoor,(*it).pb->coor);
       }else{
         rmsd+=dist3d(ncoor,(*it).b->coor);
-        cout<<(*it).a->bu<<" "<<(*it).b->bu<<endl;
+        // cout<<(*it).a->bu<<" "<<(*it).b->bu<<endl;
         bud+=pow(((*it).a->bu)-((*it).b->bu),2);
         if(cg!=-1 && cg!=-3){
           float num=0.0;
@@ -810,7 +817,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     topN=cliques.back().nbNodes;
     topCliques[cg]=cliques.size()-1;
   }else{
-    cout<<"NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" envD: "<<cliques.back().envD<<" buD: "<<cliques.back().buD<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
+    // cout<<"NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" envD: "<<cliques.back().envD<<" buD: "<<cliques.back().buD<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
   }
 
   return;
@@ -821,13 +828,11 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
 /*        1         2         3         4         5         6         7*/
 /***********************************************************************/
 void printNodes(){
-  FILE* fp;
+  
   vector<nodes>::iterator it;
   char suffix[50];
-  int fileout=2;
 
   if(pairwiseF.compare("")==0){
-    fileout=1;
     if(wrfn==1){ //Add similarity score to filename
       if(rnc1.compare("")!=0 && rnc2.compare("")!=0){
         sprintf(suffix,"_%d_%5.4f_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].tani,cliques[topCliques[steps.back()]].ligRMSD);
@@ -837,53 +842,52 @@ void printNodes(){
       strcat(out_file,suffix);
     }
     strcat(out_file,".isomif");
+    open_file_ptr(&fpout,out_file,1);
   }
 
-  open_file_ptr(&fp,out_file,fileout);
   if(emptOut!=1){
-    fprintf(fp,"%s",outH);
+    fprintf(fpout,"%s",outH);
     for(int cs=0; cs<steps.size(); cs++){
       int i=topCliques[steps[cs]];
       if(steps[cs]==-2){
-        fprintf(fp,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cg2],ss2[cg2]);
+        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cg2],ss2[cg2]);
         for(int j=0; j<cliques[i].va.size(); j++){
-          fprintf(fp, "A %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].va[j].ncoor[0],cliques[i].va[j].ncoor[1],cliques[i].va[j].ncoor[2],cliques[i].va[j].m[0],cliques[i].va[j].m[1],cliques[i].va[j].m[2],cliques[i].va[j].m[3],cliques[i].va[j].m[4],cliques[i].va[j].m[5]);
+          fprintf(fpout, "A %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].va[j].ncoor[0],cliques[i].va[j].ncoor[1],cliques[i].va[j].ncoor[2],cliques[i].va[j].m[0],cliques[i].va[j].m[1],cliques[i].va[j].m[2],cliques[i].va[j].m[3],cliques[i].va[j].m[4],cliques[i].va[j].m[5]);
         }
         for(int j=0; j<cliques[i].vb.size(); j++){
-          fprintf(fp, "B %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].vb[j].coor[0],cliques[i].vb[j].coor[1],cliques[i].vb[j].coor[2],cliques[i].vb[j].m[0],cliques[i].vb[j].m[1],cliques[i].vb[j].m[2],cliques[i].vb[j].m[3],cliques[i].vb[j].m[4],cliques[i].vb[j].m[5]);
+          fprintf(fpout, "B %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].vb[j].coor[0],cliques[i].vb[j].coor[1],cliques[i].vb[j].coor[2],cliques[i].vb[j].m[0],cliques[i].vb[j].m[1],cliques[i].vb[j].m[2],cliques[i].vb[j].m[3],cliques[i].vb[j].m[4],cliques[i].vb[j].m[5]);
         }
       }else if(steps[cs]==-1){
-        fprintf(fp,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)prot1.size(),(int)prot2.size());
+        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)prot1.size(),(int)prot2.size());
         for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
-          fprintf(fp, "%3s %4d %4s %5d %s %8.3f %8.3f %8.3f %3s %4d %4s %5d %s %8.3f %8.3f %8.3f\n",(*it).ca->resn.c_str(),(*it).ca->resnb,(*it).ca->atomn.c_str(),(*it).ca->atomnb,(*it).ca->chain.c_str(),(*it).ca->coor[0],(*it).ca->coor[1],(*it).ca->coor[2],(*it).cb->resn.c_str(),(*it).cb->resnb,(*it).cb->atomn.c_str(),(*it).cb->atomnb,(*it).cb->chain.c_str(),(*it).cb->coor[0],(*it).cb->coor[1],(*it).cb->coor[2]);
+          fprintf(fpout, "%3s %4d %4s %5d %s %8.3f %8.3f %8.3f %3s %4d %4s %5d %s %8.3f %8.3f %8.3f\n",(*it).ca->resn.c_str(),(*it).ca->resnb,(*it).ca->atomn.c_str(),(*it).ca->atomnb,(*it).ca->chain.c_str(),(*it).ca->coor[0],(*it).ca->coor[1],(*it).ca->coor[2],(*it).cb->resn.c_str(),(*it).cb->resnb,(*it).cb->atomn.c_str(),(*it).cb->atomnb,(*it).cb->chain.c_str(),(*it).cb->coor[0],(*it).cb->coor[1],(*it).cb->coor[2]);
         }
       }else if(steps[cs]==-3){
-        fprintf(fp,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)pseudoL1.size(),(int)pseudoL2.size());
+        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)pseudoL1.size(),(int)pseudoL2.size());
         for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
-          fprintf(fp, "%3s %8.3f %8.3f %8.3f %3s %8.3f %8.3f %8.3f\n",(*it).pa->type.c_str(),(*it).pa->coor[0],(*it).pa->coor[1],(*it).pa->coor[2],(*it).pb->type.c_str(),(*it).pb->coor[0],(*it).pb->coor[1],(*it).pb->coor[2]);
+          fprintf(fpout, "%3s %8.3f %8.3f %8.3f %3s %8.3f %8.3f %8.3f\n",(*it).pa->type.c_str(),(*it).pa->coor[0],(*it).pa->coor[1],(*it).pa->coor[2],(*it).pb->type.c_str(),(*it).pb->coor[0],(*it).pb->coor[1],(*it).pb->coor[2]);
         }
       }else{
-        fprintf(fp,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cliques[i].cg],ss2[cliques[i].cg]);
+        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d LIGRMSD %5.3f\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cliques[i].cg],ss2[cliques[i].cg],cliques[i].ligRMSD);
         for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
           for(int j=0; j<nb_of_probes; ++j){
             if((*it).a->pb[j]==1 && (*it).b->pb[j]==1){
-              fprintf(fp, "%d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",j,(*it).a->coor[0],(*it).a->coor[1],(*it).a->coor[2],(*it).b->coor[0],(*it).b->coor[1],(*it).b->coor[2]);
+              fprintf(fpout, "%d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",j,(*it).a->coor[0],(*it).a->coor[1],(*it).a->coor[2],(*it).b->coor[0],(*it).b->coor[1],(*it).b->coor[2]);
             }
           }
         }
       }
-      fprintf(fp,"REMARK ROTMAT ");
+      fprintf(fpout,"REMARK ROTMAT ");
       for(int m=0; m<3; m++) {
         for(int n=0; n<3; n++){
-          fprintf(fp," %9.4f",gsl_matrix_get(cliques[i].mat_r,m,n));
+          fprintf(fpout," %9.4f",gsl_matrix_get(cliques[i].mat_r,m,n));
         }
       }
-      fprintf(fp,"\nREMARK CENTRES %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n",cliques[i].cen_a[0],cliques[i].cen_a[1],cliques[i].cen_a[2],cliques[i].cen_b[0],cliques[i].cen_b[1],cliques[i].cen_b[2]);
-      fprintf(fp,"REMARK DET %g\n",cliques[i].det);
+      fprintf(fpout,"\nREMARK CENTRES %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n",cliques[i].cen_a[0],cliques[i].cen_a[1],cliques[i].cen_a[2],cliques[i].cen_b[0],cliques[i].cen_b[1],cliques[i].cen_b[2]);
+      fprintf(fpout,"REMARK DET %g\n",cliques[i].det);
     }
+    fprintf(fpout,"REMARK END\n");
   }
-
-  fclose(fp);
   return;
 }
 /***********************************************************************/
@@ -1171,6 +1175,7 @@ int samePseudo(pseudoC& ps1,pseudoC& ps2){
 /*        1         2         3         4         5         6         7*/
 /***********************************************************************/
 void getPairwise(){
+  string empt ("");
   string line;
   ifstream infile(pairwiseF.c_str());
   while(getline(infile,line)){
@@ -1195,6 +1200,26 @@ void getPairwise(){
       npw.rnc2=rnc2id;
       pw.push_back(npw);
     }
+  }
+  //Store pairwise filename
+  const char* prefix3; //Pairwise prefix
+  string pwpre;
+  int i;
+  for(i=pairwiseF.length()-1; i>=0; i--){
+      if(pairwiseF.at(i)=='/'){
+       pwpre=pairwiseF.substr(i+1,pairwiseF.length()-i-1);
+       break;
+     }
+   }
+  if(pwpre.compare(empt)==0){
+    pwpre=pairwiseF.substr(0,pairwiseF.length()-i-1);
+  }
+  prefix3 = pwpre.c_str();
+
+  if(!strcmp(outbase,"")){ //If no outbase name is defined, create one
+    sprintf(out_file,"./pw_%s",prefix3);
+  }else{
+    sprintf(out_file,"%spw_%s",outbase,prefix3);
   }
 }
 /***********************************************************************/
@@ -1485,7 +1510,7 @@ int read_commandline(int argc, char *argv[]){
       }
 
       if(list1.size() != list2.size()){
-        cout<<"Lists of atoms to superimpose must have same number of atoms."<<endl;
+        cout<<"Lists of atoms to superimpose must have same nb of atoms."<<endl;
         return(24);
       }
     }
@@ -1638,7 +1663,8 @@ int get_info(string str1, string str2){
   if(pre1.compare(empt)==0){
     pre1=str1.substr(0,found1-i-1);
   }
-  prefix1 = pre1.c_str(); 
+  prefix1 = pre1.c_str();
+  tag1=pre1;
 
   //Store Mif 2 filename without the .isomif in prefix1
   string pre2;
@@ -1656,35 +1682,15 @@ int get_info(string str1, string str2){
     pre2=str2.substr(0,found2-i-1);
   }
   prefix2 = pre2.c_str();
+  tag2=pre2;
 
   //Create output file
-  if(pairwiseF.compare("")!=0){
-    //Store pairwise filename
-    string pwpre;
-    for(i=pairwiseF.length()-1; i>=0; i--){
-        if(pairwiseF.at(i)=='/'){
-         pwpre=pairwiseF.substr(i+1,pairwiseF.length()-i-1);
-         break;
-       }
-     }
-    if(pwpre.compare(empt)==0){
-      pwpre=pairwiseF.substr(0,pairwiseF.length()-i-1);
-    }
-    prefix3 = pwpre.c_str();
-
-    if(!strcmp(outbase,"")){ //If no outbase name is defined, create one
-      sprintf(out_file,"./pw_%s",prefix3);
-    }else{
-      sprintf(out_file,"%spw_%s",outbase,prefix3);
-    }
+  if(!strcmp(outbase,"")){ //If no outbase name is defined, create one
+    // sprintf(out_file,"./%s_match_%s.pdb",prefix1,prefix2);
+    sprintf(out_file,"./%s_match_%s",prefix1,prefix2);
   }else{
-    if(!strcmp(outbase,"")){ //If no outbase name is defined, create one
-      // sprintf(out_file,"./%s_match_%s.pdb",prefix1,prefix2);
-      sprintf(out_file,"./%s_match_%s",prefix1,prefix2);
-    }else{
-      // sprintf(out_file,"%s%s_match_%s.pdb",outbase,prefix1,prefix2);
-      sprintf(out_file,"%s%s_match_%s",outbase,prefix1,prefix2);
-    }  
+    // sprintf(out_file,"%s%s_match_%s.pdb",outbase,prefix1,prefix2);
+    sprintf(out_file,"%s%s_match_%s",outbase,prefix1,prefix2);
   }
 
 

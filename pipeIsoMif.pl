@@ -18,8 +18,10 @@ my $outDir="";
 my $cmdMode=0;
 my @mifParam=();
 my @cases=();
+my @casesHT=();
 my @cmds=();
 my $batch=6;
+my $paramString="";
 
 #Read command line
 for(my $i=0; $i<=$#ARGV; $i++){
@@ -49,11 +51,11 @@ for(my $i=0; $i<=$#ARGV; $i++){
   }
 }
 
-&storeParams();
+# &storeParams();
 
 &storeCases();
 
-&recur(0,"",0);
+# &recur(0,"",0);
 
 &runCmds();
 
@@ -62,6 +64,7 @@ sub runCmds{
     my $filenb=0;
     my $count=0;
     system("rm ".$jobsDir."/*");
+    system("rm ".$jobsDir."/ht/*");
     open OUT, ">".$jobsDir.$filenb.".pbs" or die "cant open".$jobsDir.$filenb.".pbs";
     print OUT "#!/bin/sh\n#PBS -l nodes=1:ppn=1\n#PBS -N ".$tag.$filenb."\n";
     for(my $i=0; $i<@cmds; $i++){
@@ -85,6 +88,42 @@ sub runCmds{
       # print "qsub $file\n";
     }
     &areJobsDone("nrg",$tag);
+  }elsif($cmdMode eq "ht"){
+    my $filenb=0;
+    my $count=0;
+    system("mkdir ".$jobsDir."/ht/") unless(-d $jobsDir."/ht/");
+    system("mkdir ".$jobsDir) unless(-d $jobsDir);
+    system("rm ".$jobsDir."/*");
+    system("rm ".$jobsDir."/ht/*");
+    open OUT, ">".$jobsDir.$filenb.".pbs" or die "cant open".$jobsDir.$filenb.".pbs";
+    print OUT "#!/bin/sh\n#PBS -l nodes=1:ppn=1\n#PBS -N ".$tag.$filenb."\n".$mifPath." -pp ".$jobsDir."ht/".$filenb." ".$paramString;
+    open OUTHT, ">".$jobsDir."ht/".$filenb or die "cant open".$jobsDir."ht/".$filenb;
+    for(my $i=0; $i<@cmds; $i++){
+      if($count==$batch){
+        $count=0;
+        close OUT;
+        system("qsub ".$jobsDir.$filenb.".pbs -o /dev/null -e /dev/null");
+        $filenb++;
+        open OUT, ">".$jobsDir.$filenb.".pbs" or die "cant open".$jobsDir.$filenb.".pbs";
+        print OUT "#!/bin/sh\n#PBS -l nodes=1:ppn=1\n#PBS -N ".$tag.$filenb."\n".$mifPath." -pp ".$jobsDir."ht/".$filenb." ".$paramString;
+        open OUTHT, ">".$jobsDir."ht/".$filenb or die "cant open".$jobsDir."ht/".$filenb;
+      }
+      print OUTHT "$cmds[$i]";
+      $count++;
+      print OUTHT "\n" unless($count==$batch);
+    }
+    close OUT;
+    close OUTHT;
+    system("qsub ".$jobsDir.$filenb.".pbs -o /dev/null -e /dev/null");
+
+    # my @files=glob($jobsDir."/*");
+    # foreach my $file (@files){
+    #   next unless($file=~/\.pbs$/);
+      
+    #   # print "qsub $file\n";
+    # }
+
+    &areJobsDone("ht",$tag);
   }elsif($cmdMode eq "print"){
     for(my $i=0; $i<@cmds; $i++){
       print $cmds[$i]."\n";
@@ -131,36 +170,48 @@ sub runCmds{
   }
 }
 
-
 sub storeCases{
-  open IN, "<".$mifJobsF or die "Cant open ".$mifJobsF;
-  while(my $line=<IN>){
-    if($line!~/^$/){
+  if($cmdMode eq "ht"){
+    open IN, "<".$mifJobsF or die "Cant open ".$mifJobsF;
+    while(my $line=<IN>){
       chomp($line);
-      push @cases, $mifPath." ".$line;
+      next if($line=~/^$/);
+      if($line=~/^#param/){
+        $line=~s/^#param\s+//;
+        $paramString=$line;
+      }else{ push @cmds, $line; }
     }
-  }
-  close IN;
-}
-
-sub recur{
-  my $level=$_[2];
-  $level++;
-  for(my $p=$_[0]; $p<@mifParam; $p++){
-    for(my $i=0; $i<@{$mifParam[$p][1]}; $i++){
-      my $cmd=$_[1]." ".$mifParam[$p][0]." ".$mifParam[$p][1][$i]; 
-      if($p==$#mifParam){
-        if($level==@mifParam){
-          foreach my $c (@cases){
-            push @cmds, $c.$cmd;
-          }
-        }
-      }else{
-        &recur($p+1,$cmd,$level);
+    close IN;  
+  }else{
+    open IN, "<".$mifJobsF or die "Cant open ".$mifJobsF;
+    while(my $line=<IN>){
+      if($line!~/^$/){
+        chomp($line);
+        push @cases, $mifPath." ".$line;
       }
     }
+    close IN;      
   }
 }
+
+# sub recur{
+#   my $level=$_[2];
+#   $level++;
+#   for(my $p=$_[0]; $p<@mifParam; $p++){
+#     for(my $i=0; $i<@{$mifParam[$p][1]}; $i++){
+#       my $cmd=$_[1]." ".$mifParam[$p][0]." ".$mifParam[$p][1][$i]; 
+#       if($p==$#mifParam){
+#         if($level==@mifParam){
+#           foreach my $c (@cases){
+#             push @cmds, $c.$cmd;
+#           }
+#         }
+#       }else{
+#         &recur($p+1,$cmd,$level);
+#       }
+#     }
+#   }
+# }
 
 sub storeParams{
   my $p=0;
@@ -184,12 +235,12 @@ sub areJobsDone{
   my $exitLoopC=0;
   my $getout=0;
   my $time=0;
-  print "\n\nWaiting for jobs to terminate..";
-  while(1){
-    sleep 15;
-    $time+=15;
-    my $string;
-    if($sys eq "nrg"){
+  print "\nWaiting for jobs to terminate..\n";
+  if($sys eq "nrg"){
+    while(1){
+      sleep 15;
+      $time+=15;
+      my $string;
       if($nbFiles!=0){
         my @nbb=glob $outDir."*";
         print "need $nbFiles, got ".scalar @nbb."\n";
@@ -229,10 +280,29 @@ sub areJobsDone{
         close COM;
         $getout=1 if($exitLoopR==1 && $exitLoopQ==1 && $exitLoopC==1); 
       }
+      last if($getout==1);
     }
-    last if($getout==1);
+  }elsif($sys eq "ht"){
+    while(1){
+      sleep 60;
+      $time+=60;
+      my $got=0;
+      my @nbb=glob $outDir."*";
+      foreach my $f (@nbb){
+        open IN, "<".$f;
+        while(my $line=<IN>){
+          chomp($line);
+          $got++ if($line=~/^REMARK END$/);
+        }
+        close IN;
+      }
+      print "need $nbFiles, got ".$got."\n";
+      if($got >= $nbFiles){
+        $getout=1;
+      }
+      last if($getout==1);
+    }
   }
-
   print "Job ".$_[0]." is done! Took $time seconds.";
   return();
 }
