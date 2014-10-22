@@ -234,19 +234,6 @@ void Protein::readPDB(string filename){
 
     if(line.compare(0,3,"END") == 0){ break; }
 
-    //Store ligand coords if necessary using resnumc
-    // if(line.compare(0,6,"HETATM") == 0 && resnumc.compare("")!=0){
-    //   thisresnumc = line.substr(17,3) + line.substr(22,4) + line.substr(21,1);
-    //   stripSpace(thisresnumc);
-    //   // cout<<endl<<thisresnumc;
-    //   if(resnumc.compare(thisresnumc)==0){
-    //     LIGAND.push_back(atof((line.substr(30,8).c_str())));
-    //     LIGAND.push_back(atof((line.substr(38,8).c_str())));
-    //     LIGAND.push_back(atof((line.substr(46,8).c_str())));
-    //     // cout<< resnumc<< " to "<< thisresnumc << " "<< atof((line.substr(30,8).c_str()))<<" "<< atof((line.substr(38,8).c_str()))<<" "<<atof((line.substr(46,8).c_str()))<<endl;
-    //   }
-    // }
-
     //Print copy of the PDB
     ofs << line << endl; 
         
@@ -275,7 +262,6 @@ void Protein::readPDB(string filename){
       y=atof(fields[9].c_str());
       z=atof(fields[10].c_str());
 
-      if((fields[3].compare("A")!=0) && (fields[3].compare("")!=0)){ continue; }
       if(fields[4].compare("HOH")==0){ continue; }
 
       atom atm;
@@ -300,9 +286,10 @@ void Protein::readPDB(string filename){
       if(atomTypes.find(atm.resn+"_"+atm.atomn) == atomTypes.end()){ atm.mif=0; }
       if(fields[5].compare(chain)!=0 && chain.compare("none")!=0){ atm.mif=0; }
       if(line.compare(0,6,"HETATM") == 0){ atm.mif=0; }
+      if((fields[3].compare("A")!=0) && (fields[3].compare("")!=0)){ atm.mif=0; }
 
       if(resnumc.compare("")!=0){
-        thisresnumc = line.substr(17,3) + line.substr(22,4) + line.substr(21,1);
+        thisresnumc = line.substr(17,3) + line.substr(22,4) + line.substr(21,1) + line.substr(16,1);
         stripSpace(thisresnumc);
         if(resnumc.compare(thisresnumc)==0 && found==string::npos){
           LIGAND.push_back(atof((line.substr(30,8).c_str())));
