@@ -54,8 +54,12 @@ if($mifFile=~/\/([a-z0-9_-]+)\.mif$/i){
   exit;
 }
 
+my $thinness=0;
 open IN, "<".$mifFile or die "cant open mif file $mifFile";
 while(my $line=<IN>){
+  if($line=~/^#protein_grid_distance\s+([\.0-9-]+)\s+to\s+([\.0-9-]+)/){
+    $thinness=abs($2-$1);
+  }
   if($line=~/^#ATOM/){
     if($line=~/#ATOM\s+([a-z0-9]+)\s+([0-9]+)\s+([a-z0-9]+)\s+([0-9]+)\s+([a-z0-9]{1})\s+([\.0-9-]+)\s+([\.0-9-]+)\s+([\.0-9-]+)\s+([0-9]{1})\s+([0-9]{1})$/i){
       if($10==1 && $3 eq "CA"){
@@ -115,7 +119,6 @@ if(@pseudo){
   print NPML "TER \\\n\"\"\",\"pseudocenters\")\nhide nonbonded\nset connect_mode,1\n";  
 }
 
-
 # open OUT, ">".$mifViewFolder."/".$mifName.".pdb" or die "Cant open mifView file";
 for(my $i=0; $i<6; $i++){ #Loop each probe
   if($#{$probes[$i]}){
@@ -134,7 +137,10 @@ for(my $i=0; $i<6; $i++){ #Loop each probe
     }
   }
 }
-for(my $i=0; $i<3; $i++){
+my $gridit=3;
+$gridit=4 if($thinness<=1.0);
+
+for(my $i=0; $i<$gridit; $i++){
   if(scalar @{$grid[$i]} > 0){
     $gridInt[$i][0]=$it;
     print NPML "cmd.read_pdbstr(\"\"\"";
@@ -177,7 +183,7 @@ for(my $i=0; $i<6; $i++){
     }
   }
 }
-for(my $i=0; $i<3; $i++){
+for(my $i=0; $i<$gridit; $i++){
   if(@{$grid[$i]}){
     if($grid[$i][0]!=$grid[$i][1]){
       # print PML "create ".$gridLab[$i].", id $gridInt[$i][0]-$gridInt[$i][1] & ".$mifName."\n";

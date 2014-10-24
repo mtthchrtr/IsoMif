@@ -324,6 +324,7 @@ int main(int argc, char *argv[]){
   vector<atom>().swap(lig2);
   cliques.clear();
   vector<Clique>().swap(cliques);
+  for(int k=0; k<4; k++){ ss1[k]=0; ss2[k]=0; }
 
   cout<< "Finished printing nodes and clearing"<<endl;
 
@@ -631,7 +632,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   vector<float> lb;
 
   nCliques++;
-  // cout<<nCliques<<endl;
+  cout<<nCliques<<endl;
 
   Clique newClique;
   newClique.cg=cg;
