@@ -846,30 +846,37 @@ void printNodes(){
     open_file_ptr(&fpout,out_file,1);
   }
 
-  if(emptOut!=1){
-    fprintf(fpout,"%s",outH);
-    for(int cs=0; cs<steps.size(); cs++){
-      int i=topCliques[steps[cs]];
-      if(steps[cs]==-2){
-        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cg2],ss2[cg2]);
+
+  fprintf(fpout,"%s",outH);
+  for(int cs=0; cs<steps.size(); cs++){
+    int i=topCliques[steps[cs]];
+    if(steps[cs]==-2){
+      fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cg2],ss2[cg2]);
+      if(emptOut!=1){
         for(int j=0; j<cliques[i].va.size(); j++){
           fprintf(fpout, "A %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].va[j].ncoor[0],cliques[i].va[j].ncoor[1],cliques[i].va[j].ncoor[2],cliques[i].va[j].m[0],cliques[i].va[j].m[1],cliques[i].va[j].m[2],cliques[i].va[j].m[3],cliques[i].va[j].m[4],cliques[i].va[j].m[5]);
         }
         for(int j=0; j<cliques[i].vb.size(); j++){
           fprintf(fpout, "B %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].vb[j].coor[0],cliques[i].vb[j].coor[1],cliques[i].vb[j].coor[2],cliques[i].vb[j].m[0],cliques[i].vb[j].m[1],cliques[i].vb[j].m[2],cliques[i].vb[j].m[3],cliques[i].vb[j].m[4],cliques[i].vb[j].m[5]);
         }
-      }else if(steps[cs]==-1){
-        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)prot1.size(),(int)prot2.size());
+      }
+    }else if(steps[cs]==-1){
+      fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)prot1.size(),(int)prot2.size());
+      if(emptOut!=1){
         for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
           fprintf(fpout, "%3s %4d %4s %5d %s %8.3f %8.3f %8.3f %3s %4d %4s %5d %s %8.3f %8.3f %8.3f\n",(*it).ca->resn.c_str(),(*it).ca->resnb,(*it).ca->atomn.c_str(),(*it).ca->atomnb,(*it).ca->chain.c_str(),(*it).ca->coor[0],(*it).ca->coor[1],(*it).ca->coor[2],(*it).cb->resn.c_str(),(*it).cb->resnb,(*it).cb->atomn.c_str(),(*it).cb->atomnb,(*it).cb->chain.c_str(),(*it).cb->coor[0],(*it).cb->coor[1],(*it).cb->coor[2]);
         }
-      }else if(steps[cs]==-3){
-        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)pseudoL1.size(),(int)pseudoL2.size());
+      }
+    }else if(steps[cs]==-3){
+      fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)pseudoL1.size(),(int)pseudoL2.size());
+      if(emptOut!=1){
         for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
           fprintf(fpout, "%3s %8.3f %8.3f %8.3f %3s %8.3f %8.3f %8.3f\n",(*it).pa->type.c_str(),(*it).pa->coor[0],(*it).pa->coor[1],(*it).pa->coor[2],(*it).pb->type.c_str(),(*it).pb->coor[0],(*it).pb->coor[1],(*it).pb->coor[2]);
         }
-      }else{
-        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d LIGRMSD %5.3f\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cliques[i].cg],ss2[cliques[i].cg],cliques[i].ligRMSD);
+      }
+    }else{
+      fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d LIGRMSD %5.3f\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cliques[i].cg],ss2[cliques[i].cg],cliques[i].ligRMSD);
+      if(emptOut!=1){
         for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
           for(int j=0; j<nb_of_probes; ++j){
             if((*it).a->pb[j]==1 && (*it).b->pb[j]==1){
@@ -878,6 +885,8 @@ void printNodes(){
           }
         }
       }
+    }
+    if(emptOut!=1){
       fprintf(fpout,"REMARK ROTMAT ");
       for(int m=0; m<3; m++) {
         for(int n=0; n<3; n++){
@@ -887,8 +896,8 @@ void printNodes(){
       fprintf(fpout,"\nREMARK CENTRES %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n",cliques[i].cen_a[0],cliques[i].cen_a[1],cliques[i].cen_a[2],cliques[i].cen_b[0],cliques[i].cen_b[1],cliques[i].cen_b[2]);
       fprintf(fpout,"REMARK DET %g\n",cliques[i].det);
     }
-    fprintf(fpout,"REMARK END\n");
   }
+  fprintf(fpout,"REMARK END\n");
   return;
 }
 /***********************************************************************/
