@@ -83,15 +83,14 @@ while(my $line=<IN>){
   $line=~s/^\s+//g;
   $line=~s/\s+$//g;
   my @info=split(/\s+/,$line);
-
   #Store vrtx potential interaction
-  for(my $i=3; $i<9; $i++){
-    push @{$probes[$i-3]}, ($info[0],$info[1],$info[2],$info[9],$info[10],$info[11],$info[12]) if($info[$i]==1);
+  for(my $i=3; $i<21; $i+=3){
+    push @{$probes[($i/3)-1]}, ($info[0],$info[1],$info[2],$info[21],$info[22],$info[23],$info[24]) if($info[$i]==1);
   }
 
   #Store vrtx grid presence
-  for(my $i=9; $i<13; $i++){
-      push @{$grid[$i-9]}, ($info[0],$info[1],$info[2],$info[33]) if($info[$i]==1);
+  for(my $i=21; $i<25; $i++){
+      push @{$grid[$i-21]}, ($info[0],$info[1],$info[2],$info[25]) if($info[$i]==1);
   }
 }
 close IN;
@@ -141,7 +140,7 @@ my $gridit=3;
 $gridit=3 if($thinness<=1.0);
 
 for(my $i=0; $i<$gridit; $i++){
-  if(scalar @{$grid[$i]} > 0){
+  if(exists $grid[$i] && scalar @{$grid[$i]} > 0){
     $gridInt[$i][0]=$it;
     print NPML "cmd.read_pdbstr(\"\"\"";
     for(my $j=0; $j<@{$grid[$i]}; $j+=4){       
@@ -184,7 +183,7 @@ for(my $i=0; $i<6; $i++){
   }
 }
 for(my $i=0; $i<$gridit; $i++){
-  if(@{$grid[$i]}){
+  if(exists $grid[$i] && scalar @{$grid[$i]} > 0){
     if($grid[$i][0]!=$grid[$i][1]){
       # print PML "create ".$gridLab[$i].", id $gridInt[$i][0]-$gridInt[$i][1] & ".$mifName."\n";
       # print PML "color $gridColors[$i],".$gridLab[$i]."\nshow nonbonded,".$gridLab[$i]."\n";

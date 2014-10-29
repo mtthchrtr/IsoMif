@@ -637,8 +637,8 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   Clique newClique;
   newClique.cg=cg;
   newClique.nbNodes=n;
-  newClique.envD=0.0;
-  newClique.taniX=0.0;
+  newClique.tani=0.0;
+  newClique.normNodes=0.0;
   newClique.rmsd=0.0;
   newClique.envD=0.0;
   newClique.buD=0.0;
@@ -705,67 +705,68 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
       }
       for(int w=0; w<lig2.size(); w++){
         if(lig2[w].atomn.compare(lig1[v].atomn)==0){
-          ligRMSD+=dist3d(lig1[v].ncoor,lig2[w].coor);
-          // cout<<lig1[v].atomn<<" "<<lig2[w].atomn<<" "<<dist3d(lig1[v].ncoor,lig2[w].coor)<<endl;
+          ligRMSD+=pow(dist3d(lig1[v].ncoor,lig2[w].coor),2.0);
+          // cout<<lig1[v].atomn<<" "<<lig2[w].atomn<<" "<<pow(dist3d(lig1[v].ncoor,lig2[w].coor),2.0)<<endl;
           ligRMSDc++;
           break;
         }
       }
     }
-    if(ligRMSDc>0) ligRMSD=sqrt(ligRMSD/(float)ligRMSDc);
+    if(ligRMSDc>0 && ligRMSDc==lig1.size() && lig1.size()==lig2.size()){
+      ligRMSD=sqrt(ligRMSD/(float)ligRMSDc);
+    }else{
+      ligRMSD=0.0;
+    }
   }
-
   cliques.back().ligRMSD=ligRMSD;
+  // cout<<"LigRMSD "<<ligRMSD<<endl;
 
-  //Calculate RMSD
-  //Calculate envD
-  //Calculate buD
-  // if(0){
-    float rmsd=0.0;
-    float envD=0.0;
-    float bud=0.0;
-    for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
-      float ncoor[3];
-      for(int i=0; i<3; i++){
-        ncoor[i]=cliques.back().cen_b[i];
-        for(int j=0; j<3; j++){
-          if(cg==-1){
-            ncoor[i]+=((*it).ca->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
-          }else if(cg==-3){
-            ncoor[i]+=((*it).pa->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
-          }else{
-            ncoor[i]+=((*it).a->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
-          }
-        }
-      }
-      if(cg==-1){
-        rmsd+=dist3d(ncoor,(*it).cb->coor);
-      }else if(cg==-3){
-        rmsd+=dist3d(ncoor,(*it).pb->coor);
-      }else{
-        rmsd+=dist3d(ncoor,(*it).b->coor);
-        // cout<<(*it).a->bu<<" "<<(*it).b->bu<<endl;
-        bud+=pow(((*it).a->bu)-((*it).b->bu),2);
-        if(cg!=-1 && cg!=-3){
-          float num=0.0;
-          float d1=0.0;
-          float d2=0.0;
-          for(int i=0; i<20; ++i){
-            // cout <<(*it).a->env[i]<<" "<<(*it).b->env[i]<<" | ";
-            num+=(*it).a->env[i]*(*it).b->env[i];
-            d1+=pow((*it).a->env[i],2);
-            d2+=pow((*it).b->env[i],2);
-          }
-          float cosd=num/(sqrt(d1)*sqrt(d2));
-          envD+=cosd;
+  //Calculate RMSD,envD,buD,vecCosineDiff
+  float envD=0.0;
+  float bud=0.0;
+  float rmsd=0.0;
+  for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
+    float ncoor[3];
+    for(int i=0; i<3; i++){
+      ncoor[i]=cliques.back().cen_b[i];
+      for(int j=0; j<3; j++){
+        if(cg==-1){
+          ncoor[i]+=((*it).ca->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
+        }else if(cg==-3){
+          ncoor[i]+=((*it).pa->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
+        }else{
+          ncoor[i]+=((*it).a->coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
         }
       }
     }
-    rmsd=sqrt(rmsd/(float)cliques.back().nbNodes);
-    cliques.back().rmsd=rmsd;
-    cliques.back().envD=envD/(float)cliques.back().nbNodes;
-    cliques.back().buD=sqrt(bud/(float)cliques.back().nbNodes);
-  // }
+    if(cg==-1){
+      rmsd+=pow(dist3d(ncoor,(*it).cb->coor),2.0);
+    }else if(cg==-3){
+      rmsd+=pow(dist3d(ncoor,(*it).pb->coor),2.0);
+    }else{
+      rmsd+=pow(dist3d(ncoor,(*it).b->coor),2.0);
+      // cout<<(*it).a->bu<<" "<<(*it).b->bu<<endl;
+      // bud+=pow(((*it).a->bu)-((*it).b->bu),2);
+
+        float num=0.0;
+        float d1=0.0;
+        float d2=0.0;
+        for(int i=0; i<6; ++i){
+          num+=((*it).a->nrg[i]*(*it).b->nrg[i])+((*it).a->ang[i]*(*it).b->ang[i]);
+          d1+=pow((*it).a->nrg[i],2)+pow((*it).a->ang[i],2);
+          d2+=pow((*it).b->nrg[i],2)+pow((*it).b->ang[i],2);
+        }
+        float cosd=num/(sqrt(d1)*sqrt(d2));
+        // printf("A %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).a->nrg[0],(*it).a->ang[0],(*it).a->nrg[1],(*it).a->ang[1],(*it).a->nrg[2],(*it).a->ang[2],(*it).a->nrg[3],(*it).a->ang[3],(*it).a->nrg[4],(*it).a->ang[4],(*it).a->nrg[5],(*it).a->ang[5]);
+        // printf("B %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).b->nrg[0],(*it).b->ang[0],(*it).b->nrg[1],(*it).b->ang[1],(*it).b->nrg[2],(*it).b->ang[2],(*it).b->nrg[3],(*it).b->ang[3],(*it).b->nrg[4],(*it).b->ang[4],(*it).b->nrg[5],(*it).b->ang[5]);
+        // cout<<"cosd "<<cosd<<endl<<endl;
+        cliques.back().normNodes+=cosd;
+    }
+  }
+  cliques.back().rmsd=sqrt(rmsd/(float)cliques.back().nbNodes);
+  cliques.back().normNodesRMSD=cliques.back().normNodes/cliques.back().rmsd;
+  cliques.back().envD=envD/(float)cliques.back().nbNodes;
+  cliques.back().buD=sqrt(bud/(float)cliques.back().nbNodes);
   
   // cout<<"Finding corresponding vertexes..."<<endl;
   // float dist=0.0;
@@ -797,12 +798,6 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     cliques.back().tani=(float)n/((float)ss1[cg]+(float)ss2[cg]-(float)n);
   }
 
-  // if(cg==-1){
-  //   cliques.back().taniX=(float)n/((float)caSize1+(float)caSize2-(float)n);
-  // }else{
-  //   cliques.back().taniX=cliques.back().envD/((float)ss1[cg]+(float)ss2[cg]-(float)n);
-  // }
-
   // cout<<"ROTATION MAT:";
   // for(int i=0; i<3; i++){
     // for(int j=0; j<3; j++){
@@ -812,13 +807,13 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   // cout<<endl<<"cen_a: "<<cliques.back().cen_a[0]<<" "<<cliques.back().cen_a[1]<<" "<<cliques.back().cen_a[2];
   // cout<<endl<<"cen_b: "<<cliques.back().cen_b[0]<<" "<<cliques.back().cen_b[1]<<" "<<cliques.back().cen_b[2]<<endl;
   
-  if(cliques.back().nbNodes>topN){
-    cout<<"TOP NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" envD: "<<cliques.back().envD<<" buD: "<<cliques.back().buD<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
-    topT=cliques.back().tani;
+  if(cliques.back().normNodesRMSD>topT){
+    cout<<"NEW TOP CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
+    topT=cliques.back().normNodesRMSD;
     topN=cliques.back().nbNodes;
     topCliques[cg]=cliques.size()-1;
   }else{
-    // cout<<"NEW CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" envD: "<<cliques.back().envD<<" buD: "<<cliques.back().buD<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
+    // cout<<"CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
   }
 
   return;
@@ -915,7 +910,6 @@ void clearStep(int cg){
     newClique.cg=cg;
     newClique.nbNodes=0;
     newClique.tani=0.0;
-    newClique.taniX=0.0;
     newClique.ligRMSD=0.0;
     newClique.mat_r=gsl_matrix_alloc(3,3);
     for(int i=0; i<3; i++) {
@@ -1124,8 +1118,19 @@ void createNodes(int cg, vector<node> &graph, int s){
             if(mif1.at(i).pb[pb]==1 && mif2.at(j).pb[pb]==1) flag=1;
             if(mif1.at(i).pb[pb]==mif2.at(j).pb[pb]) cints++;
           }
-
+          // cout<<cints<<" "<<commonInt<<" flag "<<flag<<endl;
           if(cints>=commonInt && flag==1){
+
+            // float num=0.0;
+            // float d1=0.0;
+            // float d2=0.0;
+            // for(int i=0; i<6; ++i){
+            //   num+=((*it).a->nrg[i]*(*it).b->nrg[i])+((*it).a->ang[i]*(*it).b->ang[i]);
+            //   d1+=pow((*it).a->nrg[i],2)+pow((*it).a->ang[i],2);
+            //   d2+=pow((*it).b->nrg[i],2)+pow((*it).b->ang[i],2);
+            // }
+            // float cosd=num/(sqrt(d1)*sqrt(d2));
+
             if(s==1){
               // cout<<mif1.at(i).ncoor[0]<<" "<<mif1.at(i).ncoor[1]<<" "<<mif1.at(i).ncoor[2]<<" | "<<mif2.at(j).coor[0]<<" "<<mif2.at(j).coor[1]<<" "<<mif2.at(j).coor[2];
             
@@ -1254,7 +1259,8 @@ int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, int* ss, i
   string chain;
   string dump;
   int pb0,pb1,pb2,pb3,pb4,pb5,gr0,gr1,gr2,gr3;
-  int e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12,e13,e14,e15,e16,e17,e18,e19;
+  float nrg0,nrg1,nrg2,nrg3,nrg4,nrg5,ang0,ang1,ang2,ang3,ang4,ang5;
+  // int e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12,e13,e14,e15,e16,e17,e18,e19;
 
   ifstream infile(mifFile.c_str());
   while(getline(infile,line)){
@@ -1299,7 +1305,7 @@ int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, int* ss, i
       pcC++;
     }else if(line.compare(0,1,"#")!=0){
       stringstream test(line);
-      test >> x >> y >> z >> pb0 >> pb1 >> pb2 >> pb3 >> pb4 >> pb5 >> gr0 >> gr1 >> gr2 >> gr3 >> e0 >> e1 >> e2 >> e3 >> e4 >> e5 >> e6 >> e7 >> e8 >> e9 >> e10 >> e11 >> e12 >> e13 >> e14 >> e15 >> e16 >> e17 >> e18 >> e19 >> bu;
+      test >> x >> y >> z >>pb0 >>nrg0 >>ang0 >>pb1 >>nrg1 >>ang1 >>pb2 >>nrg2 >>ang2 >>pb3 >>nrg3 >>ang3 >>pb4 >>nrg4 >>ang4 >>pb5 >>nrg5 >>ang5 >>gr0 >>gr1 >>gr2 >>gr3 >>bu;
       nvrtx = new vertex;
       nvrtx->coor[0]=x;
       nvrtx->coor[1]=y;
@@ -1310,6 +1316,18 @@ int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, int* ss, i
       nvrtx->pb[3]=pb3;
       nvrtx->pb[4]=pb4;
       nvrtx->pb[5]=pb5;
+      nvrtx->nrg[0]=nrg0;
+      nvrtx->nrg[1]=nrg1;
+      nvrtx->nrg[2]=nrg2;
+      nvrtx->nrg[3]=nrg3;
+      nvrtx->nrg[4]=nrg4;
+      nvrtx->nrg[5]=nrg5;
+      nvrtx->ang[0]=ang0;
+      nvrtx->ang[1]=ang1;
+      nvrtx->ang[2]=ang2;
+      nvrtx->ang[3]=ang3;
+      nvrtx->ang[4]=ang4;
+      nvrtx->ang[5]=ang5;
       for(int i=0; i<6; i++) nvrtx->m[i]=0;
       nvrtx->grid[0]=gr0;
       nvrtx->grid[1]=gr1;
@@ -1320,26 +1338,26 @@ int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, int* ss, i
       nvrtx->cg[2]=0;
       nvrtx->cg[3]=0;
       nvrtx->id=totalVrtx; //Unique id for both clefts
-      nvrtx->env.push_back(e0);
-      nvrtx->env.push_back(e1);
-      nvrtx->env.push_back(e2);
-      nvrtx->env.push_back(e3);
-      nvrtx->env.push_back(e4);
-      nvrtx->env.push_back(e5);
-      nvrtx->env.push_back(e6);
-      nvrtx->env.push_back(e7);
-      nvrtx->env.push_back(e8);
-      nvrtx->env.push_back(e9);
-      nvrtx->env.push_back(e10);
-      nvrtx->env.push_back(e11);
-      nvrtx->env.push_back(e12);
-      nvrtx->env.push_back(e13);
-      nvrtx->env.push_back(e14);
-      nvrtx->env.push_back(e15);
-      nvrtx->env.push_back(e16);
-      nvrtx->env.push_back(e17);
-      nvrtx->env.push_back(e18);
-      nvrtx->env.push_back(e19);
+      // nvrtx->env.push_back(e0);
+      // nvrtx->env.push_back(e1);
+      // nvrtx->env.push_back(e2);
+      // nvrtx->env.push_back(e3);
+      // nvrtx->env.push_back(e4);
+      // nvrtx->env.push_back(e5);
+      // nvrtx->env.push_back(e6);
+      // nvrtx->env.push_back(e7);
+      // nvrtx->env.push_back(e8);
+      // nvrtx->env.push_back(e9);
+      // nvrtx->env.push_back(e10);
+      // nvrtx->env.push_back(e11);
+      // nvrtx->env.push_back(e12);
+      // nvrtx->env.push_back(e13);
+      // nvrtx->env.push_back(e14);
+      // nvrtx->env.push_back(e15);
+      // nvrtx->env.push_back(e16);
+      // nvrtx->env.push_back(e17);
+      // nvrtx->env.push_back(e18);
+      // nvrtx->env.push_back(e19);
       nvrtx->bu=bu;
       // cout<<line<<endl;
       // for(int i=0; i<nvrtx->env.size(); i++){

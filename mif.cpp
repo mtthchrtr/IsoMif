@@ -44,9 +44,11 @@ int main(int argc, char **argv)
 
   getMif(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
 
-  if(smoothDist!=0) grid.smooth();
+  // getEnv(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
 
-  getPseudo(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
+  // if(smoothDist!=0) grid.smooth();
+
+  // getPseudo(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
 
   grid.writeMif(protein.PROTEIN,protein.LIGATOMS);
 
@@ -727,7 +729,6 @@ int Grid::generateID(int w, int h, int x, int y, int z){
 void Grid::createProtVrtx(vector<atom>& prot){
   map<int,vertex>::iterator it;
   int id;
-  int uID=0;
   float minx,miny,minz,maxx,maxy,maxz;
   float nmgd=sqrt(minGridDist)+stepsize;
   cout<<"Getting prot vertexes..."<<endl;
@@ -758,6 +759,7 @@ void Grid::createProtVrtx(vector<atom>& prot){
               vrtx.z=z;
               vrtx.p=1;
               vrtx.id=uID;
+              // cout<<uID<<" "<<x<<" "<<y<<" "<<z<<" p"<<endl;
               uID++;
               if(inGridRes(vrtx,2.0)==1){
                 vrtx.grid[0]=1;
@@ -786,7 +788,6 @@ int Grid::buildGrid(vector<atom>& prot){
 
   map<int,vertex>::iterator it;
   int id;
-  int uID=0;
   for(float x=min_x; x<=max_x; x+=stepsize){
     for(float y=min_y; y<=max_y; y+=stepsize){
       for(float z=min_z; z<=max_z; z+=stepsize){
@@ -797,7 +798,6 @@ int Grid::buildGrid(vector<atom>& prot){
           if(prot[i].mif==0) continue;
           float d=((abs(x-prot[i].x)*abs(x-prot[i].x))+(abs(y-prot[i].y)*abs(y-prot[i].y))+(abs(z-prot[i].z)*abs(z-prot[i].z)));
           if(d<minDist){ minDist=d; }
-          
         }
         if(minDist<minGridDist){
           pg=1;
@@ -826,8 +826,20 @@ int Grid::buildGrid(vector<atom>& prot){
               printf("\n\nCan't malloc int**\nGoodbye.\n");
               return(24);
             }
+            vrtx.nrgs=new float[nbOfProbes];              
+            if(vrtx.nrgs==NULL){
+              printf("\n\nCan't malloc int**\nGoodbye.\n");
+              return(24);
+            }
+            vrtx.angles=new float[nbOfProbes];              
+            if(vrtx.angles==NULL){
+              printf("\n\nCan't malloc int**\nGoodbye.\n");
+              return(24);
+            }
             
             for(i=0; i<nbOfProbes; i++){ vrtx.ints[i]=0; }
+            for(i=0; i<nbOfProbes; i++){ vrtx.nrgs[i]=0.0; }
+            for(i=0; i<nbOfProbes; i++){ vrtx.angles[i]=0.0; }
 
             for(int i=0; i<aa.size(); i++){ vrtx.env[aa[i]]=1000.0; }
 
@@ -876,7 +888,6 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
   int i=0;
   int newv=0;
   int id;
-  int uID=0;
   float x,y,z,rad,nx,ny,nz;
   float minx,miny,minz,maxx,maxy,maxz;
   float dist,minDist;
@@ -961,14 +972,27 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
               printf("\n\nCan't malloc int**\nGoodbye.\n");
               return(24);
             }
+            vrtx.nrgs=new float[nbOfProbes];              
+            if(vrtx.nrgs==NULL){
+              printf("\n\nCan't malloc int**\nGoodbye.\n");
+              return(24);
+            }
+            vrtx.angles=new float[nbOfProbes];              
+            if(vrtx.angles==NULL){
+              printf("\n\nCan't malloc int**\nGoodbye.\n");
+              return(24);
+            }
             
             for(i=0; i<nbOfProbes; i++){ vrtx.ints[i]=0; }
+            for(i=0; i<nbOfProbes; i++){ vrtx.nrgs[i]=0.0; }
+            for(i=0; i<nbOfProbes; i++){ vrtx.angles[i]=0.0; }
             for(i=0; i<4; i++){ vrtx.grid[i]=0; }
 
             for(int i=0; i<aa.size(); i++){
               vrtx.env[aa[i]]=1000.0;
             }
             vrtx.id=uID;
+            // cout<<uID<<" "<<nx<<" "<<ny<<" "<<nz<<" g"<<endl;
             uID++;
             newv++;
             GRID.insert(pair<int,vertex>(id,vrtx));
@@ -1002,16 +1026,20 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
       if(inGridRes(it->second,2.0)==1){
         it->second.grid[0]=1;
         vrtx200++;
-      }else if(inGridRes(it->second,1.5)==1){
+      }
+      if(inGridRes(it->second,1.5)==1){
         it->second.grid[1]=1;
         vrtx150++;
-      }else if(inGridRes(it->second,1.0)==1){
+      }
+      if(inGridRes(it->second,1.0)==1){
         it->second.grid[2]=1;
         vrtx100++;
-      }else if(inGridRes(it->second,0.5)==1){
+      }
+      if(inGridRes(it->second,0.5)==1){
         it->second.grid[3]=1;
         vrtx050++;
       }
+      // cout<<it->second.grid[0]<<" "<<it->second.grid[1]<<" "<<it->second.grid[2]<<" "<<it->second.grid[3]<<endl;
       ++it;
     }
   }
@@ -1610,21 +1638,27 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
       //   fprintf(fpNew, "#PG %7.2f %7.2f %7.2f\n",it->second.x,it->second.y,it->second.z);  
       // }
     }else{
-      if((zip==1 && (it->second.grid[0]==1 || it->second.grid[1]==1)) || zip==0){
+      if((zip==1 && (it->second.grid[0]==1 || it->second.grid[1]==1 || it->second.grid[2]==1)) || zip==0){
         fprintf(fpNew, "%7.2f %7.2f %7.2f",it->second.x,it->second.y,it->second.z);
         for(probe=0; probe<nbOfProbes; probe++){
           fprintf(fpNew, " %1d",it->second.ints[probe]);
+          if(it->second.nrgs[probe]==0 || abs(it->second.nrgs[probe]-0.0)<0.00001){
+            fprintf(fpNew, " 0");
+          }else{ fprintf(fpNew, " %6.3f",it->second.nrgs[probe]); }
+          if(it->second.angles[probe]==0 || abs(it->second.angles[probe]-0.0)<0.00001){
+            fprintf(fpNew, " 0");
+          }else{ fprintf(fpNew, " %6.3f",it->second.angles[probe]); }
         }
         for(i=0; i<4; i++){
           fprintf(fpNew, " %1d",it->second.grid[i]);
         }
-        for(i=0; i<aa.size(); i++){
-          if(it->second.env[aa[i]]>5.0){
-            fprintf(fpNew, " %d",0);
-          }else{
-            fprintf(fpNew, " %d",(int)round(it->second.env[aa[i]]));
-          }
-        }
+        // for(i=0; i<aa.size(); i++){
+        //   if(it->second.env[aa[i]]>5.0){
+        //     fprintf(fpNew, " %d",0);
+        //   }else{
+        //     fprintf(fpNew, " %d",(int)round(it->second.env[aa[i]]));
+        //   }
+        // }
         fprintf(fpNew, " %d\n",it->second.bu);        
       }
     }
@@ -1768,12 +1802,12 @@ void getAtomTypes(){
     copy(istream_iterator<string>(iss), istream_iterator<string>(), back_inserter<vector<string> >(tokens));
     row++;
     if(row==1) continue;
-    don[tokens[2]]=atoi(tokens[2].c_str());
-    acc[tokens[2]]=atoi(tokens[3].c_str());
-    arm[tokens[2]]=atoi(tokens[4].c_str());
-    chr[tokens[2]]=atoi(tokens[5].c_str());
-    hyd[tokens[2]]=atoi(tokens[6].c_str());
-    // cout<<tokens[2]<<" "<<don[tokens[2]]<<" "<<acc[tokens[2]]<<" "<<arm[tokens[2]]<<" "<<chr[tokens[2]]<<" "<<hyd[tokens[2]]<<endl;
+    don[tokens[1]]=atoi(tokens[2].c_str());
+    acc[tokens[1]]=atoi(tokens[3].c_str());
+    arm[tokens[1]]=atoi(tokens[4].c_str());
+    chr[tokens[1]]=atoi(tokens[5].c_str());
+    hyd[tokens[1]]=atoi(tokens[6].c_str());
+    // cout<<tokens[1]<<" "<<don[tokens[1]]<<" "<<acc[tokens[1]]<<" "<<arm[tokens[1]]<<" "<<chr[tokens[1]]<<" "<<hyd[tokens[1]]<<endl;
 
   }
 }
@@ -1817,6 +1851,21 @@ void getaa(){
   }
 }
 
+void getEnv(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
+  cout<<endl<< "Getting Environment"<< endl;
+  for(int i=0; i<vrtxList.size(); i++){
+    map<int,vertex>::iterator it=grid.find(vrtxList[i]);
+    vertex& m=it->second;
+    
+    if(m.p==1){ continue; }
+    if(m.grid[0]!=1 && m.grid[1]!=1 && m.grid[2]!=1 && m.grid[3]==1) continue;
+
+    for(int j=0; j<prot.size(); j++){ //Iterate each atom for this probe at this grid intersection
+      float dist=dist_3d(prot[j].x,prot[j].y,prot[j].z,m.x,m.y,m.z);
+      if(dist<m.env[prot[j].resn]) m.env[prot[j].resn]=dist;
+    }
+  }
+}
 
 void getMif(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
   int j;
@@ -1828,151 +1877,164 @@ void getMif(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
     
     if(m.p==1){ continue; }
     // if(m.bu<bul){ continue; }
-    if(m.grid[0]!=1 && m.grid[1]!=1 && m.grid[2]!=1 && m.grid[3]==1) continue;
+    if(m.grid[0]==1 || m.grid[1]==1 || m.grid[2]==1){
   
-    // if(printDetails==1){ cout<<endl<<"Vertex id: "<< m.id <<" "<<m.x<<" "<<m.y<<" "<<m.z<<endl; }
-    int flag=0;
-    for(int probe=0; probe<nbOfProbes; probe++){ //Iterate each probe
-      float enrg_sum=0.00;
-      int countAtms=0;
+      if(printDetails==1){ cout<<endl<<"Vertex id: "<< m.id <<" "<<m.x<<" "<<m.y<<" "<<m.z<<endl; }
+      int flag=0;
+      for(int probe=0; probe<nbOfProbes; probe++){ //Iterate each probe
+        float enrg_sum=0.00;
+        float angle_sum=0.00;
+        int angleC=0;
+        int countAtms=0;
+        // float angAvrg=0.0;
 
-      // if(printDetails==1){ cout<<endl<<"### PROBE "<<probe<<" ###"<<endl; }
-
-      for(int j=0; j<prot.size(); j++){ //Iterate each atom for this probe at this grid intersection
-        if(prot.at(j).mif!=1) continue;
-        enrg_sum+=calcNrg(m,prot.at(j),probe,countAtms);
-      }
-      if(countAtms>0){
-        if(enrg_sum<nrgT[probes[probe]] || (fabs(enrg_sum-nrgT[probes[probe]]))<0.001){
-          m.ints[probe]=1;
-          flag=1;
+        if(printDetails==1){ cout<<endl<<"### PROBE "<<probe<<" ###"<<endl; }
+        for(int j=0; j<prot.size(); j++){ //Iterate each atom for this probe at this grid intersection
+          if(prot.at(j).mif!=1) continue;
+          enrg_sum+=calcNrg(m,prot.at(j),probe,countAtms,angle_sum,angleC);
+        }
+        if(countAtms>0){
+          if(enrg_sum<nrgT[probes[probe]] || (fabs(enrg_sum-nrgT[probes[probe]]))<0.001){
+            m.ints[probe]=1;
+            m.nrgs[probe]=enrg_sum;
+            if(angleC>0){
+              m.angles[probe]=angle_sum/(float)angleC;
+            }
+            if(printDetails==1){ cout<<"NRG "<<probe<<" "<< enrg_sum<<" angleSum: "<<angle_sum<<" / "<<angleC<<" = "<<m.angles[probe]<<endl; }
+            flag=1;
+            if(printDetails==1){ cout<<m.grid[0]<<" "<<m.grid[1]<<" "<<m.grid[2]<<" "<<m.grid[3]<<"NRG "<<probe<<" "<< enrg_sum<<" angleSum: "<<angle_sum<<" / "<<angleC<<" = "<<m.angles[probe]<<endl; }
+          }else{
+            m.ints[probe]=0;
+            m.nrgs[probe]=enrg_sum;
+            if(angleC>0){
+              m.angles[probe]=angle_sum/(float)angleC;
+            }
+            if(printDetails==1){ cout<<"NRG "<<probe<<" "<< enrg_sum<<" NRG BELOW threshold "<<angle_sum<<" / "<<angleC<<" = "<<m.angles[probe]<<endl; }
+          }
+        }else{
+          if(printDetails==1){ cout<<"NRG "<<probe<<" no atoms"<<endl; }
         }
       }
-    }
 
-    //Increment search space
-    if(flag==1){
-      for(int gi=0; gi<4; gi++){
-        if(m.grid[gi]==1){
-          ss[gi]++;
+      //Increment search space
+      if(flag==1){
+        for(int gi=0; gi<4; gi++){
+          if(m.grid[gi]==1){
+            ss[gi]++;
+          }
         }
       }
     }
   }
 }
 
-double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms){
+double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms, float& angSum, int& angC){
   float dist,alpha,epsilon,angle;
   int atomAtId,pbAtId;
   double energy;
   energy=0.0;
   alpha=1.0;
   angle=1.0;
-  float angleThresh=40.00;
+  float angleThresh=60.00;
   int tVrtxId=-1;
   float rDist,rpDist;
 
   //Get distance between probe and atom
   dist=dist_3d(atm.x,atm.y,atm.z,vrtx.x,vrtx.y,vrtx.z);
 
-  if(pbId==0){
-    if(dist<vrtx.env[atm.resn]) vrtx.env[atm.resn]=dist;
-  }
-
   if(dist > maxD[probes[pbId]] || dist < minD[probes[pbId]] || dist > atmPbMaxDist){
     return(energy);
   }else{
-
     string at=atomTypes[atm.resn+"_"+atm.atomn];
     string pat=probes[pbId];
     epsilon=eps[at+"_"+pat];
 
     //Hbond Donnor/Acceptor
     if((acc[at]==1 && don[pat]==1) || (acc[pat]==1 && don[at]==1)){
-      alpha=1.0;
 
       rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
       rpDist=dist_3d(vrtx.x,vrtx.y,vrtx.z,atm.xr,atm.yr,atm.zr);
-
-      // if(printDetails==1){
-      //   cout <<"Hbond Acceptor/Donor "<<endl;
-      //   cout<< "Dist "<< dist << " rDist "<< rDist<< " rpDist "<< rpDist<<" rDir "<< atm.rDir <<endl;
-      // }
 
       angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
       angle=acos(angle)* 180.0 / PI;
       if(atm.rDir==0){ angle=180.00-angle; }
 
-      if(atm.resn.compare("ASN")==0 && atm.atomn.compare("OD1")==0){
-        angleThresh=80.00;
-      }else if(atm.resn.compare("ASN")==0 && atm.atomn.compare("ND2")==0){
-        angleThresh=80.00;
-      }else if(atm.resn.compare("GLN")==0 && atm.atomn.compare("OE1")==0){
-        angleThresh=80.00;
-      }else if(atm.resn.compare("GLN")==0 && atm.atomn.compare("NE2")==0){
-        angleThresh=80.00;
-      }else if(atm.resn.compare("SER")==0 && atm.atomn.compare("OG")==0){
-        angleThresh=80.00;
-      }else if(atm.resn.compare("THR")==0 && atm.atomn.compare("OG1")==0){
-        angleThresh=80.00;
-      }else if(atm.resn.compare("ARG")==0 && atm.atomn.compare("NH1")==0){
-        angleThresh=80.00;
-      }else if(atm.resn.compare("ARG")==0 && atm.atomn.compare("NH2")==0){
-        angleThresh=80.00;
-      }else if(atm.resn.compare("LYS")==0 && atm.atomn.compare("NZ")==0){
-        angleThresh=80.00;
-      }else if(atm.resn.compare("ASP")==0 && atm.atomn.compare("OD1")==0){
-        angleThresh=80.00;
-      }else if(atm.resn.compare("ASP")==0 && atm.atomn.compare("OD2")==0){
-        angleThresh=80.00;
-      }else if(atm.resn.compare("GLU")==0 && atm.atomn.compare("OE1")==0){
-        angleThresh=80.00;
-      }else if(atm.resn.compare("GLU")==0 && atm.atomn.compare("OE2")==0){
-        angleThresh=80.00;
-      }
-
-      // if(printDetails==1){
-        // cout <<"Angle "<< angle << " thresh " << angleThresh << " | ref atom: "<<atm.xr<<" "<<atm.yr<<" "<<atm.zr << " dir: "<<atm.rDir<<endl;
+      // if(atm.resn.compare("ASN")==0 && atm.atomn.compare("OD1")==0){
+      //   angleThresh=80.00;
+      // }else if(atm.resn.compare("ASN")==0 && atm.atomn.compare("ND2")==0){
+      //   angleThresh=80.00;
+      // }else if(atm.resn.compare("GLN")==0 && atm.atomn.compare("OE1")==0){
+      //   angleThresh=80.00;
+      // }else if(atm.resn.compare("GLN")==0 && atm.atomn.compare("NE2")==0){
+      //   angleThresh=80.00;
+      // }else if(atm.resn.compare("SER")==0 && atm.atomn.compare("OG")==0){
+      //   angleThresh=80.00;
+      // }else if(atm.resn.compare("THR")==0 && atm.atomn.compare("OG1")==0){
+      //   angleThresh=80.00;
+      // }else if(atm.resn.compare("ARG")==0 && atm.atomn.compare("NH1")==0){
+      //   angleThresh=80.00;
+      // }else if(atm.resn.compare("ARG")==0 && atm.atomn.compare("NH2")==0){
+      //   angleThresh=80.00;
+      // }else if(atm.resn.compare("LYS")==0 && atm.atomn.compare("NZ")==0){
+      //   angleThresh=80.00;
+      // }else if(atm.resn.compare("ASP")==0 && atm.atomn.compare("OD1")==0){
+      //   angleThresh=80.00;
+      // }else if(atm.resn.compare("ASP")==0 && atm.atomn.compare("OD2")==0){
+      //   angleThresh=80.00;
+      // }else if(atm.resn.compare("GLU")==0 && atm.atomn.compare("OE1")==0){
+      //   angleThresh=80.00;
+      // }else if(atm.resn.compare("GLU")==0 && atm.atomn.compare("OE2")==0){
+      //   angleThresh=80.00;
       // }
 
+      if(printDetails==1){ cout<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<endl <<"Hbond "<<"Angle "<< angle << " Thresh " << angleThresh <<endl; }
+      if(printDetails==1){ cout<< "Dist "<< dist << " rDist "<< rDist<< " rpDist "<< rpDist<<" rDir "<< atm.rDir <<endl; }
       if(angle>angleThresh){
-        // if(printDetails==1){ cout<<"Angle over threshold"<<endl; }
+        if(printDetails==1){ cout<<"Angle over threshold"<<endl; }
         return(energy);
       }
+      alpha=1.0;
+      energy=(epsilon)*(exp(-1.0*dist*alpha));
+      count_atoms++;
+
+      angSum+=angle;
+      angC++;
     }else if(arm[at]==1 && arm[pat]==1){ //aromatic interaction
+      if(printDetails==1){ cout<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<endl<< "Aromatic"<<endl; }
+      if(atm.dir==1){
+        rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
+        rpDist=dist_3d(vrtx.x,vrtx.y,vrtx.z,atm.xr,atm.yr,atm.zr);
+        angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
+        angle=acos(angle)* 180.0 / PI;
+        if(angle>90 || fabs(180.00-angle) < 0.001){
+          angle=180-angle;
+        }
+        if(angle>35.00 && angle<55.00){
+          if(printDetails==1){ cout <<"angle between 35 and 55"<<endl; }
+          return(energy);
+        }
+        if(printDetails==1){ cout<<"angle "<<angle<<endl; }
+        angSum+=angle;
+        angC++;
+      }else{
+        if(printDetails==1){ cout<<"No angle to alculate"<<endl; }
+      }
+
       alpha=1.0;
-      rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
-      rpDist=dist_3d(vrtx.x,vrtx.y,vrtx.z,atm.xr,atm.yr,atm.zr);
-      angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
-      angle=acos(angle)* 180.0 / PI;
-      if(angle>90 || fabs(180.00-angle) < 0.001){
-        angle=180-angle;
-      }
-
-      // if(printDetails==1){
-        // cout<< "aromatic"<<endl;
-        // cout<< "Angle "<< angle<<endl;
-      // }
-
-      if(angle>40.00 && angle < 80.00){
-        // if(printDetails==1){ cout <<"angle between 60 and 80"<<endl; }
-        return(energy);
-      }
-
+      energy=(epsilon)*(exp(-1.0*dist*alpha));
+      count_atoms++;
+      if(printDetails==1){  cout<< "epsilon: " << epsilon<< " alpha: "<< alpha<< " dist: "<< dist<< " -> NRG: "<< energy<< endl<<endl; }
     }else if(chr[at]==1 && chr[pat]==1){ //charged interaction
-      // if(printDetails==1){ cout << "charged couple"<< endl; }
+      if(printDetails==1){ cout<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<endl << "Charged couple"<< endl; }
       alpha=1.0;
-    }else if(hyd[pat]==1){//if its a hydrophoic probe
-      // if(printDetails==1){ cout << "Hydrophobic probe"<< endl; }
+      energy=(epsilon)*(exp(-1.0*dist*alpha));
+      count_atoms++;
+    }else if(hyd[pat]==1 && hyd[at]==1){//if its a hydrophoic probe
+      if(printDetails==1){ cout << "Hydrophobic"<< endl<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<endl; }
       alpha=1.0;
+      energy=(epsilon)*(exp(-1.0*dist*alpha));
+      count_atoms++;
     }
-
-    count_atoms++;
-    energy=(epsilon)*(exp(-1.0*dist*alpha));
-
-    // if(printDetails==1){
-    //   cout<< "epsilon: " << epsilon<< " alpha: "<< alpha<< " dist: "<< dist<< " -> NRG: "<< energy<< endl<<endl;
-    // }
     return(energy);
   }
 }

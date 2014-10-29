@@ -69,6 +69,7 @@ sub runCmds{
       if($count==$batch){
         $count=0;
         close OUT;
+        system("qsub ".$jobsDir.$filenb.".pbs"." -o /dev/null -e /dev/null");
         $filenb++;
         open OUT, ">".$jobsDir.$filenb.".pbs" or die "cant open".$jobsDir.$filenb.".pbs";
         print OUT "#!/bin/sh\n#PBS -l nodes=1:ppn=1\n#PBS -N ".$tag.$filenb."\n";
@@ -78,12 +79,7 @@ sub runCmds{
       print OUT "\n" unless($count==$batch);
     }
     close OUT;
-    my @files=glob($jobsDir."/*");
-    foreach my $file (@files){
-      # print "qsub $file\n";
-      system("qsub $file -o /dev/null -e /dev/null");
-      # print "qsub $file\n";
-    }
+    system("qsub ".$jobsDir.$filenb.".pbs"." -o /dev/null -e /dev/null");
     &areJobsDone("nrg",$tag);
   }elsif($cmdMode eq "print"){
     for(my $i=0; $i<@cmds; $i++){

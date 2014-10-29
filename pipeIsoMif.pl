@@ -284,8 +284,8 @@ sub areJobsDone{
     }
   }elsif($sys eq "ht"){
     while(1){
-      sleep 60;
-      $time+=60;
+      sleep 30;
+      $time+=30;
       my $got=0;
       my @nbb=glob $outDir."*";
       foreach my $f (@nbb){

@@ -39,10 +39,12 @@ struct vertex {
   int grid[4];
   int cg[4];
   int pb[6];
+  float nrg[6];
+  float ang[6];
   int m[6];
   int bu;
   int id;
-  vector<int> env;
+  // vector<int> env;
 };
 
 //Atom struc
@@ -88,8 +90,9 @@ struct CliqueStruct{
   vector<vertex> va;
   vector<vertex> vb;
   int nbNodes;
+  float normNodes;
+  float normNodesRMSD;
   float tani;
-  float taniX;
   float rmsd;
   float ligRMSD;
   float envD;
@@ -109,7 +112,7 @@ float topT=-1.0;
 float topN=-1;
 int bkAll = 0;
 int nCliques=0;
-int maxCliques=200;
+int maxCliques=2000;
 vector<Clique> cliques;
 
 int emptOut=0;
