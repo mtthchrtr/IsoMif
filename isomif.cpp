@@ -252,9 +252,10 @@ int main(int argc, char *argv[]){
       //Create nodes
       cout<<"Creating nodes..."<<endl;
       createNodes(cg,graph,cgs);
+
       numNodes=graph.size();
       cout<<"NbNodes "<<numNodes<<endl;
-
+    // return(0);
       // cout<<"g.size: "<<graph.size()<<endl;
 
       // for(i=0; i<graph.size(); i++){
@@ -715,6 +716,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     if(ligRMSDc>0 && ligRMSDc==lig1.size() && lig1.size()==lig2.size()){
       ligRMSD=sqrt(ligRMSD/(float)ligRMSDc);
     }else{
+      cout<<"ligRMSDc "<<ligRMSDc<<" ligsize1 "<<lig1.size()<<" ligsize2 "<<lig2.size()<<endl;
       ligRMSD=0.0;
     }
   }
@@ -765,8 +767,8 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   }
   cliques.back().rmsd=sqrt(rmsd/(float)cliques.back().nbNodes);
   cliques.back().normNodesRMSD=cliques.back().normNodes/cliques.back().rmsd;
-  cliques.back().envD=envD/(float)cliques.back().nbNodes;
-  cliques.back().buD=sqrt(bud/(float)cliques.back().nbNodes);
+  // cliques.back().envD=envD/(float)cliques.back().nbNodes;
+  // cliques.back().buD=sqrt(bud/(float)cliques.back().nbNodes);
   
   // cout<<"Finding corresponding vertexes..."<<endl;
   // float dist=0.0;
@@ -796,6 +798,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     cliques.back().tani=(float)n/((float)cliques.back().rmsd);
   }else{
     cliques.back().tani=(float)n/((float)ss1[cg]+(float)ss2[cg]-(float)n);
+    cliques.back().taniNorm=cliques.back().normNodes/((float)ss1[cg]+(float)ss2[cg]-cliques.back().normNodes);
   }
 
   // cout<<"ROTATION MAT:";
@@ -807,13 +810,13 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   // cout<<endl<<"cen_a: "<<cliques.back().cen_a[0]<<" "<<cliques.back().cen_a[1]<<" "<<cliques.back().cen_a[2];
   // cout<<endl<<"cen_b: "<<cliques.back().cen_b[0]<<" "<<cliques.back().cen_b[1]<<" "<<cliques.back().cen_b[2]<<endl;
   
-  if(cliques.back().normNodesRMSD>topT){
-    cout<<"NEW TOP CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
-    topT=cliques.back().normNodesRMSD;
+  if(cliques.back().tani>topT){
+    cout<<"NEW TOP CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" TANI "<<cliques.back().tani<<" TANINORMNODES "<<cliques.back().taniNorm<<" RMSD: "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
+    topT=cliques.back().tani;
     topN=cliques.back().nbNodes;
     topCliques[cg]=cliques.size()-1;
   }else{
-    // cout<<"CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" TANI "<<cliques.back().tani<<" RMSD: "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
+    cout<<"CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" TANI "<<cliques.back().tani<<" TANINORMNODES "<<cliques.back().taniNorm<<" RMSD: "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
   }
 
   return;
@@ -844,55 +847,62 @@ void printNodes(){
 
   fprintf(fpout,"%s",outH);
   for(int cs=0; cs<steps.size(); cs++){
-    int i=topCliques[steps[cs]];
-    if(steps[cs]==-2){
-      fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cg2],ss2[cg2]);
-      if(emptOut!=1){
-        for(int j=0; j<cliques[i].va.size(); j++){
-          fprintf(fpout, "A %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].va[j].ncoor[0],cliques[i].va[j].ncoor[1],cliques[i].va[j].ncoor[2],cliques[i].va[j].m[0],cliques[i].va[j].m[1],cliques[i].va[j].m[2],cliques[i].va[j].m[3],cliques[i].va[j].m[4],cliques[i].va[j].m[5]);
+    int istart=0;
+    int iend=cliques.size();
+    if(wc==0){
+      istart=topCliques[steps[cs]];
+      iend=topCliques[steps[cs]]+1;
+    }
+    for(int i=istart; i<iend; i++){
+      if(steps[cs]==-2){
+        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cg2],ss2[cg2]);
+        if(emptOut!=1){
+          for(int j=0; j<cliques[i].va.size(); j++){
+            fprintf(fpout, "A %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].va[j].ncoor[0],cliques[i].va[j].ncoor[1],cliques[i].va[j].ncoor[2],cliques[i].va[j].m[0],cliques[i].va[j].m[1],cliques[i].va[j].m[2],cliques[i].va[j].m[3],cliques[i].va[j].m[4],cliques[i].va[j].m[5]);
+          }
+          for(int j=0; j<cliques[i].vb.size(); j++){
+            fprintf(fpout, "B %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].vb[j].coor[0],cliques[i].vb[j].coor[1],cliques[i].vb[j].coor[2],cliques[i].vb[j].m[0],cliques[i].vb[j].m[1],cliques[i].vb[j].m[2],cliques[i].vb[j].m[3],cliques[i].vb[j].m[4],cliques[i].vb[j].m[5]);
+          }
         }
-        for(int j=0; j<cliques[i].vb.size(); j++){
-          fprintf(fpout, "B %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].vb[j].coor[0],cliques[i].vb[j].coor[1],cliques[i].vb[j].coor[2],cliques[i].vb[j].m[0],cliques[i].vb[j].m[1],cliques[i].vb[j].m[2],cliques[i].vb[j].m[3],cliques[i].vb[j].m[4],cliques[i].vb[j].m[5]);
+      }else if(steps[cs]==-1){
+        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)prot1.size(),(int)prot2.size());
+        if(emptOut!=1){
+          for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
+            fprintf(fpout, "%3s %4d %4s %5d %s %8.3f %8.3f %8.3f %3s %4d %4s %5d %s %8.3f %8.3f %8.3f\n",(*it).ca->resn.c_str(),(*it).ca->resnb,(*it).ca->atomn.c_str(),(*it).ca->atomnb,(*it).ca->chain.c_str(),(*it).ca->coor[0],(*it).ca->coor[1],(*it).ca->coor[2],(*it).cb->resn.c_str(),(*it).cb->resnb,(*it).cb->atomn.c_str(),(*it).cb->atomnb,(*it).cb->chain.c_str(),(*it).cb->coor[0],(*it).cb->coor[1],(*it).cb->coor[2]);
+          }
         }
-      }
-    }else if(steps[cs]==-1){
-      fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)prot1.size(),(int)prot2.size());
-      if(emptOut!=1){
-        for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
-          fprintf(fpout, "%3s %4d %4s %5d %s %8.3f %8.3f %8.3f %3s %4d %4s %5d %s %8.3f %8.3f %8.3f\n",(*it).ca->resn.c_str(),(*it).ca->resnb,(*it).ca->atomn.c_str(),(*it).ca->atomnb,(*it).ca->chain.c_str(),(*it).ca->coor[0],(*it).ca->coor[1],(*it).ca->coor[2],(*it).cb->resn.c_str(),(*it).cb->resnb,(*it).cb->atomn.c_str(),(*it).cb->atomnb,(*it).cb->chain.c_str(),(*it).cb->coor[0],(*it).cb->coor[1],(*it).cb->coor[2]);
+      }else if(steps[cs]==-3){
+        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)pseudoL1.size(),(int)pseudoL2.size());
+        if(emptOut!=1){
+          for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
+            fprintf(fpout, "%3s %8.3f %8.3f %8.3f %3s %8.3f %8.3f %8.3f\n",(*it).pa->type.c_str(),(*it).pa->coor[0],(*it).pa->coor[1],(*it).pa->coor[2],(*it).pb->type.c_str(),(*it).pb->coor[0],(*it).pb->coor[1],(*it).pb->coor[2]);
+          }
         }
-      }
-    }else if(steps[cs]==-3){
-      fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)pseudoL1.size(),(int)pseudoL2.size());
-      if(emptOut!=1){
-        for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
-          fprintf(fpout, "%3s %8.3f %8.3f %8.3f %3s %8.3f %8.3f %8.3f\n",(*it).pa->type.c_str(),(*it).pa->coor[0],(*it).pa->coor[1],(*it).pa->coor[2],(*it).pb->type.c_str(),(*it).pb->coor[0],(*it).pb->coor[1],(*it).pb->coor[2]);
-        }
-      }
-    }else{
-      fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d LIGRMSD %5.3f\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cliques[i].cg],ss2[cliques[i].cg],cliques[i].ligRMSD);
-      if(emptOut!=1){
-        for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
-          for(int j=0; j<nb_of_probes; ++j){
-            if((*it).a->pb[j]==1 && (*it).b->pb[j]==1){
-              fprintf(fpout, "%d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",j,(*it).a->coor[0],(*it).a->coor[1],(*it).a->coor[2],(*it).b->coor[0],(*it).b->coor[1],(*it).b->coor[2]);
+      }else{
+        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d NORMNODES %6.3f NORMNODESRMSD %6.3f TANI %5.3f TANINORM %5.3f RMSD %5.3f SS1 %d SS2 %d LIGRMSD %5.3f\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].normNodes,cliques[i].normNodesRMSD,cliques[i].tani,cliques[i].taniNorm,cliques[i].rmsd,ss1[cliques[i].cg],ss2[cliques[i].cg],cliques[i].ligRMSD);
+        if(emptOut!=1){
+          for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
+            for(int j=0; j<nb_of_probes; ++j){
+              if((*it).a->pb[j]==1 && (*it).b->pb[j]==1){
+                fprintf(fpout, "%d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",j,(*it).a->coor[0],(*it).a->coor[1],(*it).a->coor[2],(*it).b->coor[0],(*it).b->coor[1],(*it).b->coor[2]);
+              }
             }
           }
         }
       }
-    }
-    if(emptOut!=1){
-      fprintf(fpout,"REMARK ROTMAT ");
-      for(int m=0; m<3; m++) {
-        for(int n=0; n<3; n++){
-          fprintf(fpout," %9.4f",gsl_matrix_get(cliques[i].mat_r,m,n));
+      if(emptOut!=1){
+        fprintf(fpout,"REMARK ROTMAT ");
+        for(int m=0; m<3; m++) {
+          for(int n=0; n<3; n++){
+            fprintf(fpout," %9.4f",gsl_matrix_get(cliques[i].mat_r,m,n));
+          }
         }
+        fprintf(fpout,"\nREMARK CENTRES %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n",cliques[i].cen_a[0],cliques[i].cen_a[1],cliques[i].cen_a[2],cliques[i].cen_b[0],cliques[i].cen_b[1],cliques[i].cen_b[2]);
+        fprintf(fpout,"REMARK DET %g\n",cliques[i].det);
       }
-      fprintf(fpout,"\nREMARK CENTRES %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n",cliques[i].cen_a[0],cliques[i].cen_a[1],cliques[i].cen_a[2],cliques[i].cen_b[0],cliques[i].cen_b[1],cliques[i].cen_b[2]);
-      fprintf(fpout,"REMARK DET %g\n",cliques[i].det);
     }
+    fprintf(fpout,"REMARK END\n");
   }
-  fprintf(fpout,"REMARK END\n");
   return;
 }
 /***********************************************************************/
@@ -909,7 +919,11 @@ void clearStep(int cg){
     Clique newClique;
     newClique.cg=cg;
     newClique.nbNodes=0;
+    newClique.normNodes=0.0;
+    newClique.normNodesRMSD=0.0;
+    newClique.taniNorm=0.0;
     newClique.tani=0.0;
+    newClique.ligRMSD=0.0;
     newClique.ligRMSD=0.0;
     newClique.mat_r=gsl_matrix_alloc(3,3);
     for(int i=0; i<3; i++) {
@@ -1124,12 +1138,15 @@ void createNodes(int cg, vector<node> &graph, int s){
             // float num=0.0;
             // float d1=0.0;
             // float d2=0.0;
-            // for(int i=0; i<6; ++i){
-            //   num+=((*it).a->nrg[i]*(*it).b->nrg[i])+((*it).a->ang[i]*(*it).b->ang[i]);
-            //   d1+=pow((*it).a->nrg[i],2)+pow((*it).a->ang[i],2);
-            //   d2+=pow((*it).b->nrg[i],2)+pow((*it).b->ang[i],2);
+            // for(int pb=0; pb<nb_of_probes; ++pb){
+            //   num+=(mif1.at(i).nrg[pb]*mif2.at(j).nrg[pb])+(mif1.at(i).ang[pb]*mif2.at(j).ang[pb]);
+            //   d1+=pow(mif1.at(i).nrg[pb],2)+pow(mif1.at(i).ang[pb],2);
+            //   d2+=pow(mif2.at(j).nrg[pb],2)+pow(mif2.at(j).ang[pb],2);
             // }
             // float cosd=num/(sqrt(d1)*sqrt(d2));
+            // printf("A %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",mif1.at(i).nrg[0],mif1.at(i).ang[0],mif1.at(i).nrg[1],mif1.at(i).ang[1],mif1.at(i).nrg[2],mif1.at(i).ang[2],mif1.at(i).nrg[3],mif1.at(i).ang[3],mif1.at(i).nrg[4],mif1.at(i).ang[4],mif1.at(i).nrg[5],mif1.at(i).ang[5]);
+            // printf("B %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",mif2.at(j).nrg[0],mif2.at(j).ang[0],mif2.at(j).nrg[1],mif2.at(j).ang[1],mif2.at(j).nrg[2],mif2.at(j).ang[2],mif2.at(j).nrg[3],mif2.at(j).ang[3],mif2.at(j).nrg[4],mif2.at(j).ang[4],mif2.at(j).nrg[5],mif2.at(j).ang[5]);
+            // cout<<"cosd "<<cosd<<endl<<endl;
 
             if(s==1){
               // cout<<mif1.at(i).ncoor[0]<<" "<<mif1.at(i).ncoor[1]<<" "<<mif1.at(i).ncoor[2]<<" | "<<mif2.at(j).coor[0]<<" "<<mif2.at(j).coor[1]<<" "<<mif2.at(j).coor[2];
@@ -1481,6 +1498,8 @@ int read_commandline(int argc, char *argv[]){
   strcat(usage,tmp_line);
   sprintf(tmp_line,"-j          : \t JTT matrix rank threhsold [default 5]\n");
   strcat(usage,tmp_line);
+  sprintf(tmp_line,"-wc         : \t write all the cliques found and their info without the nodes [default 0]\n");
+  strcat(usage,tmp_line);
   sprintf(tmp_line,"-pr         : \t print details on console\n");
   strcat(usage,tmp_line);
 
@@ -1581,6 +1600,10 @@ int read_commandline(int argc, char *argv[]){
 
     if(strcmp(argv[nb_arg],"-j")==0){
       jttt=atoi(argv[nb_arg+1]);
+    }
+
+    if(strcmp(argv[nb_arg],"-wc")==0){
+      wc=1;
     }
 
     if(strcmp(argv[nb_arg],"-m")==0){

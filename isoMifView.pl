@@ -90,7 +90,7 @@ while($line=<IN>){
     }
   }
 
-  if($line=~/^REMARK CLIQUE CG ([0-9-]+) NODES ([0-9]+) TANI ([0-9\.]+) SS1 ([0-9]+) SS2 ([0-9]+)$/){
+  if($line=~/^REMARK CLIQUE CG ([0-9-]+)/){
     $tcg=$1;
   }
 

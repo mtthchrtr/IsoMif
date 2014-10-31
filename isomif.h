@@ -93,6 +93,7 @@ struct CliqueStruct{
   float normNodes;
   float normNodesRMSD;
   float tani;
+  float taniNorm;
   float rmsd;
   float ligRMSD;
   float envD;
@@ -112,7 +113,7 @@ float topT=-1.0;
 float topN=-1;
 int bkAll = 0;
 int nCliques=0;
-int maxCliques=2000;
+int maxCliques=200;
 vector<Clique> cliques;
 
 int emptOut=0;
@@ -128,6 +129,7 @@ int* probesList=NULL;
 int probesListNb;
 int commonInt=1;
 
+int wc=0;
 int jttt=5;
 int jtt[20][20];
 int nb_of_probes=6;
