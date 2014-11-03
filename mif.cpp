@@ -1331,9 +1331,7 @@ void Grid::writeGrid(){
 int Grid::readGrid(){
   string line;
   string tmp;
-  string tmpF= outBase + tag + ".grid";
-  ifstream infile(tmpF.c_str());
-  // ifstream infile(gridFile.c_str());
+  ifstream infile(gridFile.c_str());
   while(getline(infile,line)){
     if(line.compare("")==0) continue;
     string start = line.substr(0,2);
