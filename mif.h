@@ -96,8 +96,10 @@ atPairStruc* atPair;
 
 string cmdLine="";
 string cleftFile="";
+string gridFile="";
 string proteinFile="";
 string outBase="";
+string outGridBase="";
 string tag="";
 string chain="";
 string basePath="";
@@ -121,7 +123,7 @@ int nbOfAts=0;
 int nbOfAtoms=0;
 int nbOfProbes=0;
 int ss[4];
-int zip;
+int zip=0;
 int bul=0;
 int buD=40;
 float* epsilons;
@@ -170,6 +172,8 @@ class  Grid{
     void createProtVrtx(vector<atom>&);
   	void getMinMax(string);
     void getBuriedness();
+    void writeGrid();
+    int readGrid();
     int getDiag(int, int, int, int&);
   	int inGridRes(vertex&, float);
     void smooth();

@@ -75,10 +75,9 @@ int readCmdLine(int argc, char **argv){
   }
     
   usage << "\n!---   IsoMIF   ---!\nWelcome.Bienvenue\n";
-  usage << "\nObligatory Arguments\n";
   usage << "-p <filename>        : \t Protein (PDB format)\n";
   usage << "-g <filename>        : \t Cleft of protein (GetCleft sphere format)\n";
-  usage << "\nOptional Arguments\n";
+  usage << "-grid <filename>     : \t Grid of protein\n";
   usage << "-s                   : \t grid spacing 0.25, 0.5, 1.0 or 2.0 (default: 0.25Angstrom)\n";
   usage << "-d <distance in Ang.>: \t atom-probe distance threshold. (default: "<< atmPbMaxDist <<" Angstrom)\n";
   usage << "-c <chain>           : \t which Chain to consider for energy calculations\n";
@@ -94,6 +93,7 @@ int readCmdLine(int argc, char **argv){
   usage << "-l                   : \t RESNUMC of the ligand from which to crop the grid\n";
   usage << "-r                   : \t maximum distance between the grid and the ligand\n";
   usage << "-x                   : \t do not write atoms in mif file\n";
+  usage << "-og                  : \t dir for grid file\n";
   usage << "-z                   : \t small output files, only with 2.0 and 1.5 angstrom and lig atoms\n";
   usage << "-h                   : \t help menu\n";
 
@@ -113,6 +113,9 @@ int readCmdLine(int argc, char **argv){
     }
     if(strcmp(argv[nb_arg],"-p")==0){
       proteinFile=string(argv[nb_arg+1]);
+    }
+    if(strcmp(argv[nb_arg],"-grid")==0){
+      gridFile=string(argv[nb_arg+1]);
     }
     if(strcmp(argv[nb_arg],"-g")==0){
       cleftFile=string(argv[nb_arg+1]);
@@ -159,6 +162,9 @@ int readCmdLine(int argc, char **argv){
     if(strcmp(argv[nb_arg],"-z")==0){
       zip=1;
     }
+    if(strcmp(argv[nb_arg],"-og")==0){
+      outGridBase=string(argv[nb_arg+1]);
+    }
     if(strcmp(argv[nb_arg],"-pr")==0){
       printDetails=1;
     }
@@ -176,10 +182,17 @@ int readCmdLine(int argc, char **argv){
     outBase = outBase + "/";
   }
 
+  if(outGridBase.compare("")==0){
+    outGridBase="./";
+  }else{
+    outGridBase = outGridBase + "/";
+  }
+
   cout<<endl;
   cout<< "ProteinFile: "<< proteinFile <<endl;
   cout<< "CleftFile: "<< cleftFile <<endl;
   cout<< "Outbase: "<< outBase <<endl;
+  cout<< "OutGridBase: "<< outBase <<endl;
   cout<< "Chain: "<< chain <<endl;
   cout<< "Tag: " << tag << endl;
   cout<< "Burriedness level: " << bul << endl;
@@ -707,15 +720,20 @@ Grid::Grid(string filename, Protein& prot){
   vrtx150=0;
   vrtx200=0;
 
-  createProtVrtx(prot.PROTEIN);
-  if(filename.compare("")==0){
-    buildGrid(prot.PROTEIN);
+  if(gridFile.compare("")==0){
+    createProtVrtx(prot.PROTEIN);
+    if(filename.compare("")==0){
+      buildGrid(prot.PROTEIN);
+    }else{
+      // getMinMax(filename,prot);
+      readGetCleft(filename, prot.PROTEIN, prot.LIGAND);
+      // getProtVrtx(prot.PROTEIN);
+    }
+    getBuriedness();
+    if(outGridBase.compare("")!=0) writeGrid();
   }else{
-    // getMinMax(filename,prot);
-    readGetCleft(filename, prot.PROTEIN, prot.LIGAND);
-    // getProtVrtx(prot.PROTEIN);
+    readGrid();
   }
-  getBuriedness();
 }
 
 Grid::~Grid(void){ }
@@ -1026,15 +1044,15 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
       if(inGridRes(it->second,2.0)==1){
         it->second.grid[0]=1;
         vrtx200++;
-      }
+      }else
       if(inGridRes(it->second,1.5)==1){
         it->second.grid[1]=1;
         vrtx150++;
-      }
+      }else
       if(inGridRes(it->second,1.0)==1){
         it->second.grid[2]=1;
         vrtx100++;
-      }
+      }else
       if(inGridRes(it->second,0.5)==1){
         it->second.grid[3]=1;
         vrtx050++;
@@ -1057,6 +1075,7 @@ void Grid::getBuriedness(){
   map<int,vertex>::iterator m=GRID.begin();
   while(m!=GRID.end()){
     if(m->second.p==1){
+      m->second.bu=0;
       ++m;
       continue;
     }
@@ -1284,6 +1303,106 @@ void Grid::getBuriedness(){
     }
   }
   cout<<"Removed "<<nbu<<" not burried grid points."<<endl;
+}
+
+void Grid::writeGrid(){
+  string outg=outGridBase + tag + ".grid";
+  map<int,vertex>::iterator it;
+  FILE* fpwg;
+  int g0=0;
+  int g1=0;
+  int g2=0;
+  int g3=0;
+  fpwg = fopen(outg.c_str(),"w");
+  fprintf(fpwg,"#w %d\n#h %d\n#d %d\n#maxx %7.3f\n#maxy %7.3f\n#maxz %7.3f\n#minx %7.3f\n#miny %7.3f\n#minz %7.3f\n",width,height,depth,max_x,max_y,max_z,min_x,min_y,min_z);
+  for(it=GRID.begin();it!=GRID.end();it++){
+    if(it->second.p==1) continue;
+    if(it->second.grid[0]==1 || it->second.grid[1]==1 || it->second.grid[2]==1){
+      if(it->second.grid[0]==1) g0++;
+      if(it->second.grid[1]==1) g1++;
+      if(it->second.grid[2]==1) g2++;
+      fprintf(fpwg, "%d %d %7.3f %7.3f %7.3f %d %d %d %d %d %d\n",it->first,it->second.id,it->second.x,it->second.y,it->second.z,it->second.p,it->second.bu,it->second.grid[0],it->second.grid[1],it->second.grid[2],it->second.grid[3]);
+    }
+  }
+  fclose(fpwg);
+  cout<<"g0 "<<g0<<" g1 "<<g1<<" g2 "<<g2<<endl;
+}
+
+int Grid::readGrid(){
+  string line;
+  string tmp;
+  string tmpF= outBase + tag + ".grid";
+  ifstream infile(tmpF.c_str());
+  // ifstream infile(gridFile.c_str());
+  while(getline(infile,line)){
+    if(line.compare("")==0) continue;
+    string start = line.substr(0,2);
+    if(start.compare("#w")==0){
+      tmp=line.substr(3);
+      width=atoi(tmp.c_str());
+    }else if(start.compare("#h")==0){
+      tmp=line.substr(3);
+      height=atoi(tmp.c_str());
+    }else if(start.compare("#d")==0){
+      tmp=line.substr(3);
+      depth=atoi(tmp.c_str());
+    }else if(start.compare("#maxx")==0){
+      tmp=line.substr(6);
+      max_x=atof(tmp.c_str());
+    }else if(start.compare("#maxy")==0){
+      tmp=line.substr(6);
+      max_y=atof(tmp.c_str());
+    }else if(start.compare("#maxz")==0){
+      tmp=line.substr(6);
+      max_z=atof(tmp.c_str());
+    }else if(start.compare("#minx")==0){
+      tmp=line.substr(6);
+      min_x=atof(tmp.c_str());
+    }else if(start.compare("#miny")==0){
+      tmp=line.substr(6);
+      min_y=atof(tmp.c_str());
+    }else if(start.compare("#minz")==0){
+      tmp=line.substr(6);
+      min_z=atof(tmp.c_str());
+    }else{
+      stringstream test(line);
+      vertex vrtx;
+      vrtx.ints=new int[nbOfProbes];              
+      if(vrtx.ints==NULL){
+        printf("\n\nCan't malloc int**\nGoodbye.\n");
+        return(24);
+      }
+      vrtx.nrgs=new float[nbOfProbes];              
+      if(vrtx.nrgs==NULL){
+        printf("\n\nCan't malloc int**\nGoodbye.\n");
+        return(24);
+      }
+      vrtx.angles=new float[nbOfProbes];              
+      if(vrtx.angles==NULL){
+        printf("\n\nCan't malloc int**\nGoodbye.\n");
+        return(24);
+      }
+      for(int i=0; i<nbOfProbes; i++){ vrtx.ints[i]=0; }
+      for(int i=0; i<nbOfProbes; i++){ vrtx.nrgs[i]=0.0; }
+      for(int i=0; i<nbOfProbes; i++){ vrtx.angles[i]=0.0; }
+      for(int i=0; i<4; i++){ vrtx.grid[i]=0; }
+      int gid;
+      test >> gid >> vrtx.id >> vrtx.x >> vrtx.y >> vrtx.z >> vrtx.p >> vrtx.bu >> vrtx.grid[0] >> vrtx.grid[1] >> vrtx.grid[2] >> vrtx.grid[3];
+      if(vrtx.grid[0]==1){
+        vrtx200++;
+      }else if(vrtx.grid[1]==1){
+        vrtx150++;
+      }else if(vrtx.grid[2]==1){
+        vrtx100++;
+      }else if(vrtx.grid[3]==1){
+        vrtx050++;
+      }
+      GRID.insert(pair<int,vertex>(gid,vrtx));
+      vrtxIdList.push_back(gid);
+    }
+  }
+  cout<<"Grid points [2.0] "<<vrtx200<<" [1.5] "<<vrtx150<<" [1.0] "<<vrtx100<<" [0.5] "<<vrtx050<<"."<<endl;
+  return(0);
 }
 
 int Grid::getDiag(int tx, int ty, int tz, int& flag){
