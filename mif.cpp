@@ -182,12 +182,6 @@ int readCmdLine(int argc, char **argv){
     outBase = outBase + "/";
   }
 
-  if(outGridBase.compare("")==0){
-    outGridBase="./";
-  }else{
-    outGridBase = outGridBase + "/";
-  }
-
   cout<<endl;
   cout<< "ProteinFile: "<< proteinFile <<endl;
   cout<< "CleftFile: "<< cleftFile <<endl;

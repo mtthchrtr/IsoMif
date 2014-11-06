@@ -633,7 +633,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   vector<float> lb;
 
   nCliques++;
-  cout<<nCliques<<endl;
+  // cout<<nCliques<<endl;
 
   Clique newClique;
   newClique.cg=cg;
@@ -727,6 +727,9 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   float envD=0.0;
   float bud=0.0;
   float rmsd=0.0;
+  float numBu=0.0;
+  float d1Bu=0.0;
+  float d2Bu=0.0;
   for(it=cliques.back().nodes.begin(); it!=cliques.back().nodes.end(); ++it){
     float ncoor[3];
     for(int i=0; i<3; i++){
@@ -747,24 +750,25 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
       rmsd+=pow(dist3d(ncoor,(*it).pb->coor),2.0);
     }else{
       rmsd+=pow(dist3d(ncoor,(*it).b->coor),2.0);
-      // cout<<(*it).a->bu<<" "<<(*it).b->bu<<endl;
-      // bud+=pow(((*it).a->bu)-((*it).b->bu),2);
 
-        float num=0.0;
-        float d1=0.0;
-        float d2=0.0;
-        for(int i=0; i<6; ++i){
-          num+=((*it).a->nrg[i]*(*it).b->nrg[i])+((*it).a->ang[i]*(*it).b->ang[i]);
-          d1+=pow((*it).a->nrg[i],2)+pow((*it).a->ang[i],2);
-          d2+=pow((*it).b->nrg[i],2)+pow((*it).b->ang[i],2);
-        }
-        float cosd=num/(sqrt(d1)*sqrt(d2));
-        // printf("A %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).a->nrg[0],(*it).a->ang[0],(*it).a->nrg[1],(*it).a->ang[1],(*it).a->nrg[2],(*it).a->ang[2],(*it).a->nrg[3],(*it).a->ang[3],(*it).a->nrg[4],(*it).a->ang[4],(*it).a->nrg[5],(*it).a->ang[5]);
-        // printf("B %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).b->nrg[0],(*it).b->ang[0],(*it).b->nrg[1],(*it).b->ang[1],(*it).b->nrg[2],(*it).b->ang[2],(*it).b->nrg[3],(*it).b->ang[3],(*it).b->nrg[4],(*it).b->ang[4],(*it).b->nrg[5],(*it).b->ang[5]);
-        // cout<<"cosd "<<cosd<<endl<<endl;
-        cliques.back().normNodes+=cosd;
+      cout<<(*it).a->bu<<" "<<(*it).b->bu<<endl;
+      numBu+=(*it).a->bu*(*it).b->bu;
+      d1Bu+=pow((*it).a->bu,2);
+      d2Bu+=pow((*it).b->bu,2);
+
+      for(int i=0; i<6; ++i){
+        cliques.back().nrg+=(*it).a->nrg[i]+(*it).b->nrg[i];
+      }
+
+      // printf("A %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).a->nrg[0],(*it).a->ang[0],(*it).a->nrg[1],(*it).a->ang[1],(*it).a->nrg[2],(*it).a->ang[2],(*it).a->nrg[3],(*it).a->ang[3],(*it).a->nrg[4],(*it).a->ang[4],(*it).a->nrg[5],(*it).a->ang[5]);
+      // printf("B %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).b->nrg[0],(*it).b->ang[0],(*it).b->nrg[1],(*it).b->ang[1],(*it).b->nrg[2],(*it).b->ang[2],(*it).b->nrg[3],(*it).b->ang[3],(*it).b->nrg[4],(*it).b->ang[4],(*it).b->nrg[5],(*it).b->ang[5]);
+      printf("A %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).a->nrg[0],(*it).a->nrg[1],(*it).a->nrg[2],(*it).a->nrg[3],(*it).a->nrg[4],(*it).a->nrg[5]);
+      printf("B %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).b->nrg[0],(*it).b->nrg[1],(*it).b->nrg[2],(*it).b->nrg[3],(*it).b->nrg[4],(*it).b->nrg[5]);
+      cout<<"cosd "<<(*it).cosd<<endl;
+      cliques.back().normNodes+=(*it).cosd;
     }
   }
+  cliques.back().cosdBu=numBu/(sqrt(d1Bu)*sqrt(d2Bu));
   cliques.back().rmsd=sqrt(rmsd/(float)cliques.back().nbNodes);
   cliques.back().normNodesRMSD=cliques.back().normNodes/cliques.back().rmsd;
   // cliques.back().envD=envD/(float)cliques.back().nbNodes;
@@ -810,13 +814,13 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   // cout<<endl<<"cen_a: "<<cliques.back().cen_a[0]<<" "<<cliques.back().cen_a[1]<<" "<<cliques.back().cen_a[2];
   // cout<<endl<<"cen_b: "<<cliques.back().cen_b[0]<<" "<<cliques.back().cen_b[1]<<" "<<cliques.back().cen_b[2]<<endl;
   
-  if(cliques.back().tani>topT){
-    cout<<"NEW TOP CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" TANI "<<cliques.back().tani<<" TANINORMNODES "<<cliques.back().taniNorm<<" RMSD: "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
-    topT=cliques.back().tani;
+  if(cliques.back().normNodes>topT){
+    cout<<"NEW TOP CLIQUE CG "<<cg<<" cosdBu "<<cliques.back().cosdBu<<" NODES "<<cliques.back().nbNodes<<" NRG: "<<cliques.back().nrg<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" TANI "<<cliques.back().tani<<" TANINORMNODES "<<cliques.back().taniNorm<<" RMSD: "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
+    topT=cliques.back().normNodes;
     topN=cliques.back().nbNodes;
     topCliques[cg]=cliques.size()-1;
   }else{
-    cout<<"CLIQUE CG "<<cg<<" NODES "<<cliques.back().nbNodes<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" TANI "<<cliques.back().tani<<" TANINORMNODES "<<cliques.back().taniNorm<<" RMSD: "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
+    cout<<"CLIQUE CG "<<cg<<" cosdBu "<<cliques.back().cosdBu<<" NODES "<<cliques.back().nbNodes<<" NRG: "<<cliques.back().nrg<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" TANI "<<cliques.back().tani<<" TANINORMNODES "<<cliques.back().taniNorm<<" RMSD: "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
   }
 
   return;
@@ -1132,18 +1136,20 @@ void createNodes(int cg, vector<node> &graph, int s){
             if(mif1.at(i).pb[pb]==1 && mif2.at(j).pb[pb]==1) flag=1;
             if(mif1.at(i).pb[pb]==mif2.at(j).pb[pb]) cints++;
           }
+
+          float num=0.0;
+          float d1=0.0;
+          float d2=0.0;
+          for(int pb=0; pb<nb_of_probes; ++pb){
+            num+=(mif1.at(i).nrg[pb]*mif2.at(j).nrg[pb])+(mif1.at(i).ang[pb]*mif2.at(j).ang[pb]);
+            d1+=pow(mif1.at(i).nrg[pb],2)+pow(mif1.at(i).ang[pb],2);
+            d2+=pow(mif2.at(j).nrg[pb],2)+pow(mif2.at(j).ang[pb],2);
+          }
+          float cosd=num/(sqrt(d1)*sqrt(d2));
+
           // cout<<cints<<" "<<commonInt<<" flag "<<flag<<endl;
           if(cints>=commonInt && flag==1){
 
-            // float num=0.0;
-            // float d1=0.0;
-            // float d2=0.0;
-            // for(int pb=0; pb<nb_of_probes; ++pb){
-            //   num+=(mif1.at(i).nrg[pb]*mif2.at(j).nrg[pb])+(mif1.at(i).ang[pb]*mif2.at(j).ang[pb]);
-            //   d1+=pow(mif1.at(i).nrg[pb],2)+pow(mif1.at(i).ang[pb],2);
-            //   d2+=pow(mif2.at(j).nrg[pb],2)+pow(mif2.at(j).ang[pb],2);
-            // }
-            // float cosd=num/(sqrt(d1)*sqrt(d2));
             // printf("A %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",mif1.at(i).nrg[0],mif1.at(i).ang[0],mif1.at(i).nrg[1],mif1.at(i).ang[1],mif1.at(i).nrg[2],mif1.at(i).ang[2],mif1.at(i).nrg[3],mif1.at(i).ang[3],mif1.at(i).nrg[4],mif1.at(i).ang[4],mif1.at(i).nrg[5],mif1.at(i).ang[5]);
             // printf("B %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",mif2.at(j).nrg[0],mif2.at(j).ang[0],mif2.at(j).nrg[1],mif2.at(j).ang[1],mif2.at(j).nrg[2],mif2.at(j).ang[2],mif2.at(j).nrg[3],mif2.at(j).ang[3],mif2.at(j).nrg[4],mif2.at(j).ang[4],mif2.at(j).nrg[5],mif2.at(j).ang[5]);
             // cout<<"cosd "<<cosd<<endl<<endl;
@@ -1160,12 +1166,17 @@ void createNodes(int cg, vector<node> &graph, int s){
                 // cout<<" dist "<<dist<<" OK!"<<endl;
               }    
             }
+            // if(cosd<0.50) continue;
             // cout<<mif1.at(i).ncoor[0]<<" "<<mif1.at(i).ncoor[1]<<" "<<mif1.at(i).ncoor[2]<<" | "<<mif1.at(i).pb[0]<<" "<<mif1.at(i).pb[1]<<" "<<mif1.at(i).pb[2]<<" "<<mif1.at(i).pb[3]<<" "<<mif1.at(i).pb[4]<<" "<<mif1.at(i).pb[5]<<" <- SAME -> ";
             // cout<<mif2.at(j).coor[0]<<" "<<mif2.at(j).coor[1]<<" "<<mif2.at(j).coor[2]<<" | "<<mif2.at(j).pb[0]<<" "<<mif2.at(j).pb[1]<<" "<<mif2.at(j).pb[2]<<" "<<mif2.at(j).pb[3]<<" "<<mif2.at(j).pb[4]<<" "<<mif2.at(j).pb[5]<<endl;
-            
+            // printf("A %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",mif1.at(i).nrg[0],mif1.at(i).ang[0],mif1.at(i).nrg[1],mif1.at(i).ang[1],mif1.at(i).nrg[2],mif1.at(i).ang[2],mif1.at(i).nrg[3],mif1.at(i).ang[3],mif1.at(i).nrg[4],mif1.at(i).ang[4],mif1.at(i).nrg[5],mif1.at(i).ang[5]);
+            // printf("B %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",mif2.at(j).nrg[0],mif2.at(j).ang[0],mif2.at(j).nrg[1],mif2.at(j).ang[1],mif2.at(j).nrg[2],mif2.at(j).ang[2],mif2.at(j).nrg[3],mif2.at(j).ang[3],mif2.at(j).nrg[4],mif2.at(j).ang[4],mif2.at(j).nrg[5],mif2.at(j).ang[5]);
+            // cout<<"cosd: "<<cosd<<endl;
+
             node newNode;
             newNode.a=&mif1.at(i);
             newNode.b=&mif2.at(j);
+            newNode.cosd=cosd;
             graph.push_back(newNode);
           }
       }

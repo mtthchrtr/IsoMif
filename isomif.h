@@ -78,6 +78,7 @@ struct nodes{
   atom* cb;
   pseudoC* pa;
   pseudoC* pb;
+  float cosd;
   // float** nrgs;
   // int* pbPass;
   // int neibrs;
@@ -95,9 +96,11 @@ struct CliqueStruct{
   float tani;
   float taniNorm;
   float rmsd;
+  float cosdBu;
   float ligRMSD;
   float envD;
   float buD;
+  float nrg;
   gsl_matrix *mat_r;
   float cen_a[3];
   float cen_b[3];

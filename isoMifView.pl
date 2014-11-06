@@ -145,8 +145,8 @@ sub storeMif{
     $line=~s/\s+$//g;
     my @info=split(/\s+/,$line);
     #Store vrtx potential interaction
-    for(my $i=3; $i<9; $i++){
-      push @{${$_[1]}[$i-3]}, ($info[0],$info[1],$info[2],$info[9],$info[10],$info[11],$info[12]) if($info[$i]==1);
+    for(my $i=3; $i<21; $i+=3){
+      push @{${$_[1]}[($i/3)-1]}, ($info[0],$info[1],$info[2],$info[21],$info[22],$info[23],$info[24]) if($info[$i]==1);
     }
     # #Store vrtx grid presence
     # for(my $i=9; $i<13; $i++){
@@ -174,7 +174,7 @@ sub printMif{
     if($#{${$_[1]}[$i]}){
       ${$_[2]}[$i][$res][0]=$it;
       for(my $j=0; $j<@{${$_[1]}[$i]}; $j+=7){ #For each node
-        if(${$_[1]}[$i][$j+3+$res]==1){ #If its in this grid resolution
+        if(${$_[1]}[$i][$j+3+$res]==1){ #If its in the g grid resolution
           my $coor=();
           my $ncoor=();
           $coor[0]=$ncoor[0]=${$_[1]}[$i][$j];
