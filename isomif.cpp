@@ -49,7 +49,12 @@ int main(int argc, char *argv[]){
 
   if(get_info(nrg_file1,nrg_file2)==24){ return(24); }
 
-  sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK nb_of_probes: %d\nREMARK C-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nREMARK dDist: %5.2f\nREMARK jtt_threshold: %d\nREMARK max_nodes: %d\nREMARK commont int : %d\nREMARK wsimfn: %d\nREMARK tag1: %s\nREMARK tag2: %s\nREMARK rnc1: %s\nREMARK rnc2: %s\n",cmdLine,nrg_file1.c_str(),nrg_file2.c_str(),nb_of_probes,ca_dDist,ps_dDist,dDist,jttt,maxNodes,commonInt,wrfn,tag1.c_str(),tag2.c_str(),rnc1.c_str(),rnc2.c_str());
+  if(emptOut==1){
+    sprintf(tmp,"REMARK command: %s\nREMARK wsimfn: %d\nREMARK tag1: %s\nREMARK tag2: %s\nREMARK rnc1: %s\nREMARK rnc2: %s\n",cmdLine,wrfn,tag1.c_str(),tag2.c_str(),rnc1.c_str(),rnc2.c_str());  
+  }else{
+    sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK nb_of_probes: %d\nREMARK C-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nREMARK dDist: %5.2f\nREMARK jtt_threshold: %d\nREMARK max_nodes: %d\nREMARK commont int : %d\nREMARK wsimfn: %d\nREMARK tag1: %s\nREMARK tag2: %s\nREMARK rnc1: %s\nREMARK rnc2: %s\n",cmdLine,nrg_file1.c_str(),nrg_file2.c_str(),nb_of_probes,ca_dDist,ps_dDist,dDist,jttt,maxNodes,commonInt,wrfn,tag1.c_str(),tag2.c_str(),rnc1.c_str(),rnc2.c_str());  
+  }
+  
   strcpy(outH,tmp);
 
   //Print info to User
@@ -156,7 +161,7 @@ int main(int argc, char *argv[]){
       //   }
       // }
 
-      cout<<"Rotating vertexes of Mif 1 onto Mif 2 using list of atoms..."<<endl;
+      // cout<<"Rotating vertexes of Mif 1 onto Mif 2 using list of atoms..."<<endl;
       //Rotate mif 1 onto mif 2
       for(int v=0; v<mif1.size(); v++){
         for(int i=0; i<3; i++){
@@ -167,7 +172,7 @@ int main(int argc, char *argv[]){
         }
       }
 
-      cout<<"Finding corresponding vertexes..."<<endl;
+      // cout<<"Finding corresponding vertexes..."<<endl;
       float dist=0.0;
       for(int u=0; u<mif1.size(); u++){
         if(mif1[u].grid[cg2]!=1) continue;
@@ -202,11 +207,11 @@ int main(int argc, char *argv[]){
           }
         }
       }
-      cout<<"Vertexes matched in mif1: "<<nc.va.size()<<" "<<ss1[cg2]<<endl;
-      cout<<"Vertexes matched in mif2: "<<nc.vb.size()<<" "<<ss2[cg2]<<endl;
+      // cout<<"Vertexes matched in mif1: "<<nc.va.size()<<" "<<ss1[cg2]<<endl;
+      // cout<<"Vertexes matched in mif2: "<<nc.vb.size()<<" "<<ss2[cg2]<<endl;
       nc.nbNodes=nc.va.size()+nc.vb.size();
       nc.tani=( ((float)nc.va.size()/(float)ss1[cg2]) + ((float)nc.vb.size()/(float)ss2[cg2]) ) / 2.0;
-      cout<<"NEW CLIQUE CG "<<steps[cs]<<" NODES "<<nc.nbNodes<<" TANI "<<nc.tani<<endl;
+      // cout<<"NEW CLIQUE CG "<<steps[cs]<<" NODES "<<nc.nbNodes<<" TANI "<<nc.tani<<endl;
       cliques.push_back(nc);
     }else{
       bool* conn=NULL;
@@ -234,7 +239,7 @@ int main(int argc, char *argv[]){
         //   }
         // }
 
-        cout<<"Rotating Mif 1 onto Mif 2 using previous stage..."<<endl;
+        // cout<<"Rotating Mif 1 onto Mif 2 using previous stage..."<<endl;
         for(int v=0; v<mif1.size(); v++){
           for(int i=0; i<3; i++){
             mif1[v].ncoor[i]=cliques.back().cen_b[i];
@@ -246,7 +251,7 @@ int main(int argc, char *argv[]){
         cgs=1; //Wee need to check distance between rotated vertex and remaining vrtx     
       }else{
         cgs=0;
-        cout<<"Not rotating vertexes"<<endl;
+        // cout<<"Not rotating vertexes"<<endl;
       }
 
       //Create nodes
@@ -633,7 +638,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   vector<float> lb;
 
   nCliques++;
-  // cout<<nCliques<<endl;
+  cout<<nCliques<<endl;
 
   Clique newClique;
   newClique.cg=cg;
@@ -716,7 +721,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     if(ligRMSDc>0 && ligRMSDc==lig1.size() && lig1.size()==lig2.size()){
       ligRMSD=sqrt(ligRMSD/(float)ligRMSDc);
     }else{
-      cout<<"ligRMSDc "<<ligRMSDc<<" ligsize1 "<<lig1.size()<<" ligsize2 "<<lig2.size()<<endl;
+      // cout<<"ligRMSDc "<<ligRMSDc<<" ligsize1 "<<lig1.size()<<" ligsize2 "<<lig2.size()<<endl;
       ligRMSD=0.0;
     }
   }
@@ -751,7 +756,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     }else{
       rmsd+=pow(dist3d(ncoor,(*it).b->coor),2.0);
 
-      cout<<(*it).a->bu<<" "<<(*it).b->bu<<endl;
+      // cout<<(*it).a->bu<<" "<<(*it).b->bu<<endl;
       numBu+=(*it).a->bu*(*it).b->bu;
       d1Bu+=pow((*it).a->bu,2);
       d2Bu+=pow((*it).b->bu,2);
@@ -762,9 +767,9 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
 
       // printf("A %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).a->nrg[0],(*it).a->ang[0],(*it).a->nrg[1],(*it).a->ang[1],(*it).a->nrg[2],(*it).a->ang[2],(*it).a->nrg[3],(*it).a->ang[3],(*it).a->nrg[4],(*it).a->ang[4],(*it).a->nrg[5],(*it).a->ang[5]);
       // printf("B %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).b->nrg[0],(*it).b->ang[0],(*it).b->nrg[1],(*it).b->ang[1],(*it).b->nrg[2],(*it).b->ang[2],(*it).b->nrg[3],(*it).b->ang[3],(*it).b->nrg[4],(*it).b->ang[4],(*it).b->nrg[5],(*it).b->ang[5]);
-      printf("A %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).a->nrg[0],(*it).a->nrg[1],(*it).a->nrg[2],(*it).a->nrg[3],(*it).a->nrg[4],(*it).a->nrg[5]);
-      printf("B %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).b->nrg[0],(*it).b->nrg[1],(*it).b->nrg[2],(*it).b->nrg[3],(*it).b->nrg[4],(*it).b->nrg[5]);
-      cout<<"cosd "<<(*it).cosd<<endl;
+      // printf("A %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).a->nrg[0],(*it).a->nrg[1],(*it).a->nrg[2],(*it).a->nrg[3],(*it).a->nrg[4],(*it).a->nrg[5]);
+      // printf("B %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).b->nrg[0],(*it).b->nrg[1],(*it).b->nrg[2],(*it).b->nrg[3],(*it).b->nrg[4],(*it).b->nrg[5]);
+      // cout<<"cosd "<<(*it).cosd<<endl;
       cliques.back().normNodes+=(*it).cosd;
     }
   }
@@ -814,13 +819,13 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   // cout<<endl<<"cen_a: "<<cliques.back().cen_a[0]<<" "<<cliques.back().cen_a[1]<<" "<<cliques.back().cen_a[2];
   // cout<<endl<<"cen_b: "<<cliques.back().cen_b[0]<<" "<<cliques.back().cen_b[1]<<" "<<cliques.back().cen_b[2]<<endl;
   
-  if(cliques.back().normNodes>topT){
+  if(cliques.back().tani>topT){
     cout<<"NEW TOP CLIQUE CG "<<cg<<" cosdBu "<<cliques.back().cosdBu<<" NODES "<<cliques.back().nbNodes<<" NRG: "<<cliques.back().nrg<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" TANI "<<cliques.back().tani<<" TANINORMNODES "<<cliques.back().taniNorm<<" RMSD: "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
-    topT=cliques.back().normNodes;
+    topT=cliques.back().tani;
     topN=cliques.back().nbNodes;
     topCliques[cg]=cliques.size()-1;
   }else{
-    cout<<"CLIQUE CG "<<cg<<" cosdBu "<<cliques.back().cosdBu<<" NODES "<<cliques.back().nbNodes<<" NRG: "<<cliques.back().nrg<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" TANI "<<cliques.back().tani<<" TANINORMNODES "<<cliques.back().taniNorm<<" RMSD: "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
+    // cout<<"CLIQUE CG "<<cg<<" cosdBu "<<cliques.back().cosdBu<<" NODES "<<cliques.back().nbNodes<<" NRG: "<<cliques.back().nrg<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" TANI "<<cliques.back().tani<<" TANINORMNODES "<<cliques.back().taniNorm<<" RMSD: "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
   }
 
   return;

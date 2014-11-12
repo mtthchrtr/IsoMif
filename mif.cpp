@@ -94,7 +94,7 @@ int readCmdLine(int argc, char **argv){
   usage << "-r                   : \t maximum distance between the grid and the ligand\n";
   usage << "-x                   : \t do not write atoms in mif file\n";
   usage << "-og                  : \t dir for grid file\n";
-  usage << "-z                   : \t small output files, only with 2.0 and 1.5 angstrom and lig atoms\n";
+  usage << "-z                   : \t output with only vertices from the resolution specified [0-3] and lig atoms\n";
   usage << "-h                   : \t help menu\n";
 
   if(argc<5){
@@ -160,7 +160,7 @@ int readCmdLine(int argc, char **argv){
       sscanf(argv[nb_arg+1], "%d", &bul);
     }
     if(strcmp(argv[nb_arg],"-z")==0){
-      zip=1;
+      sscanf(argv[nb_arg+1], "%d", &zip);
     }
     if(strcmp(argv[nb_arg],"-og")==0){
       outGridBase=string(argv[nb_arg+1]);
@@ -855,13 +855,11 @@ int Grid::buildGrid(vector<atom>& prot){
 
             for(int i=0; i<aa.size(); i++){ vrtx.env[aa[i]]=1000.0; }
 
-            //Print grid in appropriate file
             if(inGridRes(vrtx,2.0)==1){
               vrtx.grid[0]=1;
               vrtx200++;
             }else{ vrtx.grid[0]=0; }
 
-            //Print grid in appropriate file
             if(inGridRes(vrtx,1.5)==1){
               vrtx.grid[1]=1;
               vrtx150++;
@@ -877,6 +875,8 @@ int Grid::buildGrid(vector<atom>& prot){
               vrtx050++;               
             }else{ vrtx.grid[3]=0; }
             vrtx025++;
+
+            if(vrtx.grid[zip]!=1 && zip!=-1) continue;
 
             vrtx.id=uID;
             uID++;
@@ -1031,27 +1031,32 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
       dist=((abs(it->second.x-(*pit).x)*abs(it->second.x-(*pit).x))+(abs(it->second.y-(*pit).y)*abs(it->second.y-(*pit).y))+(abs(it->second.z-(*pit).z)*abs(it->second.z-(*pit).z)));
       if(dist<minDist) minDist=dist;
     }
-    if(minDist<minGridDist || minDist > maxGridDist){
+
+    if(inGridRes(it->second,2.0)==1){
+      it->second.grid[0]=1;
+      vrtx200++;
+    }else{ it->second.grid[0]=0; }
+
+    if(inGridRes(it->second,1.5)==1){
+      it->second.grid[1]=1;
+      vrtx150++;
+    }else{ it->second.grid[1]=0; }
+    
+    if(inGridRes(it->second,1.0)==1){
+      it->second.grid[2]=1;
+      vrtx100++;
+    }else{ it->second.grid[2]=0; }
+    
+    if(inGridRes(it->second,0.5)==1){
+      it->second.grid[3]=1;
+      vrtx050++;               
+    }else{ it->second.grid[3]=0; }
+    vrtx025++;
+
+    if(minDist<minGridDist || minDist > maxGridDist || (it->second.grid[zip]!=1 && zip!=-1)){
       GRID.erase(it++);
       chipped++;
     }else{
-      if(inGridRes(it->second,2.0)==1){
-        it->second.grid[0]=1;
-        vrtx200++;
-      }else
-      if(inGridRes(it->second,1.5)==1){
-        it->second.grid[1]=1;
-        vrtx150++;
-      }else
-      if(inGridRes(it->second,1.0)==1){
-        it->second.grid[2]=1;
-        vrtx100++;
-      }else
-      if(inGridRes(it->second,0.5)==1){
-        it->second.grid[3]=1;
-        vrtx050++;
-      }
-      // cout<<it->second.grid[0]<<" "<<it->second.grid[1]<<" "<<it->second.grid[2]<<" "<<it->second.grid[3]<<endl;
       ++it;
     }
   }
@@ -1749,7 +1754,7 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
       //   fprintf(fpNew, "#PG %7.2f %7.2f %7.2f\n",it->second.x,it->second.y,it->second.z);  
       // }
     }else{
-      if((zip==1 && (it->second.grid[0]==1 || it->second.grid[1]==1 || it->second.grid[2]==1)) || zip==0){
+      if((zip!=-1 && it->second.grid[zip]==1) || zip==-1){
         fprintf(fpNew, "%7.2f %7.2f %7.2f",it->second.x,it->second.y,it->second.z);
         for(probe=0; probe<nbOfProbes; probe++){
           fprintf(fpNew, " %1d",it->second.ints[probe]);

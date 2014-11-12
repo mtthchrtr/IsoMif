@@ -123,7 +123,7 @@ int nbOfAts=0;
 int nbOfAtoms=0;
 int nbOfProbes=0;
 int ss[4];
-int zip=0;
+int zip=-1;
 int bul=0;
 int buD=40;
 float* epsilons;
