@@ -54,7 +54,7 @@ if($outDir eq ""){
   $outDir=&get_dirs("/Users/matthieuchartier/hive/","matchView");
 }
 
-my @probeNames=("HYD","ARM","DON","ACC","POS","NEG");
+my @probeNames=();
 my @pbColors=("aquamarine","brightorange","blue","red","limegreen","lightmagenta");
 
 #Retrieve the nodes and other info from match file
@@ -138,6 +138,10 @@ close IN;
 sub storeMif{
   open IN, "<".$_[0] or die "cant open mif file $mifFile";
   while(my $line=<IN>){
+    if($line=~/^#probe\[([0-9]+)\]\s+([0-9a-z\.-]+)$/i){
+      $probeNames[$1]=$2;
+      next;
+    }
     next if($line=~/^#ATOM/);
     next if($line=~/^#/);
     next if($line=~/^$/);

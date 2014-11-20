@@ -87,6 +87,7 @@ int readCmdLine(int argc, char **argv){
   usage << "-o                   : \t output directory\n";
   usage << "-b                   : \t burriedness level (0-14) [8]\n";
   usage << "-m                   : \t smooth\n";
+  usage << "-ff                  : \t force field to use\n";
   usage << "-mat                 : \t epsilon matrix to use\n";
   usage << "-pb                  : \t probes threshold file to use\n";
   usage << "-t                   : \t filename (tag) [pdb name by default]\n";
@@ -125,6 +126,9 @@ int readCmdLine(int argc, char **argv){
     }
     if(strcmp(argv[nb_arg],"-o")==0){
       outBase=string(argv[nb_arg+1]);
+    }
+    if(strcmp(argv[nb_arg],"-ff")==0){
+      ff=string(argv[nb_arg+1]);
     }
     if(strcmp(argv[nb_arg],"-c")==0){
       chain=string(argv[nb_arg+1]);
@@ -1734,10 +1738,12 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
   }
   fprintf(fpNew, "#gridLigMinDist %5.2f\n",sqrt(gridLigDist));
   fprintf(fpNew,"#chain %s\n",chain.c_str());
+  fprintf(fpNew,"#ff %s\n",ff.c_str());
   fprintf(fpNew,"#nbOfProbes %2d\n",nbOfProbes);
   for(i=0; i<nbOfProbes; i++){
     fprintf(fpNew,"#probe[%d] %4s\n",i,probes[i].c_str());
   }
+  fprintf(fpNew,"#zip %d\n",zip);
   fprintf(fpNew,"#stepsize %4.2f\n",stepsize);
   fprintf(fpNew,"#atom_probe_distance_threshold %7.4f\n",atmPbMaxDist);
   fprintf(fpNew,"#protein_grid_distance %7.4f to %7.4f\n",sqrt(minGridDist),sqrt(maxGridDist));
@@ -1845,7 +1851,7 @@ void stripSpace(string &str) {
 }
 
 void getAtomRef(){
-  string fn=basePath + "/forcefield_files/atoms";
+  string fn=basePath + "/forcefield_files/"+ff+"/atoms";
   ifstream infile(fn.c_str());
   string line;
   string res;
@@ -1860,7 +1866,7 @@ void getAtomRef(){
 }
 
 void getPseudoC(){
-  string fn=basePath + "/forcefield_files/pseudocenters";
+  string fn=basePath + "/forcefield_files/"+ff+"/pseudocenters";
   ifstream infile(fn.c_str());
   string line;
   string res;
@@ -1879,7 +1885,7 @@ void getEpsilons(){
   if(matrixF.compare("")!=0){
     fn=matrixF;
   }else{
-    fn=basePath + "/forcefield_files/epsilons";
+    fn=basePath + "/forcefield_files/"+ff+"/epsilons";
   }
   ifstream infile(fn.c_str());
   string s;
@@ -1906,7 +1912,7 @@ void getEpsilons(){
 }
 
 void getAtomTypes(){
-  string fn=basePath + "/forcefield_files/atomTypes";
+  string fn=basePath + "/forcefield_files/"+ff+"/atomTypes";
   ifstream infile(fn.c_str());
   string s;
   int row=0;
@@ -1933,7 +1939,7 @@ void getProbes(){
   if(probesF.compare("")!=0){
     fn=probesF;
   }else{
-    fn=basePath + "/forcefield_files/probes";
+    fn=basePath + "/forcefield_files/"+ff+"/probes";
   }
   ifstream infile(fn.c_str());
   string line;
@@ -1955,7 +1961,7 @@ void getProbes(){
 }
 
 void getaa(){
-  string fn=basePath + "/forcefield_files/aa";
+  string fn=basePath + "/forcefield_files/"+ff+"/aa";
   ifstream infile(fn.c_str());
   string line;
   string taa;
@@ -2065,91 +2071,97 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms, float& angSu
     string pat=probes[pbId];
     epsilon=eps[at+"_"+pat];
 
-    //Hbond Donnor/Acceptor
-    if((acc[at]==1 && don[pat]==1) || (acc[pat]==1 && don[at]==1)){
-
-      rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
-      rpDist=dist_3d(vrtx.x,vrtx.y,vrtx.z,atm.xr,atm.yr,atm.zr);
-
-      angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
-      angle=acos(angle)* 180.0 / PI;
-      if(atm.rDir==0){ angle=180.00-angle; }
-
-      // if(atm.resn.compare("ASN")==0 && atm.atomn.compare("OD1")==0){
-      //   angleThresh=80.00;
-      // }else if(atm.resn.compare("ASN")==0 && atm.atomn.compare("ND2")==0){
-      //   angleThresh=80.00;
-      // }else if(atm.resn.compare("GLN")==0 && atm.atomn.compare("OE1")==0){
-      //   angleThresh=80.00;
-      // }else if(atm.resn.compare("GLN")==0 && atm.atomn.compare("NE2")==0){
-      //   angleThresh=80.00;
-      // }else if(atm.resn.compare("SER")==0 && atm.atomn.compare("OG")==0){
-      //   angleThresh=80.00;
-      // }else if(atm.resn.compare("THR")==0 && atm.atomn.compare("OG1")==0){
-      //   angleThresh=80.00;
-      // }else if(atm.resn.compare("ARG")==0 && atm.atomn.compare("NH1")==0){
-      //   angleThresh=80.00;
-      // }else if(atm.resn.compare("ARG")==0 && atm.atomn.compare("NH2")==0){
-      //   angleThresh=80.00;
-      // }else if(atm.resn.compare("LYS")==0 && atm.atomn.compare("NZ")==0){
-      //   angleThresh=80.00;
-      // }else if(atm.resn.compare("ASP")==0 && atm.atomn.compare("OD1")==0){
-      //   angleThresh=80.00;
-      // }else if(atm.resn.compare("ASP")==0 && atm.atomn.compare("OD2")==0){
-      //   angleThresh=80.00;
-      // }else if(atm.resn.compare("GLU")==0 && atm.atomn.compare("OE1")==0){
-      //   angleThresh=80.00;
-      // }else if(atm.resn.compare("GLU")==0 && atm.atomn.compare("OE2")==0){
-      //   angleThresh=80.00;
-      // }
-
-      if(printDetails==1){ cout<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<endl <<"Hbond "<<"Angle "<< angle << " Thresh " << angleThresh <<endl; }
-      if(printDetails==1){ cout<< "Dist "<< dist << " rDist "<< rDist<< " rpDist "<< rpDist<<" rDir "<< atm.rDir <<endl; }
-      if(angle>angleThresh){
-        if(printDetails==1){ cout<<"Angle over threshold"<<endl; }
-        return(energy);
-      }
-      alpha=1.0;
+    if(ff.compare("FlexAID")==0){
       energy=(epsilon)*(exp(-1.0*dist*alpha));
+      // cout<<atm.resn<<" "<<atm.atomn<<" "<<at<<" "<<pat<<" ("<<pbId<<") "<<epsilon<<" "<<dist<<" "<<energy<<endl;
       count_atoms++;
+    }else{
+      //Hbond Donnor/Acceptor
+      if((acc[at]==1 && don[pat]==1) || (acc[pat]==1 && don[at]==1)){
 
-      angSum+=angle;
-      angC++;
-    }else if(arm[at]==1 && arm[pat]==1){ //aromatic interaction
-      if(printDetails==1){ cout<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<endl<< "Aromatic"<<endl; }
-      if(atm.dir==1){
         rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
         rpDist=dist_3d(vrtx.x,vrtx.y,vrtx.z,atm.xr,atm.yr,atm.zr);
+
         angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
         angle=acos(angle)* 180.0 / PI;
-        if(angle>90 || fabs(180.00-angle) < 0.001){
-          angle=180-angle;
-        }
-        if(angle>35.00 && angle<55.00){
-          if(printDetails==1){ cout <<"angle between 35 and 55"<<endl; }
+        if(atm.rDir==0){ angle=180.00-angle; }
+
+        // if(atm.resn.compare("ASN")==0 && atm.atomn.compare("OD1")==0){
+        //   angleThresh=80.00;
+        // }else if(atm.resn.compare("ASN")==0 && atm.atomn.compare("ND2")==0){
+        //   angleThresh=80.00;
+        // }else if(atm.resn.compare("GLN")==0 && atm.atomn.compare("OE1")==0){
+        //   angleThresh=80.00;
+        // }else if(atm.resn.compare("GLN")==0 && atm.atomn.compare("NE2")==0){
+        //   angleThresh=80.00;
+        // }else if(atm.resn.compare("SER")==0 && atm.atomn.compare("OG")==0){
+        //   angleThresh=80.00;
+        // }else if(atm.resn.compare("THR")==0 && atm.atomn.compare("OG1")==0){
+        //   angleThresh=80.00;
+        // }else if(atm.resn.compare("ARG")==0 && atm.atomn.compare("NH1")==0){
+        //   angleThresh=80.00;
+        // }else if(atm.resn.compare("ARG")==0 && atm.atomn.compare("NH2")==0){
+        //   angleThresh=80.00;
+        // }else if(atm.resn.compare("LYS")==0 && atm.atomn.compare("NZ")==0){
+        //   angleThresh=80.00;
+        // }else if(atm.resn.compare("ASP")==0 && atm.atomn.compare("OD1")==0){
+        //   angleThresh=80.00;
+        // }else if(atm.resn.compare("ASP")==0 && atm.atomn.compare("OD2")==0){
+        //   angleThresh=80.00;
+        // }else if(atm.resn.compare("GLU")==0 && atm.atomn.compare("OE1")==0){
+        //   angleThresh=80.00;
+        // }else if(atm.resn.compare("GLU")==0 && atm.atomn.compare("OE2")==0){
+        //   angleThresh=80.00;
+        // }
+
+        if(printDetails==1){ cout<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<endl <<"Hbond "<<"Angle "<< angle << " Thresh " << angleThresh <<endl; }
+        if(printDetails==1){ cout<< "Dist "<< dist << " rDist "<< rDist<< " rpDist "<< rpDist<<" rDir "<< atm.rDir <<endl; }
+        if(angle>angleThresh){
+          if(printDetails==1){ cout<<"Angle over threshold"<<endl; }
           return(energy);
         }
-        if(printDetails==1){ cout<<"angle "<<angle<<endl; }
+        alpha=1.0;
+        energy=(epsilon)*(exp(-1.0*dist*alpha));
+        count_atoms++;
+
         angSum+=angle;
         angC++;
-      }else{
-        if(printDetails==1){ cout<<"No angle to alculate"<<endl; }
-      }
+      }else if(arm[at]==1 && arm[pat]==1){ //aromatic interaction
+        if(printDetails==1){ cout<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<endl<< "Aromatic"<<endl; }
+        if(atm.dir==1){
+          rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
+          rpDist=dist_3d(vrtx.x,vrtx.y,vrtx.z,atm.xr,atm.yr,atm.zr);
+          angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
+          angle=acos(angle)* 180.0 / PI;
+          if(angle>90 || fabs(180.00-angle) < 0.001){
+            angle=180-angle;
+          }
+          if(angle>35.00 && angle<55.00){
+            if(printDetails==1){ cout <<"angle between 35 and 55"<<endl; }
+            return(energy);
+          }
+          if(printDetails==1){ cout<<"angle "<<angle<<endl; }
+          angSum+=angle;
+          angC++;
+        }else{
+          if(printDetails==1){ cout<<"No angle to alculate"<<endl; }
+        }
 
-      alpha=1.0;
-      energy=(epsilon)*(exp(-1.0*dist*alpha));
-      count_atoms++;
-      if(printDetails==1){  cout<< "epsilon: " << epsilon<< " alpha: "<< alpha<< " dist: "<< dist<< " -> NRG: "<< energy<< endl<<endl; }
-    }else if(chr[at]==1 && chr[pat]==1){ //charged interaction
-      if(printDetails==1){ cout<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<endl << "Charged couple"<< endl; }
-      alpha=1.0;
-      energy=(epsilon)*(exp(-1.0*dist*alpha));
-      count_atoms++;
-    }else if(hyd[pat]==1 && hyd[at]==1){//if its a hydrophoic probe
-      if(printDetails==1){ cout << "Hydrophobic"<< endl<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<endl; }
-      alpha=1.0;
-      energy=(epsilon)*(exp(-1.0*dist*alpha));
-      count_atoms++;
+        alpha=1.0;
+        energy=(epsilon)*(exp(-1.0*dist*alpha));
+        count_atoms++;
+        if(printDetails==1){  cout<< "epsilon: " << epsilon<< " alpha: "<< alpha<< " dist: "<< dist<< " -> NRG: "<< energy<< endl<<endl; }
+      }else if(chr[at]==1 && chr[pat]==1){ //charged interaction
+        if(printDetails==1){ cout<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<endl << "Charged couple"<< endl; }
+        alpha=1.0;
+        energy=(epsilon)*(exp(-1.0*dist*alpha));
+        count_atoms++;
+      }else if(hyd[pat]==1 && hyd[at]==1){//if its a hydrophoic probe
+        if(printDetails==1){ cout << "Hydrophobic"<< endl<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<endl; }
+        alpha=1.0;
+        energy=(epsilon)*(exp(-1.0*dist*alpha));
+        count_atoms++;
+      }
     }
     return(energy);
   }

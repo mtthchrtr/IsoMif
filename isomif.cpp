@@ -23,8 +23,6 @@ int main(int argc, char *argv[]){
 
   setJTT(jttt);
 
-  storeProbesList();
-
   if(pairwiseF.compare("")!=0){
     getPairwise();
     open_file_ptr(&fpout,out_file,1);
@@ -63,6 +61,8 @@ int main(int argc, char *argv[]){
   // cout<<rnc1<<" "<<rnc2<<endl;
   createVrtxVec(nrg_file1,mif1,prot1,ss1,caSize1,pseudoL1,rnc1,lig1);
   createVrtxVec(nrg_file2,mif2,prot2,ss2,caSize2,pseudoL2,rnc2,lig2);
+  cout<<"mif1 size: "<<mif1.size()<<endl;
+  cout<<"mif2 size: "<<mif2.size()<<endl;
 
   // for(int i=0; i<lig1.size(); i++){
   //   cout<<lig1[i].resn<<" "<<lig1[i].resnb<<" "<<lig1[i].chain<<" "<<lig1[i].atomn<<" "<<lig1[i].coor[0]<<" "<<lig1[i].coor[1]<<" "<<lig1[i].coor[2]<<endl;
@@ -71,25 +71,7 @@ int main(int argc, char *argv[]){
   // for(int i=0; i<lig2.size(); i++){
   //   cout<<lig2[i].resn<<" "<<lig2[i].resnb<<" "<<lig2[i].chain<<" "<<lig2[i].atomn<<" "<<lig2[i].coor[0]<<" "<<lig2[i].coor[1]<<" "<<lig2[i].coor[2]<<endl;
   // }
-
-  // for(i=0; i<mif1.size(); i++){
-  //   cout<< mif1.at(i).coor[0]<<" "<< mif1.at(i).coor[1]<<" "<< mif1.at(i).coor[2]<<" "<< mif1.at(i).pb[0]<<" "<< mif1.at(i).pb[1]<<" "<< mif1.at(i).pb[2]<<" "<< mif1.at(i).pb[3]<<" "<< mif1.at(i).pb[4]<<" "<< mif1.at(i).pb[5]<<endl;
-  // }
-  // for(i=0; i<mif2.size(); i++){
-  //   cout<< mif2.at(i).coor[0]<<" "<< mif2.at(i).coor[1]<<" "<< mif2.at(i).coor[2]<<" "<< mif2.at(i).pb[0]<<" "<< mif2.at(i).pb[1]<<" "<< mif2.at(i).pb[2]<<" "<< mif2.at(i).pb[3]<<" "<< mif2.at(i).pb[4]<<" "<< mif2.at(i).pb[5]<<" "<< mif2.at(i).grid[0]<<" "<< mif2.at(i).grid[1]<<" "<< mif2.at(i).grid[2]<<" "<< mif2.at(i).grid[3]<<endl;
-  // }
-
-  // for(i=0; i<mif1.size(); i++){
-  //   if(mif1.at(i).grid[0]==1){
-  //     cout<< mif1.at(i).coor[0]<<" "<< mif1.at(i).coor[1]<<" "<< mif1.at(i).coor[2]<<" "<< mif1.at(i).pb[0]<<" "<< mif1.at(i).pb[1]<<" "<< mif1.at(i).pb[2]<<" "<< mif1.at(i).pb[3]<<" "<< mif1.at(i).pb[4]<<" "<< mif1.at(i).pb[5]<<" "<< mif1.at(i).grid[0]<<" "<< mif1.at(i).grid[1]<<" "<< mif1.at(i).grid[2]<<" "<< mif1.at(i).grid[3]<<endl; 
-  //   }
-  // }
-  // cout<<endl<<"Grid 2"<<endl<<endl;
-  // for(i=0; i<mif2.size(); i++){
-  //   if(mif2.at(i).grid[0]==1){
-  //     cout<< mif2.at(i).coor[0]<<" "<< mif2.at(i).coor[1]<<" "<< mif2.at(i).coor[2]<<" "<< mif2.at(i).pb[0]<<" "<< mif2.at(i).pb[1]<<" "<< mif2.at(i).pb[2]<<" "<< mif2.at(i).pb[3]<<" "<< mif2.at(i).pb[4]<<" "<< mif2.at(i).pb[5]<<" "<< mif2.at(i).grid[0]<<" "<< mif2.at(i).grid[1]<<" "<< mif2.at(i).grid[2]<<" "<< mif2.at(i).grid[3]<<endl;
-  //   }
-  // }
+  // return(0);
 
   //Set which vertices to be considered if cg_start > 0
   if(cg_start>-1){
@@ -180,7 +162,7 @@ int main(int argc, char *argv[]){
           if(mif2[v].grid[cg2]!=1) continue;
           dist=dist3d(mif1[u].ncoor,mif2[v].coor);        
           if(dist < dDist || fabs(dist-dDist)<0.001){ //If passes distance threshold
-            for(int i=0; i<6; i++){
+            for(int i=0; i<nb_of_probes; i++){
               if(mif1[u].pb[i]==1 && mif2[v].pb[i]==1){
                 // cout<<i<<" - "<<mif1[u].ncoor[0]<<" "<<mif1[u].ncoor[1]<<" "<<mif1[u].ncoor[2]<<" "<<mif2[v].coor[0]<<" "<<mif2[v].coor[1]<<" "<<mif2[v].coor[2]<<" - "<<mif1[u].pb[i]<<" "<<mif2[v].pb[i]<<endl;  
                 mif1[u].m[i]=1;
@@ -192,7 +174,7 @@ int main(int argc, char *argv[]){
       }
 
       for(int u=0; u<mif1.size(); u++){
-        for(int i=0; i<6; i++){
+        for(int i=0; i<nb_of_probes; i++){
           if(mif1[u].m[i]==1){
             nc.va.push_back(mif1[u]);
             break;
@@ -200,7 +182,7 @@ int main(int argc, char *argv[]){
         }
       }
       for(int v=0; v<mif2.size(); v++){
-        for(int i=0; i<6; i++){
+        for(int i=0; i<nb_of_probes; i++){
           if(mif2[v].m[i]==1){
             nc.vb.push_back(mif2[v]);
             break;
@@ -257,7 +239,6 @@ int main(int argc, char *argv[]){
       //Create nodes
       cout<<"Creating nodes..."<<endl;
       createNodes(cg,graph,cgs);
-
       numNodes=graph.size();
       cout<<"NbNodes "<<numNodes<<endl;
     // return(0);
@@ -310,24 +291,37 @@ int main(int argc, char *argv[]){
 
   printNodes();
 
+  for(int v=0; v<mif1.size(); v++){
+    mif1[v].nrg.clear();
+    mif1[v].ang.clear();
+    mif1[v].pb.clear();
+    mif1[v].m.clear();
+  }
+  for(int v=0; v<mif2.size(); v++){
+    mif2[v].nrg.clear();
+    mif2[v].ang.clear();
+    mif2[v].pb.clear();
+    mif2[v].m.clear();
+  }
+
   mif1.clear();
-  vector<vertex>().swap(mif1);
+  // vector<vertex>().swap(mif1);
   mif2.clear();
-  vector<vertex>().swap(mif2);
+  // vector<vertex>().swap(mif2);
   prot1.clear();
-  vector<atom>().swap(prot1);
+  // vector<atom>().swap(prot1);
   prot2.clear();
-  vector<atom>().swap(prot2);
+  // vector<atom>().swap(prot2);
   caSize1=0;
   caSize2=0;
   pseudoL1.clear();
-  vector<pseudoC>().swap(pseudoL1);
+  // vector<pseudoC>().swap(pseudoL1);
   pseudoL2.clear();
-  vector<pseudoC>().swap(pseudoL2);
+  // vector<pseudoC>().swap(pseudoL2);
   lig1.clear();
-  vector<atom>().swap(lig1);
+  // vector<atom>().swap(lig1);
   lig2.clear();
-  vector<atom>().swap(lig2);
+  // vector<atom>().swap(lig2);
   cliques.clear();
   vector<Clique>().swap(cliques);
   for(int k=0; k<4; k++){ ss1[k]=0; ss2[k]=0; }
@@ -819,9 +813,9 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   // cout<<endl<<"cen_a: "<<cliques.back().cen_a[0]<<" "<<cliques.back().cen_a[1]<<" "<<cliques.back().cen_a[2];
   // cout<<endl<<"cen_b: "<<cliques.back().cen_b[0]<<" "<<cliques.back().cen_b[1]<<" "<<cliques.back().cen_b[2]<<endl;
   
-  if(cliques.back().tani>topT){
+  if(cliques.back().taniNorm>topT){
     cout<<"NEW TOP CLIQUE CG "<<cg<<" cosdBu "<<cliques.back().cosdBu<<" NODES "<<cliques.back().nbNodes<<" NRG: "<<cliques.back().nrg<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" TANI "<<cliques.back().tani<<" TANINORMNODES "<<cliques.back().taniNorm<<" RMSD: "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
-    topT=cliques.back().tani;
+    topT=cliques.back().taniNorm;
     topN=cliques.back().nbNodes;
     topCliques[cg]=cliques.size()-1;
   }else{
@@ -1146,11 +1140,13 @@ void createNodes(int cg, vector<node> &graph, int s){
           float d1=0.0;
           float d2=0.0;
           for(int pb=0; pb<nb_of_probes; ++pb){
-            num+=(mif1.at(i).nrg[pb]*mif2.at(j).nrg[pb])+(mif1.at(i).ang[pb]*mif2.at(j).ang[pb]);
-            d1+=pow(mif1.at(i).nrg[pb],2)+pow(mif1.at(i).ang[pb],2);
-            d2+=pow(mif2.at(j).nrg[pb],2)+pow(mif2.at(j).ang[pb],2);
+            num+=(mif1.at(i).nrg[pb]*mif2.at(j).nrg[pb]);
+            d1+=pow(mif1.at(i).nrg[pb],2);
+            d2+=pow(mif2.at(j).nrg[pb],2);
           }
           float cosd=num/(sqrt(d1)*sqrt(d2));
+          cout<<"cosd: "<<cosd<<endl;
+          if(cosd<cosdT) continue;
 
           // cout<<cints<<" "<<commonInt<<" flag "<<flag<<endl;
           if(cints>=commonInt && flag==1){
@@ -1278,8 +1274,6 @@ void getPairwise(){
 int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, int* ss, int &caSize, vector<pseudoC>& pl, string rnc, vector<atom>& llist){
   string line;
   vertex* nvrtx;
-  atom* natom;
-  pseudoC* npseudo;
   float x,y,z;
   string resn;
   int resnb,mif,bs,bu;
@@ -1291,123 +1285,107 @@ int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, int* ss, i
   int atomnb;
   string chain;
   string dump;
-  int pb0,pb1,pb2,pb3,pb4,pb5,gr0,gr1,gr2,gr3;
-  float nrg0,nrg1,nrg2,nrg3,nrg4,nrg5,ang0,ang1,ang2,ang3,ang4,ang5;
+  // int pb0,pb1,pb2,pb3,pb4,pb5,gr0,gr1,gr2,gr3;
+  // float nrg0,nrg1,nrg2,nrg3,nrg4,nrg5,ang0,ang1,ang2,ang3,ang4,ang5;
   // int e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12,e13,e14,e15,e16,e17,e18,e19;
 
   ifstream infile(mifFile.c_str());
   while(getline(infile,line)){
     if(line.compare("")==0){
       continue;
+    }else if(line.compare(0,11,"#nbOfProbes")==0){
+      stringstream test(line);
+      test >> dump >> nb_of_probes;
     }else if(line.compare(0,5,"#ATOM")==0){
       stringstream test(line);
       test >> dump >> resn >> resnb >> atomn >> atomnb >> chain >> x >> y >> z >> mif >> bs;
-      natom = new atom;
-      natom->atomn=atomn;
-      natom->atomnb=atomnb;
-      natom->resn=resn;
-      natom->resnb=resnb;
-      natom->chain=chain;
-      natom->coor[0]=x;
-      natom->coor[1]=y;
-      natom->coor[2]=z;
-      natom->id=atmC;
-      natom->mif=mif;
-      natom->bs=bs;
+      atom natom;
+      natom.atomn=atomn;
+      natom.atomnb=atomnb;
+      natom.resn=resn;
+      natom.resnb=resnb;
+      natom.chain=chain;
+      natom.coor[0]=x;
+      natom.coor[1]=y;
+      natom.coor[2]=z;
+      natom.id=atmC;
+      natom.mif=mif;
+      natom.bs=bs;
       stringstream sss;
       sss << resnb;
       thisresnumc = resn + sss.str() + chain;
       if(rnc.compare(thisresnumc)==0){
         size_t found;
         found = atomn.find("H");
-        if(found==string::npos) llist.push_back(*natom);
+        if(found==string::npos) llist.push_back(natom);
       }
       if(atomn.compare("CA")==0 && bs==1) caSize++;
-      a.push_back(*natom);
+      a.push_back(natom);
       atmC++;
     }else if(line.compare(0,7,"#PSEUDO")==0){
       stringstream test(line);
       test >> dump >> pseudo >> x >> y >> z;
-      npseudo = new pseudoC;
-      npseudo->type=pseudo;
-      npseudo->coor[0]=x;
-      npseudo->coor[1]=y;
-      npseudo->coor[2]=z;
-      npseudo->id=pcC;
-      pl.push_back(*npseudo);
+      pseudoC npseudo;
+      npseudo.type=pseudo;
+      npseudo.coor[0]=x;
+      npseudo.coor[1]=y;
+      npseudo.coor[2]=z;
+      npseudo.id=pcC;
+      pl.push_back(npseudo);
       pcC++;
     }else if(line.compare(0,1,"#")!=0){
-      stringstream test(line);
-      test >> x >> y >> z >>pb0 >>nrg0 >>ang0 >>pb1 >>nrg1 >>ang1 >>pb2 >>nrg2 >>ang2 >>pb3 >>nrg3 >>ang3 >>pb4 >>nrg4 >>ang4 >>pb5 >>nrg5 >>ang5 >>gr0 >>gr1 >>gr2 >>gr3 >>bu;
-      nvrtx = new vertex;
-      nvrtx->coor[0]=x;
-      nvrtx->coor[1]=y;
-      nvrtx->coor[2]=z;
-      nvrtx->pb[0]=pb0;
-      nvrtx->pb[1]=pb1;
-      nvrtx->pb[2]=pb2;
-      nvrtx->pb[3]=pb3;
-      nvrtx->pb[4]=pb4;
-      nvrtx->pb[5]=pb5;
-      nvrtx->nrg[0]=nrg0;
-      nvrtx->nrg[1]=nrg1;
-      nvrtx->nrg[2]=nrg2;
-      nvrtx->nrg[3]=nrg3;
-      nvrtx->nrg[4]=nrg4;
-      nvrtx->nrg[5]=nrg5;
-      nvrtx->ang[0]=ang0;
-      nvrtx->ang[1]=ang1;
-      nvrtx->ang[2]=ang2;
-      nvrtx->ang[3]=ang3;
-      nvrtx->ang[4]=ang4;
-      nvrtx->ang[5]=ang5;
-      for(int i=0; i<6; i++) nvrtx->m[i]=0;
-      nvrtx->grid[0]=gr0;
-      nvrtx->grid[1]=gr1;
-      nvrtx->grid[2]=gr2;
-      nvrtx->grid[3]=gr3;
-      nvrtx->cg[0]=0;
-      nvrtx->cg[1]=0;
-      nvrtx->cg[2]=0;
-      nvrtx->cg[3]=0;
-      nvrtx->id=totalVrtx; //Unique id for both clefts
-      // nvrtx->env.push_back(e0);
-      // nvrtx->env.push_back(e1);
-      // nvrtx->env.push_back(e2);
-      // nvrtx->env.push_back(e3);
-      // nvrtx->env.push_back(e4);
-      // nvrtx->env.push_back(e5);
-      // nvrtx->env.push_back(e6);
-      // nvrtx->env.push_back(e7);
-      // nvrtx->env.push_back(e8);
-      // nvrtx->env.push_back(e9);
-      // nvrtx->env.push_back(e10);
-      // nvrtx->env.push_back(e11);
-      // nvrtx->env.push_back(e12);
-      // nvrtx->env.push_back(e13);
-      // nvrtx->env.push_back(e14);
-      // nvrtx->env.push_back(e15);
-      // nvrtx->env.push_back(e16);
-      // nvrtx->env.push_back(e17);
-      // nvrtx->env.push_back(e18);
-      // nvrtx->env.push_back(e19);
-      nvrtx->bu=bu;
-      // cout<<line<<endl;
-      // for(int i=0; i<nvrtx->env.size(); i++){
-      //   cout<<" "<<nvrtx->env[i];
+      istringstream iss(line);
+      vector<string> tokens;
+      copy(istream_iterator<string>(iss), istream_iterator<string>(), back_inserter<vector<string> >(tokens));
+
+      // for(int i=1; i<tokens.size(); i++){
+      //   eps[coln[i-1]+"_"+rown]=atoi(tokens[i].c_str());
+      //   eps[rown+"_"+coln[i-1]]=atoi(tokens[i].c_str());
       // }
-      // cout<<endl;
+
+      // stringstream test(line);
+      // test >> x >> y >> z >>pb0 >>nrg0 >>ang0 >>pb1 >>nrg1 >>ang1 >>pb2 >>nrg2 >>ang2 >>pb3 >>nrg3 >>ang3 >>pb4 >>nrg4 >>ang4 >>pb5 >>nrg5 >>ang5 >>gr0 >>gr1 >>gr2 >>gr3 >>bu;
+      vertex nvrtx;
+      nvrtx.coor[0]=atof(tokens[0].c_str());
+      nvrtx.coor[1]=atof(tokens[1].c_str());
+      nvrtx.coor[2]=atof(tokens[2].c_str());
+
+      int pb=0;
+      int intf=0;
+      // cout<<line<<endl;
+      // cout<<"token size "<<tokens.size()<<endl;
+      while(pb<nb_of_probes){
+        int pbi=(pb*3)+3;
+        // cout<<pb<<" "<<pbi<<" "<<atoi(tokens[pbi].c_str())<<" "<<atof(tokens[pbi+1].c_str())<<" "<<atof(tokens[pbi+2].c_str())<<endl;
+        if(atoi(tokens[pbi].c_str())==1) intf=1;
+        nvrtx.pb.push_back(atoi(tokens[pbi].c_str()));
+        nvrtx.nrg.push_back(atof(tokens[pbi+1].c_str()));
+        nvrtx.ang.push_back(atof(tokens[pbi+2].c_str()));
+        nvrtx.m.push_back(0);
+        pb++;
+      }
+
+      nvrtx.grid[0]=atoi(tokens[tokens.size()-5].c_str());
+      nvrtx.grid[1]=atoi(tokens[tokens.size()-4].c_str());
+      nvrtx.grid[2]=atoi(tokens[tokens.size()-3].c_str());
+      nvrtx.grid[3]=atoi(tokens[tokens.size()-2].c_str());
+      nvrtx.cg.push_back(0);
+      nvrtx.cg.push_back(0);
+      nvrtx.cg.push_back(0);
+      nvrtx.cg.push_back(0);
+      nvrtx.id=totalVrtx; //Unique id for both clefts
+      nvrtx.bu=atoi(tokens[tokens.size()-1].c_str());
 
       //Calculate search space
-      if(pb0==1 || pb1==1 || pb2==1 || pb3==1 || pb4==1 || pb5==1){
+      if(intf==1){
         for(int k=0; k<4; k++){
-          if(nvrtx->grid[k]==1){
+          if(nvrtx.grid[k]==1){
             ss[k]++;
           }
         }
       }
 
-      p.push_back(*nvrtx);
+      p.push_back(nvrtx);
       totalVrtx++;
     }
   }
@@ -1551,10 +1529,6 @@ int read_commandline(int argc, char *argv[]){
       pairwiseF=argv[nb_arg+1];
     }
 
-    if(strcmp(argv[nb_arg],"-l")==0){
-      sprintf(probesListFile,"%s",argv[nb_arg+1]);
-    }
-
     if(strcmp(argv[nb_arg],"-w")==0){
       wrfn=1;
     }
@@ -1650,50 +1624,6 @@ int read_commandline(int argc, char *argv[]){
     if(strcmp(argv[nb_arg],"-pr")==0){
       printDetails=1;
     }
-  }
-
-  return(0);
-}
-/***********************************************************************/
-/*        1         2         3         4         5         6         7*/
-/*234567890123456789012345678901234567890123456789012345678901234567890*/
-/*        1         2         3         4         5         6         7*/
-/***********************************************************************/
-int storeProbesList(){
-  FILE* fp;
-  char buffer[100];
-  int count=0;
-  int pb;
-  int i;
-
-  if(!strcmp(probesListFile,"")){
-    probesList=new int[nb_of_probes];
-
-    for(i=0; i<nb_of_probes; ++i){
-      probesList[i]=i;
-    }
-    probesListNb=nb_of_probes;
-
-  }else{
-    open_file_ptr(&fp, probesListFile, 3);
-    while(fgets(buffer, sizeof(buffer), fp) != NULL){
-      count++;
-    }
-    fclose(fp);
-
-    probesListNb=count;
-
-    probesList=new int[count];
-
-    count=0;
-    open_file_ptr(&fp, probesListFile, 3);
-    while(fgets(buffer, sizeof(buffer), fp) != NULL){
-      std::stringstream test(buffer);
-      test >> pb;
-      probesList[count]=pb;
-      count++;
-    }
-    fclose(fp);
   }
 
   return(0);
