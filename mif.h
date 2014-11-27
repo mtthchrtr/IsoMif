@@ -32,6 +32,7 @@ struct atoms{
   string atomn;
   string chain;
   string pseudo;
+  string at;
   int resnb; //residue ID in PDB
   int atomnb; //atomnb in PDB
   int dir;
@@ -64,36 +65,21 @@ struct pseudovrtx
     string type;
 };
 
-struct atomSingleStruc{
-  float* charge;
-  string* res;
-  string* atom; 
-  int* atId;
-  int count;
+struct pbVrtx{
+  float dist;
+  float nrg;
 };
 
-struct atPairStruc{
-  float* sigma;
-  float* epsilon;
-  float * epsilon_FAINT;
-  float* alpha_FAINT;
-  float* epsilon_Custom;
-  float* alpha_Custom;
+struct pwRun{
+  string pdbF;
+  string cleftF;
+  string gridF;
+  string rnc;
+  string ligF;
 };
+vector<pwRun> pw;
 
-struct atSingleStruc{
-  string* name;
-  int* HbD_FAINT;
-  int* HbA_FAINT;
-  int* aromatic_FAINT;
-  int* charged_FAINT;
-  int* hydrophobic_FAINT;
-};
-
-atomSingleStruc* atomSingle;
-atSingleStruc* atSingle;
-atPairStruc* atPair;
-
+string pairwiseF="";
 string cmdLine="";
 string cleftFile="";
 string gridFile="";
@@ -106,7 +92,10 @@ string basePath="";
 string resnumc="";
 string matrixF="";
 string probesF="";
+string ligFile="";
 string ff="original";
+string statsF="original";
+float distpbV=2.0;
 float stepsize=0.5;
 float maxGridDist=4.5;
 float minGridDist=1.5;
@@ -129,7 +118,9 @@ int bul=0;
 int buD=40;
 float* epsilons;
 map<string,string> atomTypes;
+map<int,string> idAt;
 map<string,string> pseudoC;
+map<string,string> ligAt;
 map<string,int> eps;
 map<string,int> hyd;
 map<string,int> arm;
@@ -166,17 +157,17 @@ class  Grid{
 
     Grid(string, Protein&);
     ~Grid(void);
-  	int readGetCleft(string, vector<atom>&, vector<float>&);
-  	int generateID(int, int, int, int, int);
+    int readGetCleft(string, vector<atom>&, vector<float>&);
+    int generateID(int, int, int, int, int);
     int buildGrid(vector<atom>&);
     void getProtVrtx(vector<atom>&);
     void createProtVrtx(vector<atom>&);
-  	void getMinMax(string);
+    void getMinMax(string);
     void getBuriedness();
     void writeGrid();
     int readGrid();
     int getDiag(int, int, int, int&);
-  	int inGridRes(vertex&, float);
+    int inGridRes(vertex&, float);
     void smooth();
     void writeMif(vector<atom>&,vector<atom>&);
     map<int,vertex> GRID;
@@ -193,11 +184,15 @@ void getEnv(map<int,vertex>&, vector<atom>&,vector<int>&);
 void getPseudo(map<int,vertex>&, vector<atom>&,vector<int>&);
 int is_coord_in_cube(float,float,float,float,float,float,float);
 void stripSpace(string &);
+void getStats(map<int,vertex>&, vector<atom>&, vector<int>&);
 float roundCoord(float, int);
 double calcNrg(vertex&, atom&, int, int&, float&, int&);
 void getAtomRef();
 void getPseudoC();
 void getEpsilons();
 void getAtomTypes();
+void readLigFile();
 void getProbes();
 void getaa();
+bool compByNrg(pbVrtx,pbVrtx);
+void getPairwise();

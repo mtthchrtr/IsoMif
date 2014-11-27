@@ -17,42 +17,76 @@ int main(int argc, char **argv)
 
   if(readCmdLine(argc, argv)==24){ return(0); }
 
+  if(pairwiseF.compare("")!=0){
+    getPairwise();
+  }else{
+    pwRun npw;
+    npw.pdbF= proteinFile;
+    npw.cleftF= cleftFile;
+    npw.gridF= gridFile;
+    npw.rnc= resnumc;
+    npw.ligF= ligFile;
+    pw.push_back(npw);
+  }
+
   getAtomRef();
   getPseudoC();
   getEpsilons();
   getAtomTypes();
   getProbes();
   getaa();
+  readLigFile();
 
-  //Get prefix
-  if(tag.compare("")==0){
-    end=proteinFile.find(".pdb");
-    for(i=end-1; i>=0; i--){
-      if(proteinFile.at(i)=='/'){
-        tag=proteinFile.substr(i+1,end-i-1);
-        break;
-      }else if(i==0){
-        tag=proteinFile.substr(i,end-i);
-        break;
+  for(int pwr=0; pwr<pw.size(); pwr++){
+
+    proteinFile=pw[pwr].pdbF;
+    cleftFile=pw[pwr].cleftF;
+    gridFile=pw[pwr].gridF;
+    resnumc=pw[pwr].rnc;
+    ligFile=pw[pwr].ligF;
+
+    cout <<"pdbF "<<proteinFile<<" cleftF "<<cleftFile<<" gridF "<<gridFile<<endl;
+
+    //Get prefix
+    if(tag.compare("")==0){
+      end=proteinFile.find(".pdb");
+      for(i=end-1; i>=0; i--){
+        if(proteinFile.at(i)=='/'){
+          tag=proteinFile.substr(i+1,end-i-1);
+          break;
+        }else if(i==0){
+          tag=proteinFile.substr(i,end-i);
+          break;
+        }
       }
     }
+
+    Protein protein=Protein(proteinFile);
+
+    Grid grid=Grid(cleftFile,protein);
+
+    getMif(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
+
+    // getStats(grid.GRID,protein.LIGATOMS,grid.vrtxIdList);
+
+    // getEnv(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
+
+    // if(smoothDist!=0) grid.smooth();
+
+    // getPseudo(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
+
+    grid.writeMif(protein.PROTEIN,protein.LIGATOMS);
+
+    tag="";
+    for(int gi=0; gi<4; gi++){ ss[gi]=0; }
+    protein.PROTEIN.clear();
+    protein.LIGAND.clear();
+    protein.LIGATOMS.clear();
+    grid.GRID.clear();
+    grid.vrtxIdList.clear();
   }
 
-  Protein protein=Protein(proteinFile);
-
-	Grid grid=Grid(cleftFile,protein);
-
-  getMif(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
-
-  // getEnv(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
-
-  // if(smoothDist!=0) grid.smooth();
-
-  // getPseudo(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
-
-  grid.writeMif(protein.PROTEIN,protein.LIGATOMS);
-
-	return(0);
+  return(0);
 }
 
 
@@ -77,6 +111,7 @@ int readCmdLine(int argc, char **argv){
   usage << "\n!---   IsoMIF   ---!\nWelcome.Bienvenue\n";
   usage << "-p <filename>        : \t Protein (PDB format)\n";
   usage << "-g <filename>        : \t Cleft of protein (GetCleft sphere format)\n";
+  usage << "-pp <filename>       : \t File with highthroughput mif calculations\n";
   usage << "-grid <filename>     : \t Grid of protein\n";
   usage << "-s                   : \t grid spacing 0.25, 0.5, 1.0 or 2.0 (default: 0.25Angstrom)\n";
   usage << "-d <distance in Ang.>: \t atom-probe distance threshold. (default: "<< atmPbMaxDist <<" Angstrom)\n";
@@ -91,6 +126,9 @@ int readCmdLine(int argc, char **argv){
   usage << "-mat                 : \t epsilon matrix to use\n";
   usage << "-pb                  : \t probes threshold file to use\n";
   usage << "-t                   : \t filename (tag) [pdb name by default]\n";
+  usage << "-lf                  : \t ligand file with atom types\n";
+  usage << "-dpv                 : \t distance probe-Vrtx to consider a vrtx to be true-positive\n";
+  usage << "-sf                  : \t stats output file\n";
   usage << "-l                   : \t RESNUMC of the ligand from which to crop the grid\n";
   usage << "-r                   : \t maximum distance between the grid and the ligand\n";
   usage << "-x                   : \t do not write atoms in mif file\n";
@@ -130,11 +168,17 @@ int readCmdLine(int argc, char **argv){
     if(strcmp(argv[nb_arg],"-ff")==0){
       ff=string(argv[nb_arg+1]);
     }
+    if(strcmp(argv[nb_arg],"-sf")==0){
+      statsF=string(argv[nb_arg+1]);
+    }
     if(strcmp(argv[nb_arg],"-c")==0){
       chain=string(argv[nb_arg+1]);
     }
     if(strcmp(argv[nb_arg],"-l")==0){
       resnumc=string(argv[nb_arg+1]);
+    }
+    if(strcmp(argv[nb_arg],"-lf")==0){
+      ligFile=string(argv[nb_arg+1]);
     }
     if(strcmp(argv[nb_arg],"-mat")==0){
       matrixF=string(argv[nb_arg+1]);
@@ -157,6 +201,9 @@ int readCmdLine(int argc, char **argv){
     if(strcmp(argv[nb_arg],"-d")==0){
       sscanf(argv[nb_arg+1], "%f", &atmPbMaxDist);
     }
+    if(strcmp(argv[nb_arg],"-dpv")==0){
+      sscanf(argv[nb_arg+1], "%f", &distpbV);
+    }
     if(strcmp(argv[nb_arg],"-s")==0){
       sscanf(argv[nb_arg+1], "%f", &stepsize);
     }
@@ -174,6 +221,9 @@ int readCmdLine(int argc, char **argv){
     }
     if(strcmp(argv[nb_arg],"-t")==0){
       tag=string(argv[nb_arg+1]);
+    }
+    if(strcmp(argv[nb_arg],"-pp")==0){
+      pairwiseF=argv[nb_arg+1];
     }
   }
 
@@ -261,7 +311,7 @@ void Protein::readPDB(string filename){
       fields[8] = line.substr(30,8);  // x-coord
       fields[9] = line.substr(38,8);  // y-coord
       fields[10] = line.substr(46,8); // z-coord
-
+      
       //Remove spaces
       stripSpace(fields[1]);
       stripSpace(fields[2]);
@@ -288,14 +338,17 @@ void Protein::readPDB(string filename){
       atm.resn=fields[4];
       atm.bs=0;
       atm.mif=1;
+      atm.h=0;
 
-      found = fields[2].find("H");
-      if(found!=string::npos){
-        atm.h=1;
-      }else{
-        atm.h=0;
+      try{
+        fields[11] = line.substr(76,2); // atom symbol
+        stripSpace(fields[11]);
+        found = fields[11].find("H");
+        if(found!=string::npos) atm.h=1;
+      }catch(...){
+        // cout<<"No atom symbol"<<endl;
       }
-
+      
       if(atomTypes.find(atm.resn+"_"+atm.atomn) == atomTypes.end()){ atm.mif=0; }
       if(fields[5].compare(chain)!=0 && chain.compare("none")!=0){ atm.mif=0; }
       if(line.compare(0,6,"HETATM") == 0){ atm.mif=0; }
@@ -304,11 +357,13 @@ void Protein::readPDB(string filename){
       if(resnumc.compare("")!=0){
         thisresnumc = line.substr(17,3) + line.substr(22,4) + line.substr(21,1) + line.substr(16,1);
         stripSpace(thisresnumc);
+        // cout<< resnumc<< " to "<< thisresnumc <<" "<<fields[2]<< " "<< atof((line.substr(30,8).c_str()))<<" "<< atof((line.substr(38,8).c_str()))<<" "<<atof((line.substr(46,8).c_str()))<<endl;
         if(resnumc.compare(thisresnumc)==0 && found==string::npos){
           LIGAND.push_back(atof((line.substr(30,8).c_str())));
           LIGAND.push_back(atof((line.substr(38,8).c_str())));
           LIGAND.push_back(atof((line.substr(46,8).c_str())));
-          // cout<< resnumc<< " to "<< thisresnumc << " "<< atof((line.substr(30,8).c_str()))<<" "<< atof((line.substr(38,8).c_str()))<<" "<<atof((line.substr(46,8).c_str()))<<endl;
+          atm.at=ligAt[atm.atomn];
+          cout<<"LIGAND ATOM "<<atm.atomn<<" "<<atm.at<<endl;
           LIGATOMS.push_back(atm);
         }
       }
@@ -1911,6 +1966,21 @@ void getEpsilons(){
   }
 }
 
+void readLigFile(){
+  ifstream infile(ligFile.c_str());
+  string s;
+  while(getline(infile,s)){
+    istringstream iss(s);
+    vector<string> tokens;
+    copy(istream_iterator<string>(iss), istream_iterator<string>(), back_inserter<vector<string> >(tokens));
+    // ATP 544 PG P.3
+    // ATP 544 O1G O.2
+    // ATP 544 O2G O.3
+    ligAt[tokens[2]]=tokens[3];
+    // cout<<tokens[0]<<" "<<tokens[1]<<" "<<tokens[2]<<" "<<ligAt[tokens[0]+"_"+tokens[1]+"_"+tokens[2]]<<endl;
+  }
+}
+
 void getAtomTypes(){
   string fn=basePath + "/forcefield_files/"+ff+"/atomTypes";
   ifstream infile(fn.c_str());
@@ -1956,6 +2026,7 @@ void getProbes(){
     nrgT[pbn]=thresh;
     // cout<< pbn <<" "<<minD[pbn]<<" "<<maxD[pbn]<<" "<<nrgT[pbn]<<endl;
     probes.push_back(pbn);
+    idAt[nbOfProbes]=pbn;
     nbOfProbes++;
   }
 }
@@ -2230,6 +2301,105 @@ void getPseudo(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList)
         npv.z=grid.at(vrtxList.at(bestID)).z;
         pseudoList.push_back(npv);
       }
+    }
+  }
+}
+
+void getStats(map<int,vertex>& grid, vector<atoms>& lig,vector<int>& vrtxList){
+  string newFile=statsF + tag;
+  FILE* fpNew;
+  // fpNew = fopen(newFile.c_str(),"w");
+  for(int probe=0; probe<nbOfProbes; probe++){ //Iterate each probe
+    cout<<probe<<endl;
+    int tp=0;
+    int tn=0;
+    vector<pbVrtx> pbV;
+    for(int l=0; l<lig.size(); l++){
+      if(lig[l].at.compare(idAt[probe])==0){
+        for(int i=0; i<vrtxList.size(); i++){
+          map<int,vertex>::iterator it=grid.find(vrtxList[i]);
+          vertex& m=it->second;
+
+          if(m.p==1) continue;
+          if((zip!=-1 && it->second.grid[zip]==1) || zip==-1){
+            float dist=dist_3d(lig[l].x,lig[l].y,lig[l].z,m.x,m.y,m.z);
+            // fprintf(fpNew,"%8s %8.3f %11.4f\n",idAt[probe].c_str(),dist,m.nrgs[probe]);
+            pbVrtx npv;
+            npv.dist=dist;
+            npv.nrg=m.nrgs[probe];
+            if(dist<distpbV){ tp++; }else{ tn++; }
+            pbV.push_back(npv);
+            // cout<<"Vertex id: "<< m.id <<" "<<m.x<<" "<<m.y<<" "<<m.z<<endl;
+            // cout<<"probe "<<probe<<" "<<idAt[probe]<<" "<<m.nrgs[probe]<<" dist "<<dist<<" "<<lig[l].at<<endl;
+          }
+        }
+      }
+    }
+    if(pbV.size()!=0){
+      sort(pbV.begin(), pbV.end(), compByNrg);
+      int ctp=0;
+      int ctn=0;
+      int rocV[tn];
+      rocV[0]=0;
+      for(int i=0; i<pbV.size(); i++){
+        cout<<idAt[probe]<<" "<<pbV.at(i).dist<<" "<<pbV.at(i).nrg;
+        if(pbV.at(i).dist<distpbV){
+          cout<< " TP";
+          ctp++;
+        }else{
+          ctn++;
+        }
+        cout<<endl;
+        rocV[ctn]=ctp;
+      }
+      float xs=1.0/ctn;
+      float ys=1.0/ctp;
+      float roc=0.0;
+      // cout<<"ctp "<<ctp<<" ctn "<<ctn<<" xs "<<xs<<" ys "<<ys<<endl;
+      for(int j=1; j<=tn; j++){
+        roc+=(xs*((float)rocV[j-1])*ys)+(xs*(((float)rocV[j]*ys)-((float)rocV[j-1]*ys)))/2;
+        // cout<<j<<" "<<rocV[j]<<endl;
+      }
+      cout<<"roc "<<roc<<" tp "<<ctp<<" ctn "<<ctn<<endl;
+    }
+  }
+  // fclose(fpNew);
+}
+
+bool compByNrg(pbVrtx a, pbVrtx b)
+{
+    return a.nrg < b.nrg;
+}
+
+void getPairwise(){
+  cout<<"Getting pariwise"<<endl;
+  string empt ("");
+  string line;
+  ifstream infile(pairwiseF.c_str());
+  while(getline(infile,line)){
+    if(line.compare("")!=0){
+      istringstream ss(line);
+      istream_iterator<string> begin(ss), end;
+      vector<string> vec(begin, end);
+      string pdbF="";
+      string cleftF="";
+      string gridF="";
+      string rnc="";
+      string ligF="";
+      for(int i=0; i<vec.size(); i+=2){
+        if(vec[i].compare("-p")==0) pdbF=vec[i+1];
+        if(vec[i].compare("-g")==0) cleftF=vec[i+1];
+        if(vec[i].compare("-grid")==0) gridF=vec[i+1];
+        if(vec[i].compare("-l")==0) rnc=vec[i+1];
+        if(vec[i].compare("-lf")==0) ligF=vec[i+1];
+      }
+      pwRun npw;
+      npw.pdbF=pdbF;
+      npw.cleftF=cleftF;
+      npw.gridF=gridF;
+      npw.rnc=rnc;
+      npw.ligF=ligF;
+      pw.push_back(npw);
     }
   }
 }

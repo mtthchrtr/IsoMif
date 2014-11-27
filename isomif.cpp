@@ -59,8 +59,8 @@ int main(int argc, char *argv[]){
   // printf("--# Get Info #--\n\nEnergy file 1: %s\nEnergy file 2: %s\nOutfile: %s\nNumber of probes: %d\n\n--# Parameter Values #--\n\nC-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nNode dDist: %5.2f\nneibr dDist: %5.2f\nJTT threshold: %d\nMaximum nodes: %d\nGet all C-alpha cliques: %d\nMinimum number of Common interaction: %d\nPrint details: %d\n",nrg_file1.c_str(),nrg_file2.c_str(),out_file,nb_of_probes,ca_dDist,ps_dDist,dDist,neibr_dDist,jttt,maxNodes,bkAll,commonInt,printDetails);
   // cout<<"CG begin "<<steps.front()<<" cg_start "<<cg_start<<" end "<<steps.back()<<endl<<endl;
   // cout<<rnc1<<" "<<rnc2<<endl;
-  createVrtxVec(nrg_file1,mif1,prot1,ss1,caSize1,pseudoL1,rnc1,lig1);
-  createVrtxVec(nrg_file2,mif2,prot2,ss2,caSize2,pseudoL2,rnc2,lig2);
+  createVrtxVec(nrg_file1,mif1,prot1,ss1,ss1m,caSize1,pseudoL1,rnc1,lig1);
+  createVrtxVec(nrg_file2,mif2,prot2,ss2,ss2m,caSize2,pseudoL2,rnc2,lig2);
   cout<<"mif1 size: "<<mif1.size()<<endl;
   cout<<"mif2 size: "<<mif2.size()<<endl;
 
@@ -189,8 +189,7 @@ int main(int argc, char *argv[]){
           }
         }
       }
-      // cout<<"Vertexes matched in mif1: "<<nc.va.size()<<" "<<ss1[cg2]<<endl;
-      // cout<<"Vertexes matched in mif2: "<<nc.vb.size()<<" "<<ss2[cg2]<<endl;
+
       nc.nbNodes=nc.va.size()+nc.vb.size();
       nc.tani=( ((float)nc.va.size()/(float)ss1[cg2]) + ((float)nc.vb.size()/(float)ss2[cg2]) ) / 2.0;
       // cout<<"NEW CLIQUE CG "<<steps[cs]<<" NODES "<<nc.nbNodes<<" TANI "<<nc.tani<<endl;
@@ -324,7 +323,7 @@ int main(int argc, char *argv[]){
   // vector<atom>().swap(lig2);
   cliques.clear();
   vector<Clique>().swap(cliques);
-  for(int k=0; k<4; k++){ ss1[k]=0; ss2[k]=0; }
+  for(int k=0; k<4; k++){ ss1[k]=0; ss2[k]=0; ss1m[k]=0; ss2m[k]=0; }
 
   cout<< "Finished printing nodes and clearing"<<endl;
 
@@ -632,16 +631,20 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   vector<float> lb;
 
   nCliques++;
-  cout<<nCliques<<endl;
+  // cout<<nCliques<<endl;
 
   Clique newClique;
   newClique.cg=cg;
   newClique.nbNodes=n;
+  newClique.nbNodesM=0;
   newClique.tani=0.0;
+  newClique.taniM=0.0;
+  newClique.taniNorm=0.0;
   newClique.normNodes=0.0;
+  newClique.normNodesRMSD=0.0;
   newClique.rmsd=0.0;
-  newClique.envD=0.0;
-  newClique.buD=0.0;
+  newClique.cosdBu=0.0;
+  newClique.nrg=0.0;
 
   for(int i=0; i<n; i++){ newClique.nodes.push_back(graph.at(list[i])); }
   cliques.push_back(newClique);
@@ -722,9 +725,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   cliques.back().ligRMSD=ligRMSD;
   // cout<<"LigRMSD "<<ligRMSD<<endl;
 
-  //Calculate RMSD,envD,buD,vecCosineDiff
-  float envD=0.0;
-  float bud=0.0;
+  //Calculate RMSD,vecCosineDiff
   float rmsd=0.0;
   float numBu=0.0;
   float d1Bu=0.0;
@@ -755,9 +756,11 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
       d1Bu+=pow((*it).a->bu,2);
       d2Bu+=pow((*it).b->bu,2);
 
-      for(int i=0; i<6; ++i){
-        cliques.back().nrg+=(*it).a->nrg[i]+(*it).b->nrg[i];
+      for(int i=0; i<nb_of_probes; ++i){
+        if((*it).a->pb[i]==1 && (*it).b->pb[i]==1) cliques.back().nrg+=(*it).a->nrg[i]+(*it).b->nrg[i];
       }
+
+      cliques.back().nbNodesM+=(*it).nbi;
 
       // printf("A %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).a->nrg[0],(*it).a->ang[0],(*it).a->nrg[1],(*it).a->ang[1],(*it).a->nrg[2],(*it).a->ang[2],(*it).a->nrg[3],(*it).a->ang[3],(*it).a->nrg[4],(*it).a->ang[4],(*it).a->nrg[5],(*it).a->ang[5]);
       // printf("B %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).b->nrg[0],(*it).b->ang[0],(*it).b->nrg[1],(*it).b->ang[1],(*it).b->nrg[2],(*it).b->ang[2],(*it).b->nrg[3],(*it).b->ang[3],(*it).b->nrg[4],(*it).b->ang[4],(*it).b->nrg[5],(*it).b->ang[5]);
@@ -770,8 +773,6 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   cliques.back().cosdBu=numBu/(sqrt(d1Bu)*sqrt(d2Bu));
   cliques.back().rmsd=sqrt(rmsd/(float)cliques.back().nbNodes);
   cliques.back().normNodesRMSD=cliques.back().normNodes/cliques.back().rmsd;
-  // cliques.back().envD=envD/(float)cliques.back().nbNodes;
-  // cliques.back().buD=sqrt(bud/(float)cliques.back().nbNodes);
   
   // cout<<"Finding corresponding vertexes..."<<endl;
   // float dist=0.0;
@@ -784,7 +785,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   //     if(mif2[v].grid[cg2]!=1) continue;
   //     dist=dist3d(mif1[u].ncoor,mif2[v].coor);  
   //     if(dist < dDist || fabs(dist-dDist)<0.001){ //If passes distance threshold
-  //       for(int i=0; i<6; i++){
+  //       for(int i=0; i<nb_of_probes; i++){
   //         if(mif1[u].pb[i]==1 && mif2[v].pb[i]==1){
   //           cout<<i<<" - "<<mif1[u].ncoor[0]<<" "<<mif1[u].ncoor[1]<<" "<<mif1[u].ncoor[2]<<" "<<mif2[v].coor[0]<<" "<<mif2[v].coor[1]<<" "<<mif2[v].coor[2]<<" - "<<mif1[u].pb[i]<<" "<<mif2[v].pb[i]<<endl;  
   //           mif1[u].m[i]=1;
@@ -801,6 +802,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     cliques.back().tani=(float)n/((float)cliques.back().rmsd);
   }else{
     cliques.back().tani=(float)n/((float)ss1[cg]+(float)ss2[cg]-(float)n);
+    cliques.back().taniM=(float)cliques.back().nbNodesM/((float)ss1m[cg]+(float)ss2m[cg]-(float)cliques.back().nbNodesM);
     cliques.back().taniNorm=cliques.back().normNodes/((float)ss1[cg]+(float)ss2[cg]-cliques.back().normNodes);
   }
 
@@ -814,12 +816,12 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   // cout<<endl<<"cen_b: "<<cliques.back().cen_b[0]<<" "<<cliques.back().cen_b[1]<<" "<<cliques.back().cen_b[2]<<endl;
   
   if(cliques.back().taniNorm>topT){
-    cout<<"NEW TOP CLIQUE CG "<<cg<<" cosdBu "<<cliques.back().cosdBu<<" NODES "<<cliques.back().nbNodes<<" NRG: "<<cliques.back().nrg<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" TANI "<<cliques.back().tani<<" TANINORMNODES "<<cliques.back().taniNorm<<" RMSD: "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
+    cout<<"NEW TOP CLIQUE CG "<<cg<<" cosdBu "<<cliques.back().cosdBu<<" nbNodes "<<cliques.back().nbNodes<<" cInts "<<cliques.back().nbNodesM<<" nrg "<<cliques.back().nrg<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" tani "<<cliques.back().tani<<" taniM "<<cliques.back().taniM<<" taniNormNodes "<<cliques.back().taniNorm<<" RMSD "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
     topT=cliques.back().taniNorm;
     topN=cliques.back().nbNodes;
     topCliques[cg]=cliques.size()-1;
   }else{
-    // cout<<"CLIQUE CG "<<cg<<" cosdBu "<<cliques.back().cosdBu<<" NODES "<<cliques.back().nbNodes<<" NRG: "<<cliques.back().nrg<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" TANI "<<cliques.back().tani<<" TANINORMNODES "<<cliques.back().taniNorm<<" RMSD: "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
+    cout<<"CLIQUE CG "<<cg<<" cosdBu "<<cliques.back().cosdBu<<" nbNodes "<<cliques.back().nbNodes<<" cInts "<<cliques.back().nbNodesM<<" nrg "<<cliques.back().nrg<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" tani "<<cliques.back().tani<<" taniM "<<cliques.back().taniM<<" taniNormNodes "<<cliques.back().taniNorm<<" RMSD "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
   }
 
   return;
@@ -882,7 +884,7 @@ void printNodes(){
           }
         }
       }else{
-        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d NORMNODES %6.3f NORMNODESRMSD %6.3f TANI %5.3f TANINORM %5.3f RMSD %5.3f SS1 %d SS2 %d LIGRMSD %5.3f\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].normNodes,cliques[i].normNodesRMSD,cliques[i].tani,cliques[i].taniNorm,cliques[i].rmsd,ss1[cliques[i].cg],ss2[cliques[i].cg],cliques[i].ligRMSD);
+        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d NODESM %d NORMNODES %6.3f NORMNODESRMSD %6.3f TANI %5.3f TANIM %5.3f TANINORM %5.3f RMSD %5.3f NRG %.3f SS1 %d SS2 %d SS1M %d SS2M %d LIGRMSD %5.3f\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].nbNodesM,cliques[i].normNodes,cliques[i].normNodesRMSD,cliques[i].tani,cliques[i].taniM,cliques[i].taniNorm,cliques[i].rmsd,cliques[i].nrg,ss1[cliques[i].cg],ss2[cliques[i].cg],ss1m[cliques[i].cg],ss2m[cliques[i].cg],cliques[i].ligRMSD);
         if(emptOut!=1){
           for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
             for(int j=0; j<nb_of_probes; ++j){
@@ -1132,7 +1134,7 @@ void createNodes(int cg, vector<node> &graph, int s){
           int flag=0;
           int cints=0;
           for(int pb=0; pb<nb_of_probes; pb++){
-            if(mif1.at(i).pb[pb]==1 && mif2.at(j).pb[pb]==1) flag=1;
+            if(mif1.at(i).pb[pb]==1 && mif2.at(j).pb[pb]==1) flag++;
             if(mif1.at(i).pb[pb]==mif2.at(j).pb[pb]) cints++;
           }
 
@@ -1145,11 +1147,11 @@ void createNodes(int cg, vector<node> &graph, int s){
             d2+=pow(mif2.at(j).nrg[pb],2);
           }
           float cosd=num/(sqrt(d1)*sqrt(d2));
-          cout<<"cosd: "<<cosd<<endl;
-          if(cosd<cosdT) continue;
+          // cout<<"cosd: "<<cosd<<endl;
+          // if(cosd<cosdT) continue;
 
           // cout<<cints<<" "<<commonInt<<" flag "<<flag<<endl;
-          if(cints>=commonInt && flag==1){
+          if(cints>=commonInt && flag!=0){
 
             // printf("A %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",mif1.at(i).nrg[0],mif1.at(i).ang[0],mif1.at(i).nrg[1],mif1.at(i).ang[1],mif1.at(i).nrg[2],mif1.at(i).ang[2],mif1.at(i).nrg[3],mif1.at(i).ang[3],mif1.at(i).nrg[4],mif1.at(i).ang[4],mif1.at(i).nrg[5],mif1.at(i).ang[5]);
             // printf("B %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",mif2.at(j).nrg[0],mif2.at(j).ang[0],mif2.at(j).nrg[1],mif2.at(j).ang[1],mif2.at(j).nrg[2],mif2.at(j).ang[2],mif2.at(j).nrg[3],mif2.at(j).ang[3],mif2.at(j).nrg[4],mif2.at(j).ang[4],mif2.at(j).nrg[5],mif2.at(j).ang[5]);
@@ -1178,6 +1180,7 @@ void createNodes(int cg, vector<node> &graph, int s){
             newNode.a=&mif1.at(i);
             newNode.b=&mif2.at(j);
             newNode.cosd=cosd;
+            newNode.nbi=flag;
             graph.push_back(newNode);
           }
       }
@@ -1271,7 +1274,7 @@ void getPairwise(){
 /*234567890123456789012345678901234567890123456789012345678901234567890*/
 /*        1         2         3         4         5         6         7*/
 /***********************************************************************/
-int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, int* ss, int &caSize, vector<pseudoC>& pl, string rnc, vector<atom>& llist){
+int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, int* ss, int* ssm, int &caSize, vector<pseudoC>& pl, string rnc, vector<atom>& llist){
   string line;
   vertex* nvrtx;
   float x,y,z;
@@ -1357,7 +1360,12 @@ int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, int* ss, i
       while(pb<nb_of_probes){
         int pbi=(pb*3)+3;
         // cout<<pb<<" "<<pbi<<" "<<atoi(tokens[pbi].c_str())<<" "<<atof(tokens[pbi+1].c_str())<<" "<<atof(tokens[pbi+2].c_str())<<endl;
-        if(atoi(tokens[pbi].c_str())==1) intf=1;
+        if(atoi(tokens[pbi].c_str())==1) intf=1; //flag for search space
+        for(int k=0; k<4; k++){
+          if(nvrtx.grid[k]==1){
+            if(atoi(tokens[pbi].c_str())==1) ssm[k]++; //increment probe search space
+          }
+        }
         nvrtx.pb.push_back(atoi(tokens[pbi].c_str()));
         nvrtx.nrg.push_back(atof(tokens[pbi+1].c_str()));
         nvrtx.ang.push_back(atof(tokens[pbi+2].c_str()));

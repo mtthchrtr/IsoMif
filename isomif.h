@@ -44,7 +44,6 @@ struct vertex {
   vector<int> m;
   int bu;
   int id;
-  // vector<int> env;
 };
 
 //Atom struc
@@ -79,6 +78,7 @@ struct nodes{
   pseudoC* pa;
   pseudoC* pb;
   float cosd;
+  int nbi;
   // float** nrgs;
   // int* pbPass;
   // int neibrs;
@@ -91,15 +91,15 @@ struct CliqueStruct{
   vector<vertex> va;
   vector<vertex> vb;
   int nbNodes;
+  int nbNodesM;
   float normNodes;
   float normNodesRMSD;
   float tani;
+  float taniM;
   float taniNorm;
   float rmsd;
   float cosdBu;
   float ligRMSD;
-  float envD;
-  float buD;
   float nrg;
   gsl_matrix *mat_r;
   float cen_a[3];
@@ -143,7 +143,7 @@ float ca_dDist=3.0;
 float ps_dDist=1.0;
 float neibr_dDist=3.0;
 int cg_start=-1;
-float cosdT=0.5;
+float cosdT=0.90;
 vector<vertex> mif1;
 vector<vertex> mif2;
 vector<atom> prot1;
@@ -160,6 +160,8 @@ vector<int> steps;
 int wrfn=0; //write sim in filename
 int ss1[4];
 int ss2[4];
+int ss1m[4];
+int ss2m[4];
 int totalVrtx=0;
 map<int,int> topCliques;
 vector<atom> lig1;
@@ -182,7 +184,7 @@ float dist3d(float[], float[]);
 void clearStep(int);
 void printNodes();
 int read_commandline(int, char*[]);
-int createVrtxVec(string, vector<vertex>&, vector<atom>&, int*, int&, vector<pseudoC>&, string, vector<atom>&);
+int createVrtxVec(string, vector<vertex>&, vector<atom>&, int*, int*, int&, vector<pseudoC>&, string, vector<atom>&);
 void createNodes(int, vector<node>&, int);
 void rem_spaces(char*);
 int get_info(string, string);

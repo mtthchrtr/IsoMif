@@ -24,15 +24,18 @@ my $nbpb=0;
 my $grids=0;
 my $gride=3;
 my $ff="";
+my $ot="";
 
 #Read command line
 for(my $i=0; $i<=$#ARGV; $i++){
   if($ARGV[$i] eq "-m"){ $mifFile=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-o"){ $mifViewFolder=$ARGV[$i+1]; }
+  if($ARGV[$i] eq "-t"){ $ot=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-h"){
     print "##################\nWelcome to pipeIsoMifView\n##################\n";
     print "-m         <path to mif file>\n";
     print "-o         <mifView output directory>\n";
+    print "-t         <output tag name>\n";
     print "-h         <print help menu>\n";
     exit;
   }
@@ -124,7 +127,7 @@ close IN;
 
 print $ff."\n";
 
-open NPML, ">".$mifViewFolder."/".$mifName.".pml";
+open NPML, ">".$mifViewFolder."/".$mifName.$ot.".pml";
 
 #print protein
 print NPML "feedback disable,all,output\n";
