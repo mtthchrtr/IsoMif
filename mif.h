@@ -50,12 +50,13 @@ struct vertexes{
   // int** pb_bool;
   int p;
   int bu;
-  int* ints;
-  float* nrgs;
-  float* angles;
+  vector<int> ints;
+  vector<float> nrgs;
+  vector<float> angles;
   int grid[4];
   map<string,float> env;
   int id;
+  int modulo;
 };
 
 struct pseudovrtx
@@ -174,7 +175,7 @@ class  Grid{
     vector<int> vrtxIdList;
 
   private:
-    int vrtx025,vrtx050,vrtx100,vrtx150,vrtx200;
+    int vrtx050,vrtx100,vrtx150,vrtx200;
 };
 
 int readCmdLine(int, char**);

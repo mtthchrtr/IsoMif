@@ -368,7 +368,7 @@ void Protein::readPDB(string filename){
         }
       }
 
-      if(atm.mif==1){
+      // if(atm.mif==1){
         minx=roundCoord(x-0.5,0);
         miny=roundCoord(y-0.5,0);
         minz=roundCoord(z-0.5,0);
@@ -382,7 +382,7 @@ void Protein::readPDB(string filename){
         if(maxx>max_x){ max_x=maxx; }
         if(maxy>max_y){ max_y=maxy; }
         if(maxz>max_z){ max_z=maxz; }
-      }
+      // }
 
       PROTEIN.push_back(atm);
     }
@@ -397,7 +397,6 @@ void Protein::readPDB(string filename){
 
   cout<<"PROTEIN min/max values: minx: "<< min_x<< " miny: "<< min_y<< " minz: "<<min_z<<" maxx: "<<max_x<<" maxy: "<<max_y<<" maxz: "<<max_z<<endl;
   cout<<"PROTEIN Width "<<width<<" Height "<< height << endl;
-
 }
 
 void Protein::getAtomDir(){
@@ -767,14 +766,13 @@ int Protein::getRefAtom(float& xr, float& yr, float& zr, string tresn, int tresn
 }
 
 Grid::Grid(string filename, Protein& prot){
-  vrtx025=0;
   vrtx050=0;
   vrtx100=0;
   vrtx150=0;
   vrtx200=0;
 
   if(gridFile.compare("")==0){
-    createProtVrtx(prot.PROTEIN);
+    // createProtVrtx(prot.PROTEIN);
     if(filename.compare("")==0){
       buildGrid(prot.PROTEIN);
     }else{
@@ -782,7 +780,7 @@ Grid::Grid(string filename, Protein& prot){
       readGetCleft(filename, prot.PROTEIN, prot.LIGAND);
       // getProtVrtx(prot.PROTEIN);
     }
-    getBuriedness();
+    // getBuriedness();
     if(outGridBase.compare("")!=0) writeGrid();
   }else{
     readGrid();
@@ -892,27 +890,29 @@ int Grid::buildGrid(vector<atom>& prot){
             uID++;
           }else{
             vrtx.p=0;
-            vrtx.ints=new int[nbOfProbes];              
-            if(vrtx.ints==NULL){
-              printf("\n\nCan't malloc int**\nGoodbye.\n");
-              return(24);
-            }
-            vrtx.nrgs=new float[nbOfProbes];              
-            if(vrtx.nrgs==NULL){
-              printf("\n\nCan't malloc int**\nGoodbye.\n");
-              return(24);
-            }
-            vrtx.angles=new float[nbOfProbes];              
-            if(vrtx.angles==NULL){
-              printf("\n\nCan't malloc int**\nGoodbye.\n");
-              return(24);
-            }
+            // vrtx.ints=new int[nbOfProbes];              
+            // if(vrtx.ints==NULL){
+            //   printf("\n\nCan't malloc int**\nGoodbye.\n");
+            //   return(24);
+            // }
+            // vrtx.nrgs=new float[nbOfProbes];              
+            // if(vrtx.nrgs==NULL){
+            //   printf("\n\nCan't malloc int**\nGoodbye.\n");
+            //   return(24);
+            // }
+            // vrtx.angles=new float[nbOfProbes];              
+            // if(vrtx.angles==NULL){
+            //   printf("\n\nCan't malloc int**\nGoodbye.\n");
+            //   return(24);
+            // }
             
-            for(i=0; i<nbOfProbes; i++){ vrtx.ints[i]=0; }
-            for(i=0; i<nbOfProbes; i++){ vrtx.nrgs[i]=0.0; }
-            for(i=0; i<nbOfProbes; i++){ vrtx.angles[i]=0.0; }
+            int zi=0;
+            float zf=0.0;
+            for(int i=0; i<nbOfProbes; i++){
+              vrtx.ints.push_back(zi); vrtx.nrgs.push_back(zf); vrtx.angles.push_back(zf);
+            }
 
-            for(int i=0; i<aa.size(); i++){ vrtx.env[aa[i]]=1000.0; }
+            // for(int i=0; i<aa.size(); i++){ vrtx.env[aa[i]]=1000.0; }
 
             if(inGridRes(vrtx,2.0)==1){
               vrtx.grid[0]=1;
@@ -933,7 +933,6 @@ int Grid::buildGrid(vector<atom>& prot){
               vrtx.grid[3]=1;
               vrtx050++;               
             }else{ vrtx.grid[3]=0; }
-            vrtx025++;
 
             if(vrtx.grid[zip]!=1 && zip!=-1) continue;
 
@@ -955,14 +954,12 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
   string fields[4];
   map<int,vertex>::iterator it;
   vector<atom>::iterator pit;
-  vertex* vrtx=NULL;
   int i=0;
   int newv=0;
   int id;
   float x,y,z,rad,nx,ny,nz;
   float minx,miny,minz,maxx,maxy,maxz;
   float dist,minDist;
-  float nmxgd=sqrt(maxGridDist)+stepsize;
 
   ifs.open(filename.c_str());
 
@@ -996,6 +993,16 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
         for(ny=miny; ny<=maxy; ny+=stepsize){
           for(nz=minz; nz<=maxz; nz+=stepsize){
 
+            int flagg=0;
+            // for(int i=0; i<lig.size(); i++){
+            //   if(lig[i].atomn.compare("O3B")!=0) continue;
+            //   dist=sqrt(((abs(nx-lig[i].x)*abs(nx-lig[i].x))+(abs(ny-lig[i].y)*abs(ny-lig[i].y))+(abs(nz-lig[i].z)*abs(nz-lig[i].z))));
+            //   if(dist<0.3){
+            //     cout<<nx<<" "<<ny<<" "<<nz<<"("<<x<<" "<<y<<" "<<z<<" "<<rad<<") "<<id<<" "<<lig[i].resn<<" "<<lig[i].atomn.c_str()<<" "<<dist<<endl;
+            //     flagg=1;
+            //   }
+            // }
+
             //Generate grid vertex ID
             id=generateID(width,height,(int)((nx-min_x)/stepsize)+1,(int)((ny-min_y)/stepsize)+1,(int)((nz-min_z)/stepsize)+1);
             it = GRID.find(id);
@@ -1006,7 +1013,6 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
             //Skip if not within the sphere
             if(((abs(nx-x)*abs(nx-x))+(abs(ny-y)*abs(ny-y))+(abs(nz-z)*abs(nz-z)))>(rad*rad)) continue;
 
-            //Skip if too far from the ligand, if necessary
             if(resnumc.compare("")!=0){
               minDist=10000.0;
               for(i=0; i<ligVec.size(); i+=3){
@@ -1021,51 +1027,25 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
               if(minDist>gridLigDist) continue;
             }
 
-            // for(pit=protVec.begin(); pit!=protVec.end(); ++pit){
-            //   if((*pit).h==1) continue;
-            //   if((*pit).mif==0) continue;
-            //   dist=((abs(nx-(*pit).x)*abs(nx-(*pit).x))+(abs(ny-(*pit).y)*abs(ny-(*pit).y))+(abs(nz-(*pit).z)*abs(nz-(*pit).z)));
-            //   if(dist<minDist){ minDist=dist; }
-            // }
-            // if(minDist<minGridDist || minDist > maxGridDist){
-            //   continue;
-            // }
-            
             vertex vrtx;
             vrtx.x=nx;
             vrtx.y=ny;
             vrtx.z=nz;
             vrtx.bu=0;
             vrtx.p=0;
+            vrtx.modulo=id;
 
-            vrtx.ints=new int[nbOfProbes];              
-            if(vrtx.ints==NULL){
-              printf("\n\nCan't malloc int**\nGoodbye.\n");
-              return(24);
+            int zi=0;
+            float zf=0.0;
+            for(int i=0; i<nbOfProbes; i++){
+              vrtx.ints.push_back(zi); vrtx.nrgs.push_back(zf); vrtx.angles.push_back(zf);
             }
-            vrtx.nrgs=new float[nbOfProbes];              
-            if(vrtx.nrgs==NULL){
-              printf("\n\nCan't malloc int**\nGoodbye.\n");
-              return(24);
-            }
-            vrtx.angles=new float[nbOfProbes];              
-            if(vrtx.angles==NULL){
-              printf("\n\nCan't malloc int**\nGoodbye.\n");
-              return(24);
-            }
-            
-            for(i=0; i<nbOfProbes; i++){ vrtx.ints[i]=0; }
-            for(i=0; i<nbOfProbes; i++){ vrtx.nrgs[i]=0.0; }
-            for(i=0; i<nbOfProbes; i++){ vrtx.angles[i]=0.0; }
-            for(i=0; i<4; i++){ vrtx.grid[i]=0; }
+            for(int i=0; i<4; i++){ vrtx.grid[i]=0; }
 
-            for(int i=0; i<aa.size(); i++){
-              vrtx.env[aa[i]]=1000.0;
-            }
             vrtx.id=uID;
-            // cout<<uID<<" "<<nx<<" "<<ny<<" "<<nz<<" g"<<endl;
             uID++;
             newv++;
+
             GRID.insert(pair<int,vertex>(id,vrtx));
           }
         }
@@ -1110,12 +1090,12 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
       it->second.grid[3]=1;
       vrtx050++;               
     }else{ it->second.grid[3]=0; }
-    vrtx025++;
 
     if(minDist<minGridDist || minDist > maxGridDist || (it->second.grid[zip]!=1 && zip!=-1)){
       GRID.erase(it++);
       chipped++;
     }else{
+      vrtxIdList.push_back(it->second.modulo);
       ++it;
     }
   }
@@ -1423,24 +1403,28 @@ int Grid::readGrid(){
     }else{
       stringstream test(line);
       vertex vrtx;
-      vrtx.ints=new int[nbOfProbes];              
-      if(vrtx.ints==NULL){
-        printf("\n\nCan't malloc int**\nGoodbye.\n");
-        return(24);
+      // vrtx.ints=new int[nbOfProbes];              
+      // if(vrtx.ints==NULL){
+      //   printf("\n\nCan't malloc int**\nGoodbye.\n");
+      //   return(24);
+      // }
+      // vrtx.nrgs=new float[nbOfProbes];              
+      // if(vrtx.nrgs==NULL){
+      //   printf("\n\nCan't malloc int**\nGoodbye.\n");
+      //   return(24);
+      // }
+      // vrtx.angles=new float[nbOfProbes];              
+      // if(vrtx.angles==NULL){
+      //   printf("\n\nCan't malloc int**\nGoodbye.\n");
+      //   return(24);
+      // }
+      int zi=0;
+      float zf=0.0;
+      for(int i=0; i<nbOfProbes; i++){
+        vrtx.ints.push_back(zi); vrtx.nrgs.push_back(zf); vrtx.angles.push_back(zf);
       }
-      vrtx.nrgs=new float[nbOfProbes];              
-      if(vrtx.nrgs==NULL){
-        printf("\n\nCan't malloc int**\nGoodbye.\n");
-        return(24);
-      }
-      vrtx.angles=new float[nbOfProbes];              
-      if(vrtx.angles==NULL){
-        printf("\n\nCan't malloc int**\nGoodbye.\n");
-        return(24);
-      }
-      for(int i=0; i<nbOfProbes; i++){ vrtx.ints[i]=0; }
-      for(int i=0; i<nbOfProbes; i++){ vrtx.nrgs[i]=0.0; }
-      for(int i=0; i<nbOfProbes; i++){ vrtx.angles[i]=0.0; }
+      // for(int i=0; i<nbOfProbes; i++){  }
+      // for(int i=0; i<nbOfProbes; i++){  }
       for(int i=0; i<4; i++){ vrtx.grid[i]=0; }
       int gid;
       test >> gid >> vrtx.id >> vrtx.x >> vrtx.y >> vrtx.z >> vrtx.p >> vrtx.bu >> vrtx.grid[0] >> vrtx.grid[1] >> vrtx.grid[2] >> vrtx.grid[3];
@@ -1811,9 +1795,9 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
   for(it=GRID.begin();it!=GRID.end();it++){
 
     if(it->second.p==1){
-      // if(it->second.grid[2]==1){
-      //   fprintf(fpNew, "#PG %7.2f %7.2f %7.2f\n",it->second.x,it->second.y,it->second.z);  
-      // }
+      if(it->second.grid[2]==1){
+        fprintf(fpNew, "#PG %7.2f %7.2f %7.2f\n",it->second.x,it->second.y,it->second.z);  
+      }
     }else{
       if((zip!=-1 && it->second.grid[zip]==1) || zip==-1){
         fprintf(fpNew, "%7.2f %7.2f %7.2f",it->second.x,it->second.y,it->second.z);
@@ -2067,10 +2051,9 @@ void getMif(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
   for(int i=0; i<vrtxList.size(); i++){
     map<int,vertex>::iterator it=grid.find(vrtxList[i]);
     vertex& m=it->second;
-    
     if(m.p==1){ continue; }
     // if(m.bu<bul){ continue; }
-    if(m.grid[0]==1 || m.grid[1]==1 || m.grid[2]==1){
+    if(m.grid[0]==1 || m.grid[1]==1 || m.grid[2]==1 || m.grid[3]==1){
   
       if(printDetails==1){ cout<<endl<<"Vertex id: "<< m.id <<" "<<m.x<<" "<<m.y<<" "<<m.z<<endl; }
       int flag=0;
