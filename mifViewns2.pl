@@ -169,9 +169,9 @@ for(my $i=0; $i<$nbpb; $i++){ #Loop each probe
     }
   }
 }
-
+print "grids $grids gride $gride\n";
 #print grid points
-for(my $i=0; $i<3; $i++){
+for(my $i=$grids; $i<=$gride; $i++){
   if(exists $grid[$i] && scalar @{$grid[$i]} > 0){
     print NPML "cmd.read_pdbstr(\"\"\"";
     for(my $j=0; $j<@{$grid[$i]}; $j+=4){       
@@ -228,18 +228,18 @@ for(my $i=0; $i<3; $i++){
 print NPML "set sphere_scale, 0.3, pseudocenter\ncolor aquamarine, resn HYD & pseudocenters\ncolor brightorange, resn ARM & pseudocenters\n";
 print NPML "color blue, resn DON & pseudocenters\ncolor red, resn ACC & pseudocenters\ncolor limegreen, resn DOA & pseudocenters\nshow spheres, pseudocenters\n";
 
-print NPML "set sphere_scale, 0.3, 100\nshow spheres, 100\n";
-for(my $i=0; $i<15; $i++){
-  if($i<7){
-    my $c=((1-((7-$i)/7)));
-    print NPML "set_color blue".$i.", [".$c.",".$c.",1]\n";
-    print NPML "color blue".$i.", 100 & b=".$i."\n";  
-  }else{
-    my $c=((1-(($i-7)/7)));
-    print NPML "set_color red".$i.", [1,".$c.",".$c."]\n";
-    print NPML "color red".$i.", 100 & b=".$i."\n";
-  }
-}
+# print NPML "set sphere_scale, 0.3, 100\nshow spheres, 100\n";
+# for(my $i=0; $i<15; $i++){
+#   if($i<7){
+#     my $c=((1-((7-$i)/7)));
+#     print NPML "set_color blue".$i.", [".$c.",".$c.",1]\n";
+#     print NPML "color blue".$i.", 100 & b=".$i."\n";  
+#   }else{
+#     my $c=((1-(($i-7)/7)));
+#     print NPML "set_color red".$i.", [1,".$c.",".$c."]\n";
+#     print NPML "color red".$i.", 100 & b=".$i."\n";
+#   }
+# }
 
 # print PML "delete ".$mifName."\nhide lines\nshow sticks, HET & ".$mifName."_cpy\n";
 # print PML "save ".$mifViewFolder."/".$mifName.".pse\n";

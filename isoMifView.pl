@@ -21,6 +21,7 @@ my @mifV1=();
 my @mifV1int=();
 my @mifV2=();
 my @mifV2int=();
+my $sm="taninorm";
 
 #Read command line
 for(my $i=0; $i<=$#ARGV; $i++){
@@ -32,6 +33,7 @@ for(my $i=0; $i<=$#ARGV; $i++){
   if($ARGV[$i] eq "-m1"){ $m1Path=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-m2"){ $m2Path=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-g"){ $cg=$ARGV[$i+1]; }
+  if($ARGV[$i] eq "-s"){ $sm=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-h"){
     print "##################\nWelcome to pipeIsoMifView\n##################\n";
     print "-m         <path to isoMif file>\n";
@@ -42,6 +44,7 @@ for(my $i=0; $i<=$#ARGV; $i++){
     print "-m1        <mif 1 path>\n";
     print "-m2        <mif 2 path>\n";
     print "-g         <coarse grain step>\n";
+    print "-s         <similarity measure to find best clique>\n";
     print "-h         <print help menu>\n";
     exit;
   }
@@ -57,6 +60,85 @@ if($outDir eq ""){
 my @probeNames=();
 my @pbColors=("aquamarine","brightorange","blue","red","limegreen","lightmagenta");
 
+my %best=();
+my $cc=0;
+if($sm ne ""){
+  open IN, "<".$matchIn or die "Cant open match file";
+  while($line=<IN>){
+    if($line=~/^REMARK CLIQUE CG ([0-9]+)\s+NODES\s+([0-9]+)\s+NODESM\s+([0-9]+)\s+NORMNODES\s+([\.0-9]+)\s+NORMNODESRMSD\s+([\.0-9]+)\s+TANI\s+([\.0-9]+)\s+TANIM\s+([\.0-9]+)\s+TANINORM\s+([\.0-9]+)\s+RMSD\s+([\.0-9]+)\s+NRG\s+-?([\.0-9]+)\s+SS1\s+([0-9]+)\s+SS2\s+([0-9]+)\s+SS1M\s+([0-9]+)\s+SS2M\s+([0-9]+)\s+LIGRMSD\s+([\.0-9]+)$/){
+      next unless ($1 eq $cg);
+      if($cc==0){
+        $best{"nodes"}[0]=$cc;
+        $best{"nodes"}[1]=$2;
+        $best{"nodesm"}[0]=$cc;
+        $best{"nodesm"}[1]=$3;
+        $best{"normnodes"}[0]=$cc;
+        $best{"normnodes"}[1]=$4;
+        $best{"normnodesrmsd"}[0]=$cc;
+        $best{"normnodesrmsd"}[1]=$5;
+        $best{"tani"}[0]=$cc;
+        $best{"tani"}[1]=$6;
+        $best{"tanim"}[0]=$cc;
+        $best{"tanim"}[1]=$7;
+        $best{"taninorm"}[0]=$cc;
+        $best{"taninorm"}[1]=$8;
+        $best{"rmsd"}[0]=$cc;
+        $best{"rmsd"}[1]=$9;
+        $best{"nrg"}[0]=$cc;
+        $best{"nrg"}[1]=$10;
+        $best{"ligrmsd"}[0]=$cc;
+        $best{"ligrmsd"}[1]=$15;
+      }else{
+        if($2>$best{"nodes"}[1]){
+          $best{"nodes"}[1]=$2;
+          $best{"nodes"}[0]=$cc;
+        }
+        if($3>$best{"nodesm"}[1]){
+          $best{"nodesm"}[1]=$3;
+          $best{"nodesm"}[0]=$cc;
+        }
+        if($4>$best{"normnodes"}[1]){
+          $best{"normnodes"}[1]=$4;
+          $best{"normnodes"}[0]=$cc;
+        }
+        if($5>$best{"normnodesrmsd"}[1]){
+          $best{"normnodesrmsd"}[1]=$5;
+          $best{"normnodesrmsd"}[0]=$cc;
+        }
+        if($6>$best{"tani"}[1]){
+          $best{"tani"}[1]=$6;
+          $best{"tani"}[0]=$cc;
+        }
+        if($7>$best{"tanim"}[1]){
+          $best{"tanim"}[1]=$7;
+          $best{"tanim"}[0]=$cc;
+        }
+        if($8>$best{"taninorm"}[1]){
+          $best{"taninorm"}[1]=$8;
+          $best{"taninorm"}[0]=$cc;
+        }
+        if($9<$best{"rmsd"}[1]){
+          $best{"rmsd"}[1]=$9;
+          $best{"rmsd"}[0]=$cc;
+        }
+        if($10>$best{"nrg"}[1]){
+          $best{"nrg"}[1]=$10;
+          $best{"nrg"}[0]=$cc;
+        }
+        if($15<$best{"ligrmsd"}[1]){
+          $best{"ligrmsd"}[1]=$15;
+          $best{"ligrmsd"}[0]=$cc;
+        }
+      }
+      $cc++;
+    }
+  }
+  close IN;
+  print "Best ".$sm." ".$best{$sm}[0]." ".$best{$sm}[1]."\n";
+}
+
+$cc=0;
+my $flagStore=0;
 #Retrieve the nodes and other info from match file
 open IN, "<".$matchIn or die "Cant open match file";
 while($line=<IN>){
@@ -92,6 +174,9 @@ while($line=<IN>){
 
   if($line=~/^REMARK CLIQUE CG ([0-9-]+)/){
     $tcg=$1;
+    last if($flagStore==1);
+    $flagStore=1 if($sm ne "" && $best{$sm}[0]==$cc);
+    $cc++ if($tcg==$cg);
   }
 
   if($line=~/^REMARK ROTMAT\s+([-\.\/0-9\s+]+)$/i && $tcg==$cg){
@@ -125,6 +210,7 @@ while($line=<IN>){
       push @{$vb[$p]}, ($s[0],$s[1],$s[2]) if($s[$p+3]==1);
     }
   }elsif($line!~/^REMARK/ && $tcg==$cg){
+    next unless($flagStore==1);
     my @l=split(/\s+/,$line);
     $pb=$l[0];
     $data[$tcg][$pb].="$l[1];$l[2];$l[3];$l[4];$l[5];$l[6]\n";
@@ -137,6 +223,7 @@ close IN;
 
 sub storeMif{
   open IN, "<".$_[0] or die "cant open mif file $mifFile";
+  # print $_[0]."\n";
   while(my $line=<IN>){
     if($line=~/^#probe\[([0-9]+)\]\s+([0-9a-z\.-]+)$/i){
       $probeNames[$1]=$2;
@@ -149,8 +236,14 @@ sub storeMif{
     $line=~s/\s+$//g;
     my @info=split(/\s+/,$line);
     #Store vrtx potential interaction
-    for(my $i=3; $i<21; $i+=3){
-      push @{${$_[1]}[($i/3)-1]}, ($info[0],$info[1],$info[2],$info[21],$info[22],$info[23],$info[24]) if($info[$i]==1);
+    for(my $i=3; $i<$#info-4; $i+=3){
+      my $pbid=($i/3)-1;
+      my $g0=$#info-4;
+      my $g1=$#info-3;
+      my $g2=$#info-2;
+      my $g3=$#info-1;
+      # print "$pbid $info[0] $info[1] $info[2]\n" if($info[$i]==1);
+      push @{${$_[1]}[($i/3)-1]}, ($info[0],$info[1],$info[2],$info[$g0],$info[$g1],$info[$g2],$info[$g3]) if($info[$i]==1);
     }
     # #Store vrtx grid presence
     # for(my $i=9; $i<13; $i++){
@@ -172,10 +265,10 @@ my $mif2str=&printMif(2,\@mifV2,\@mifV2int);
 sub printMif{
   # open OUT, ">".$outDir.$tag."_mif".$_[0].".pdb" or die "Cant open mif1 out file";
   my $it=0;
+  print "\n\nprinting mif $_[0]\n";
   my $pdbstr="cmd.read_pdbstr(\"\"\"";
-  for(my $i=0; $i<6; $i++){ #Loop each probe
-    # print $i." $#{${$_[1]}[$i]}\n";
-    if($#{${$_[1]}[$i]}){
+  for(my $i=0; $i<@{$_[1]}; $i++){ #Loop each probe
+    if(scalar @{$_[1]}){
       ${$_[2]}[$i][$res][0]=$it;
       for(my $j=0; $j<@{${$_[1]}[$i]}; $j+=7){ #For each node
         if(${$_[1]}[$i][$j+3+$res]==1){ #If its in the g grid resolution
@@ -192,12 +285,13 @@ sub printMif{
               }
             } 
           }
-          $pdbstr.=sprintf("HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",$it,$probesLab[$i],$ncoor[0],$ncoor[1],$ncoor[2]);
-          # printf OUT "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\n",$it,$probesLab[$i],$ncoor[0],$ncoor[1],$ncoor[2];          
+          $pdbstr.=sprintf("HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",$it,$i,$ncoor[0],$ncoor[1],$ncoor[2]);
+          # printf OUT "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\n",$it,$probeNames[$i],$ncoor[0],$ncoor[1],$ncoor[2];          
           $it++;
         }
       }
       ${$_[2]}[$i][$res][1]=$it-1;
+      # print "probe $i ${$_[2]}[$i][$res][0] ${$_[2]}[$i][$res][1]\n";
     }
   }
   $pdbstr.="TER \\\n\"\"\",\"".$tag."_mif".$_[0]."\")\n";
@@ -352,6 +446,7 @@ if($cg==-1){
   my $str1="cmd.read_pdbstr(\"\"\"";
   my $str2="cmd.read_pdbstr(\"\"\"";
   my $strSel="";
+
   for(my$j=0; $j<@{$data[$cg]}; $j++){ #For each probe
     my @nodes=split(/\n/,$data[$cg][$j]);
     if(@nodes){
@@ -398,15 +493,12 @@ print NPML "set connect_mode,1\n".$mstr1.$mstr2;
 sub printMifPml{
   my $str="";
   # print PML3 "set connect_mode,1\nload ".$outDir.$tag."_mif".$_[2].".pdb\n";
-  for(my $i=0; $i<6; $i++){
+  for(my $i=0; $i<@{$_[0]}; $i++){
     if(@{${$_[0]}[$i]}){
         if(${$_[1]}[$i][$res][0]!=${$_[1]}[$i][$res][1]){
-          $str.="create mif_".$_[3]."_".$probesLab[$i].", id ${$_[1]}[$i][$res][0]-${$_[1]}[$i][$res][1] & ".$tag."_mif".$_[2]."\n";
-          $str.="show spheres, mif_".$_[3]."_".$probesLab[$i]."\nset sphere_scale,".$_[4].",mif_".$_[3]."_".$probesLab[$i]."\nset sphere_transparency,0.6,mif_".$_[3]."_".$probesLab[$i]."\nrebuild\n";
-          $str.="color $pbColors[$i],mif_".$_[3]."_".$probesLab[$i]."\nhide nonbonded,mif_".$_[3]."_".$probesLab[$i]."\n";
-          # print PML3 "create mif_".$_[3]."_".$probesLab[$i].", id ${$_[1]}[$i][$res][0]-${$_[1]}[$i][$res][1] & ".$tag."_mif".$_[2]."\n";
-          # print PML3 "show spheres, mif_".$_[3]."_".$probesLab[$i]."\nset sphere_scale,".$_[4].",mif_".$_[3]."_".$probesLab[$i]."\nset sphere_transparency,0.6,mif_".$_[3]."_".$probesLab[$i]."\nrebuild\n";
-          # print PML3 "color $pbColors[$i],mif_".$_[3]."_".$probesLab[$i]."\nhide nonbonded,mif_".$_[3]."_".$probesLab[$i]."\n";
+          $str.="create mif_".$_[3]."_".$probeNames[$i].", id ${$_[1]}[$i][$res][0]-${$_[1]}[$i][$res][1] & ".$tag."_mif".$_[2]."\n";
+          $str.="show spheres, mif_".$_[3]."_".$probeNames[$i]."\nset sphere_scale,".$_[4].",mif_".$_[3]."_".$probeNames[$i]."\nset sphere_transparency,0.6,mif_".$_[3]."_".$probeNames[$i]."\nrebuild\n";
+          $str.="color $pbColors[$i],mif_".$_[3]."_".$probeNames[$i]."\nhide nonbonded,mif_".$_[3]."_".$probeNames[$i]."\n";
         }
     }
   }

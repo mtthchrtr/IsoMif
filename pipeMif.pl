@@ -69,6 +69,7 @@ sub runCmds{
       if($count==$batch){
         $count=0;
         close OUT;
+        # print "qsub ".$jobsDir.$filenb.".pbs"." -o /dev/null -e /dev/null\n";
         system("qsub ".$jobsDir.$filenb.".pbs"." -o /dev/null -e /dev/null");
         $filenb++;
         open OUT, ">".$jobsDir.$filenb.".pbs" or die "cant open".$jobsDir.$filenb.".pbs";
@@ -80,6 +81,7 @@ sub runCmds{
     }
     close OUT;
     system("qsub ".$jobsDir.$filenb.".pbs"." -o /dev/null -e /dev/null");
+    # print "qsub ".$jobsDir.$filenb.".pbs"." -o /dev/null -e /dev/null\n";
     &areJobsDone("nrg",$tag);
   }elsif($cmdMode eq "print"){
     for(my $i=0; $i<@cmds; $i++){
