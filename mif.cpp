@@ -2133,7 +2133,7 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms, float& close
   string pat=probes[pbId];
   epsilon=eps[at+"_"+pat];
 
-  cout<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<" dist "<<dist<<endl;
+  if(printDetails==1){ cout<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<" dist "<<dist<<endl; }
   if(((acc[at]==1 && don[pat]==1) || (acc[pat]==1 && don[at]==1)) && atm.dir==1){
 
     rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
@@ -2150,7 +2150,7 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms, float& close
     if(dist<closest){
       closest=dist;
       vrtx.angles[pbId]=angle;
-      cout<<" closest "<<dist<<" new angle "<<vrtx.angles[pbId]<<endl;
+      if(printDetails==1){ cout<<" closest "<<dist<<" new angle "<<vrtx.angles[pbId]<<endl; }
     }
   }else if(arm[at]==1 && arm[pat]==1 && atm.dir==1){ //aromatic interaction
     if(atm.dir==1){
@@ -2167,7 +2167,7 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms, float& close
       if(dist<closest){
         closest=dist;
         vrtx.angles[pbId]=angle;
-        cout<<" closest "<<dist<<" new angle "<<vrtx.angles[pbId]<<endl;
+        if(printDetails==1){ cout<<" closest "<<dist<<" new angle "<<vrtx.angles[pbId]<<endl; }
       }
     }else{
       if(printDetails==1){ cout<<"Both aromatic but no angle to calculate."<<endl; }
@@ -2179,7 +2179,7 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms, float& close
   }
   count_atoms++;
   energy=(epsilon)*(exp(-1.0*dist*alpha));
-  cout<<"Epsilon "<<epsilon<<" NRG "<<energy<<endl;
+  if(printDetails==1){ cout<<"Epsilon "<<epsilon<<" NRG "<<energy<<endl; }
   return(energy);
 }
 
