@@ -103,6 +103,7 @@ sub runCmds{
         $count=0;
         close OUT;
         system("qsub ".$jobsDir.$filenb.".pbs -o /dev/null -e /dev/null");
+        # sleep 10;
         $filenb++;
         open OUT, ">".$jobsDir.$filenb.".pbs" or die "cant open".$jobsDir.$filenb.".pbs";
         print OUT "#!/bin/sh\n#PBS -l nodes=1:ppn=1\n#PBS -N ".$tag.$filenb."\n".$mifPath." -pp ".$jobsDir."ht/".$filenb." ".$paramString;

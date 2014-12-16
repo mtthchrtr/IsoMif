@@ -37,6 +37,7 @@ int main(int argc, char **argv)
   getaa();
   readLigFile();
 
+
   for(int pwr=0; pwr<pw.size(); pwr++){
 
     proteinFile=pw[pwr].pdbF;
@@ -363,7 +364,7 @@ void Protein::readPDB(string filename){
           LIGAND.push_back(atof((line.substr(38,8).c_str())));
           LIGAND.push_back(atof((line.substr(46,8).c_str())));
           atm.at=ligAt[atm.atomn];
-          cout<<"LIGAND ATOM "<<atm.atomn<<" "<<atm.at<<endl;
+          // cout<<"LIGAND ATOM "<<atm.atomn<<" "<<atm.at<<endl;
           LIGATOMS.push_back(atm);
         }
       }
@@ -409,237 +410,246 @@ void Protein::getAtomDir(){
     if(PROTEIN[i].mif==1){
       ring=0;
       found=0;
-      needRef=1;
-      if(PROTEIN[i].resn.compare("ALA")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("ALA")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("ARG")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("ARG")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("ARG")==0 && PROTEIN[i].atomn.compare("NE")==0){
-        tatomn="HE";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("ARG")==0 && PROTEIN[i].atomn.compare("NH1")==0){
-        tatomn="CZ";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("ARG")==0 && PROTEIN[i].atomn.compare("NH2")==0){
-        tatomn="CZ";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("ASN")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("ASN")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("ASN")==0 && PROTEIN[i].atomn.compare("OD1")==0){
-        tatomn="CG";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("ASN")==0 && PROTEIN[i].atomn.compare("ND2")==0){
-        tatomn="CG";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("ASP")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("ASP")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("ASP")==0 && PROTEIN[i].atomn.compare("OD1")==0){
-        tatomn="CG";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("ASP")==0 && PROTEIN[i].atomn.compare("OD2")==0){
-        tatomn="CG";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("CYS")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("CYS")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("GLN")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("GLN")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("GLN")==0 && PROTEIN[i].atomn.compare("OE1")==0){
-        tatomn="CD";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("GLN")==0 && PROTEIN[i].atomn.compare("NE2")==0){
-        tatomn="CD";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("GLU")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("GLU")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("GLU")==0 && PROTEIN[i].atomn.compare("OE1")==0){
-        tatomn="CD";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("GLU")==0 && PROTEIN[i].atomn.compare("OE2")==0){
-        tatomn="CD";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("GLY")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("GLY")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("HIS")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("HIS")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("HIS")==0 && PROTEIN[i].atomn.compare("ND1")==0){
-        tatomn="CG";
-        tatomn2="CE1";
-        ring=2;
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("HIS")==0 && PROTEIN[i].atomn.compare("NE2")==0){
-        tatomn="CE1";
-        tatomn2="CD2";
-        ring=2;
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("HIS")==0 && (PROTEIN[i].atomn.compare("CD2")==0 || PROTEIN[i].atomn.compare("CE1")==0 || PROTEIN[i].atomn.compare("CG")==0)){
-        tatomn="ND1";
-        tatomn2="NE2";
-        ring=1;
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("ILE")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("ILE")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("LEU")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("LEU")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("LYS")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("LYS")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("LYS")==0 && PROTEIN[i].atomn.compare("NZ")==0){
-        tatomn="CE";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("MET")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("MET")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("PHE")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("PHE")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("PHE")==0 && PROTEIN[i].atomn.compare("CG")==0){
-        tatomn="CD1";
-        tatomn2="CD2";
-        ring=1;
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("PHE")==0 && PROTEIN[i].atomn.compare("CD1")==0){
-        tatomn="CG";
-        tatomn2="CD2";
-        ring=1;
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("PHE")==0 && (PROTEIN[i].atomn.compare("CD2")==0 || PROTEIN[i].atomn.compare("CE1")==0 || PROTEIN[i].atomn.compare("CE2")==0 || PROTEIN[i].atomn.compare("CZ")==0)){
-        tatomn="CG";
-        tatomn2="CD1";
-        ring=1;
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("PRO")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("SER")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("SER")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("SER")==0 && PROTEIN[i].atomn.compare("OG")==0){
-        tatomn="CB";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("THR")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("THR")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("THR")==0 && PROTEIN[i].atomn.compare("OG1")==0){
-        tatomn="CB";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("TRP")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("TRP")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("TRP")==0 && PROTEIN[i].atomn.compare("CG")==0){
-        tatomn="CD1";
-        tatomn2="CD2";
-        ring=1;
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("TRP")==0 && PROTEIN[i].atomn.compare("CD1")==0){
-        tatomn="CG";
-        tatomn2="CD2";
-        ring=1;
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("TRP")==0 && (PROTEIN[i].atomn.compare("CD2")==0 || PROTEIN[i].atomn.compare("CE2")==0 || PROTEIN[i].atomn.compare("CE3")==0 || PROTEIN[i].atomn.compare("CZ2")==0 || PROTEIN[i].atomn.compare("CZ3")==0 || PROTEIN[i].atomn.compare("CH2")==0)){
-        tatomn="CG";
-        tatomn2="CD1";
-        ring=1;
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("TRP")==0 && PROTEIN[i].atomn.compare("NE1")==0){
-        tatomn="CE2";
-        tatomn2="CD1";
-        ring=2;
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("TYR")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("TYR")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("TYR")==0 && PROTEIN[i].atomn.compare("CG")==0){
-        tatomn="CD1";
-        tatomn2="CD2";
-        ring=1;
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("TYR")==0 && PROTEIN[i].atomn.compare("CD1")==0){
-        tatomn="CG";
-        tatomn2="CD2";
-        ring=1;
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("TYR")==0 && (PROTEIN[i].atomn.compare("CD2")==0 || PROTEIN[i].atomn.compare("CE1")==0 || PROTEIN[i].atomn.compare("CE2")==0 || PROTEIN[i].atomn.compare("CZ")==0)){
-        tatomn="CG";
-        tatomn2="CD1";
-        ring=1;
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("TYR")==0 && PROTEIN[i].atomn.compare("OH")==0){
-        tatomn="CZ";
-        rDir=0;
-      }else if(PROTEIN[i].resn.compare("VAL")==0 && PROTEIN[i].atomn.compare("N")==0){
-        tatomn="H";
-        rDir=1;
-      }else if(PROTEIN[i].resn.compare("VAL")==0 && PROTEIN[i].atomn.compare("O")==0){
-        tatomn="C";
-        rDir=0;
-      }else{
-        needRef=0;
+      needRef=0;
+      if(atomRef[PROTEIN[i].resn+"_"+PROTEIN[i].atomn].r1.compare("")!=0){ // If there is a reference atom
+        needRef=1;
+        tatomn=atomRef[PROTEIN[i].resn+"_"+PROTEIN[i].atomn].r1;
+        rDir=atomRef[PROTEIN[i].resn+"_"+PROTEIN[i].atomn].rDir;
+        if(atomRef[PROTEIN[i].resn+"_"+PROTEIN[i].atomn].r2.compare("")!=0){ // If its a ring atom
+          tatomn2=atomRef[PROTEIN[i].resn+"_"+PROTEIN[i].atomn].r2;
+          ring=atomRef[PROTEIN[i].resn+"_"+PROTEIN[i].atomn].ring;
+        }
       }
+      // if(PROTEIN[i].resn.compare("ALA")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("ALA")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("ARG")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("ARG")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("ARG")==0 && PROTEIN[i].atomn.compare("NE")==0){
+      //   tatomn="HE";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("ARG")==0 && PROTEIN[i].atomn.compare("NH1")==0){
+      //   tatomn="CZ";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("ARG")==0 && PROTEIN[i].atomn.compare("NH2")==0){
+      //   tatomn="CZ";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("ASN")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("ASN")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("ASN")==0 && PROTEIN[i].atomn.compare("OD1")==0){
+      //   tatomn="CG";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("ASN")==0 && PROTEIN[i].atomn.compare("ND2")==0){
+      //   tatomn="CG";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("ASP")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("ASP")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("ASP")==0 && PROTEIN[i].atomn.compare("OD1")==0){
+      //   tatomn="CG";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("ASP")==0 && PROTEIN[i].atomn.compare("OD2")==0){
+      //   tatomn="CG";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("CYS")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("CYS")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("GLN")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("GLN")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("GLN")==0 && PROTEIN[i].atomn.compare("OE1")==0){
+      //   tatomn="CD";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("GLN")==0 && PROTEIN[i].atomn.compare("NE2")==0){
+      //   tatomn="CD";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("GLU")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("GLU")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("GLU")==0 && PROTEIN[i].atomn.compare("OE1")==0){
+      //   tatomn="CD";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("GLU")==0 && PROTEIN[i].atomn.compare("OE2")==0){
+      //   tatomn="CD";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("GLY")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("GLY")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("HIS")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("HIS")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("HIS")==0 && PROTEIN[i].atomn.compare("ND1")==0){
+      //   tatomn="CG";
+      //   tatomn2="CE1";
+      //   ring=2;
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("HIS")==0 && PROTEIN[i].atomn.compare("NE2")==0){
+      //   tatomn="CE1";
+      //   tatomn2="CD2";
+      //   ring=2;
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("HIS")==0 && (PROTEIN[i].atomn.compare("CD2")==0 || PROTEIN[i].atomn.compare("CE1")==0 || PROTEIN[i].atomn.compare("CG")==0)){
+      //   tatomn="ND1";
+      //   tatomn2="NE2";
+      //   ring=1;
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("ILE")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("ILE")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("LEU")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("LEU")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("LYS")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("LYS")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("LYS")==0 && PROTEIN[i].atomn.compare("NZ")==0){
+      //   tatomn="CE";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("MET")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("MET")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("PHE")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("PHE")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("PHE")==0 && PROTEIN[i].atomn.compare("CG")==0){
+      //   tatomn="CD1";
+      //   tatomn2="CD2";
+      //   ring=1;
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("PHE")==0 && PROTEIN[i].atomn.compare("CD1")==0){
+      //   tatomn="CG";
+      //   tatomn2="CD2";
+      //   ring=1;
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("PHE")==0 && (PROTEIN[i].atomn.compare("CD2")==0 || PROTEIN[i].atomn.compare("CE1")==0 || PROTEIN[i].atomn.compare("CE2")==0 || PROTEIN[i].atomn.compare("CZ")==0)){
+      //   tatomn="CG";
+      //   tatomn2="CD1";
+      //   ring=1;
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("PRO")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("SER")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("SER")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("SER")==0 && PROTEIN[i].atomn.compare("OG")==0){
+      //   tatomn="CB";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("THR")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("THR")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("THR")==0 && PROTEIN[i].atomn.compare("OG1")==0){
+      //   tatomn="CB";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("TRP")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("TRP")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("TRP")==0 && PROTEIN[i].atomn.compare("CG")==0){
+      //   tatomn="CD1";
+      //   tatomn2="CD2";
+      //   ring=1;
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("TRP")==0 && PROTEIN[i].atomn.compare("CD1")==0){
+      //   tatomn="CG";
+      //   tatomn2="CD2";
+      //   ring=1;
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("TRP")==0 && (PROTEIN[i].atomn.compare("CD2")==0 || PROTEIN[i].atomn.compare("CE2")==0 || PROTEIN[i].atomn.compare("CE3")==0 || PROTEIN[i].atomn.compare("CZ2")==0 || PROTEIN[i].atomn.compare("CZ3")==0 || PROTEIN[i].atomn.compare("CH2")==0)){
+      //   tatomn="CG";
+      //   tatomn2="CD1";
+      //   ring=1;
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("TRP")==0 && PROTEIN[i].atomn.compare("NE1")==0){
+      //   tatomn="CE2";
+      //   tatomn2="CD1";
+      //   ring=2;
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("TYR")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("TYR")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("TYR")==0 && PROTEIN[i].atomn.compare("CG")==0){
+      //   tatomn="CD1";
+      //   tatomn2="CD2";
+      //   ring=1;
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("TYR")==0 && PROTEIN[i].atomn.compare("CD1")==0){
+      //   tatomn="CG";
+      //   tatomn2="CD2";
+      //   ring=1;
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("TYR")==0 && (PROTEIN[i].atomn.compare("CD2")==0 || PROTEIN[i].atomn.compare("CE1")==0 || PROTEIN[i].atomn.compare("CE2")==0 || PROTEIN[i].atomn.compare("CZ")==0)){
+      //   tatomn="CG";
+      //   tatomn2="CD1";
+      //   ring=1;
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("TYR")==0 && PROTEIN[i].atomn.compare("OH")==0){
+      //   tatomn="CZ";
+      //   rDir=0;
+      // }else if(PROTEIN[i].resn.compare("VAL")==0 && PROTEIN[i].atomn.compare("N")==0){
+      //   tatomn="H";
+      //   rDir=1;
+      // }else if(PROTEIN[i].resn.compare("VAL")==0 && PROTEIN[i].atomn.compare("O")==0){
+      //   tatomn="C";
+      //   rDir=0;
+      // }else{
+      //   needRef=0;
+      // }
 
       if(needRef==1){
         if(getRefAtom(xr, yr, zr, PROTEIN[i].resn, PROTEIN[i].resnb, tatomn, tatomn2, ring, PROTEIN[i].x, PROTEIN[i].y, PROTEIN[i].z, PROTEIN[i].chain)==1){
@@ -781,9 +791,9 @@ Grid::Grid(string filename, Protein& prot){
       // getProtVrtx(prot.PROTEIN);
     }
     // getBuriedness();
-    if(outGridBase.compare("")!=0) writeGrid();
+    // if(outGridBase.compare("")!=0) writeGrid();
   }else{
-    readGrid();
+    // readGrid();
   }
 }
 
@@ -1041,7 +1051,6 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
               vrtx.ints.push_back(zi); vrtx.nrgs.push_back(zf); vrtx.angles.push_back(zf);
             }
             for(int i=0; i<4; i++){ vrtx.grid[i]=0; }
-
             vrtx.id=uID;
             uID++;
             newv++;
@@ -1074,22 +1083,22 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
     if(inGridRes(it->second,2.0)==1){
       it->second.grid[0]=1;
       vrtx200++;
-    }else{ it->second.grid[0]=0; }
+    }
 
     if(inGridRes(it->second,1.5)==1){
       it->second.grid[1]=1;
       vrtx150++;
-    }else{ it->second.grid[1]=0; }
+    }
     
     if(inGridRes(it->second,1.0)==1){
       it->second.grid[2]=1;
       vrtx100++;
-    }else{ it->second.grid[2]=0; }
+    }
     
     if(inGridRes(it->second,0.5)==1){
       it->second.grid[3]=1;
       vrtx050++;               
-    }else{ it->second.grid[3]=0; }
+    }
 
     if(minDist<minGridDist || minDist > maxGridDist || (it->second.grid[zip]!=1 && zip!=-1)){
       GRID.erase(it++);
@@ -1104,346 +1113,346 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
   return(0);
 }
 
-void Grid::getBuriedness(){
-  map<int,vertex>::iterator it;
-  int id;
-  int nbu=0;
-  //Get buriedness of each grid point
-  cout<<"Getting buriedness..."<<endl;
-  map<int,vertex>::iterator m=GRID.begin();
-  while(m!=GRID.end()){
-    if(m->second.p==1){
-      m->second.bu=0;
-      ++m;
-      continue;
-    }
-    int bu=0;
-    int xi=(int)((m->second.x-min_x)/stepsize)+1;
-    int yi=(int)((m->second.y-min_y)/stepsize)+1;
-    int zi=(int)((m->second.z-min_z)/stepsize)+1;
-    int xl=(int)((m->second.x-min_x)/stepsize);
-    int xr=(int)((max_x-m->second.x)/stepsize);
-    int yd=(int)((m->second.y-min_y)/stepsize);
-    int yu=(int)((max_y-m->second.y)/stepsize);
-    int zb=(int)((m->second.z-min_z)/stepsize);
-    int zf=(int)((max_z-m->second.z)/stepsize);
-    // cout<<xi<<" "<<yi<<" "<<zi<<endl;
-    // cout<<min_x<<" | "<<xl<<" "<<m.x<<" "<<xr<<" | "<<max_x<<" || "<<width<<endl;
-    // cout<<min_y<<" | "<<yd<<" "<<m.y<<" "<<yu<<" | "<<max_y<<" || "<<height<<endl;
-    // cout<<min_z<<" | "<<zb<<" "<<m.z<<" "<<zf<<" | "<<max_z<<" || "<<depth<<endl;
+// void Grid::getBuriedness(){
+//   map<int,vertex>::iterator it;
+//   int id;
+//   int nbu=0;
+//   //Get buriedness of each grid point
+//   cout<<"Getting buriedness..."<<endl;
+//   map<int,vertex>::iterator m=GRID.begin();
+//   while(m!=GRID.end()){
+//     if(m->second.p==1){
+//       m->second.bu=0;
+//       ++m;
+//       continue;
+//     }
+//     int bu=0;
+//     int xi=(int)((m->second.x-min_x)/stepsize)+1;
+//     int yi=(int)((m->second.y-min_y)/stepsize)+1;
+//     int zi=(int)((m->second.z-min_z)/stepsize)+1;
+//     int xl=(int)((m->second.x-min_x)/stepsize);
+//     int xr=(int)((max_x-m->second.x)/stepsize);
+//     int yd=(int)((m->second.y-min_y)/stepsize);
+//     int yu=(int)((max_y-m->second.y)/stepsize);
+//     int zb=(int)((m->second.z-min_z)/stepsize);
+//     int zf=(int)((max_z-m->second.z)/stepsize);
+//     // cout<<xi<<" "<<yi<<" "<<zi<<endl;
+//     // cout<<min_x<<" | "<<xl<<" "<<m.x<<" "<<xr<<" | "<<max_x<<" || "<<width<<endl;
+//     // cout<<min_y<<" | "<<yd<<" "<<m.y<<" "<<yu<<" | "<<max_y<<" || "<<height<<endl;
+//     // cout<<min_z<<" | "<<zb<<" "<<m.z<<" "<<zf<<" | "<<max_z<<" || "<<depth<<endl;
 
-    // cout<<endl<<"going xl"<<endl;
-    int move=0;
-    for(int tx=xi-1; tx>=1; tx--){
-      move++;
-      if(move>buD) break;
-      id=generateID(width,height,tx,yi,zi);
-      it = GRID.find(id);
-      if(it != GRID.end()){
-        if(GRID[id].p==1){
-          bu++;
-          break;
-        }
-      }
-    }
+//     // cout<<endl<<"going xl"<<endl;
+//     int move=0;
+//     for(int tx=xi-1; tx>=1; tx--){
+//       move++;
+//       if(move>buD) break;
+//       id=generateID(width,height,tx,yi,zi);
+//       it = GRID.find(id);
+//       if(it != GRID.end()){
+//         if(GRID[id].p==1){
+//           bu++;
+//           break;
+//         }
+//       }
+//     }
 
-    // cout<<endl<<"going xr"<<endl;
-    move=0;
-    for(int tx=xi+1; tx<=width; tx++){
-      move++;
-      if(move>buD) break;
-      id=generateID(width,height,tx,yi,zi);
-      it = GRID.find(id);
-      if(it != GRID.end()){
-        if(GRID[id].p==1){
-          bu++;
-          break;
-        }
-      }
-    }
+//     // cout<<endl<<"going xr"<<endl;
+//     move=0;
+//     for(int tx=xi+1; tx<=width; tx++){
+//       move++;
+//       if(move>buD) break;
+//       id=generateID(width,height,tx,yi,zi);
+//       it = GRID.find(id);
+//       if(it != GRID.end()){
+//         if(GRID[id].p==1){
+//           bu++;
+//           break;
+//         }
+//       }
+//     }
 
-    // cout<<endl<<"going yd"<<endl;
-    move=0;
-    for(int ty=yi-1; ty>=1; ty--){
-      move++;
-      if(move>buD) break;
-      id=generateID(width,height,xi,ty,zi);
-      // cout<<xi<<" "<<ty<<" "<<zi<<endl;
-      it = GRID.find(id);
-      if(it != GRID.end()){
-        if(GRID[id].p==1){
-          bu++;
-          break;
-        }
-      }
-    }
-    // cout<<endl<<"going yu"<<endl;
-    move=0;
-    for(int ty=yi+1; ty<=height; ty++){
-      move++;
-      if(move>buD) break;
-      id=generateID(width,height,xi,ty,zi);
-      // cout<<xi<<" "<<ty<<" "<<zi<<endl;
-      it = GRID.find(id);
-      if(it != GRID.end()){
-        if(GRID[id].p==1){
-          bu++;
-          break;
-        }
-      }
-    }
-    // cout<<endl<<"going zb"<<endl;
-    move=0;
-    for(int tz=zi-1; tz>=1; tz--){
-      move++;
-      if(move>buD) break;
-      // cout<<xi<<" "<<yi<<" "<<tz<<endl;
-      id=generateID(width,height,xi,yi,tz);
-      it = GRID.find(id);
-      if(it != GRID.end()){
-        if(GRID[id].p==1){
-          bu++;
-          break;
-        }
-      }
-    }
-    // cout<<endl<<"going zf"<<endl;
-    move=0;
-    for(int tz=zi+1; tz<=depth; tz++){
-      move++;
-      if(move>buD) break;
-      // cout<<xi<<" "<<yi<<" "<<tz<<endl;
-      id=generateID(width,height,xi,yi,tz);
-      it = GRID.find(id);
-      if(it != GRID.end()){
-        if(GRID[id].p==1){
-          bu++;
-          break;
-        }
-      }
-    }
+//     // cout<<endl<<"going yd"<<endl;
+//     move=0;
+//     for(int ty=yi-1; ty>=1; ty--){
+//       move++;
+//       if(move>buD) break;
+//       id=generateID(width,height,xi,ty,zi);
+//       // cout<<xi<<" "<<ty<<" "<<zi<<endl;
+//       it = GRID.find(id);
+//       if(it != GRID.end()){
+//         if(GRID[id].p==1){
+//           bu++;
+//           break;
+//         }
+//       }
+//     }
+//     // cout<<endl<<"going yu"<<endl;
+//     move=0;
+//     for(int ty=yi+1; ty<=height; ty++){
+//       move++;
+//       if(move>buD) break;
+//       id=generateID(width,height,xi,ty,zi);
+//       // cout<<xi<<" "<<ty<<" "<<zi<<endl;
+//       it = GRID.find(id);
+//       if(it != GRID.end()){
+//         if(GRID[id].p==1){
+//           bu++;
+//           break;
+//         }
+//       }
+//     }
+//     // cout<<endl<<"going zb"<<endl;
+//     move=0;
+//     for(int tz=zi-1; tz>=1; tz--){
+//       move++;
+//       if(move>buD) break;
+//       // cout<<xi<<" "<<yi<<" "<<tz<<endl;
+//       id=generateID(width,height,xi,yi,tz);
+//       it = GRID.find(id);
+//       if(it != GRID.end()){
+//         if(GRID[id].p==1){
+//           bu++;
+//           break;
+//         }
+//       }
+//     }
+//     // cout<<endl<<"going zf"<<endl;
+//     move=0;
+//     for(int tz=zi+1; tz<=depth; tz++){
+//       move++;
+//       if(move>buD) break;
+//       // cout<<xi<<" "<<yi<<" "<<tz<<endl;
+//       id=generateID(width,height,xi,yi,tz);
+//       it = GRID.find(id);
+//       if(it != GRID.end()){
+//         if(GRID[id].p==1){
+//           bu++;
+//           break;
+//         }
+//       }
+//     }
 
-    //Diagonals
-    int tx=xi;
-    int ty=yi;
-    int tz=zi;
-    int flag=0;
-    move=0;
-    while(flag==0){
-      move++;
-      if(move>buD) break;
-      tx--; ty++; tz++;
-      int diag=getDiag(tx,ty,tz,flag);
-      if(diag){
-        bu++;
-      }
-    }
+//     //Diagonals
+//     int tx=xi;
+//     int ty=yi;
+//     int tz=zi;
+//     int flag=0;
+//     move=0;
+//     while(flag==0){
+//       move++;
+//       if(move>buD) break;
+//       tx--; ty++; tz++;
+//       int diag=getDiag(tx,ty,tz,flag);
+//       if(diag){
+//         bu++;
+//       }
+//     }
 
-    flag=0;
-    tx=xi; ty=yi; tz=zi;
-    move=0;
-    while(flag==0){
-      move++;
-      if(move>buD) break;
-      tx--; ty++; tz--; 
-      int diag=getDiag(tx,ty,tz,flag);
-      if(diag){
-        bu++;
-      }
-    }
+//     flag=0;
+//     tx=xi; ty=yi; tz=zi;
+//     move=0;
+//     while(flag==0){
+//       move++;
+//       if(move>buD) break;
+//       tx--; ty++; tz--; 
+//       int diag=getDiag(tx,ty,tz,flag);
+//       if(diag){
+//         bu++;
+//       }
+//     }
 
-    flag=0;
-    tx=xi; ty=yi; tz=zi;
-    move=0;
-    while(flag==0){
-      move++;
-      if(move>buD) break;
-      tx++; ty++; tz--; 
-      int diag=getDiag(tx,ty,tz,flag);
-      if(diag){
-        bu++;
-      }
-    }
+//     flag=0;
+//     tx=xi; ty=yi; tz=zi;
+//     move=0;
+//     while(flag==0){
+//       move++;
+//       if(move>buD) break;
+//       tx++; ty++; tz--; 
+//       int diag=getDiag(tx,ty,tz,flag);
+//       if(diag){
+//         bu++;
+//       }
+//     }
 
-    flag=0;
-    tx=xi; ty=yi; tz=zi;
-    move=0;
-    while(flag==0){
-      move++;
-      if(move>buD) break;
-      tx++; ty++; tz++; 
-      int diag=getDiag(tx,ty,tz,flag);
-      if(diag){
-        bu++;
-      }
-    }
+//     flag=0;
+//     tx=xi; ty=yi; tz=zi;
+//     move=0;
+//     while(flag==0){
+//       move++;
+//       if(move>buD) break;
+//       tx++; ty++; tz++; 
+//       int diag=getDiag(tx,ty,tz,flag);
+//       if(diag){
+//         bu++;
+//       }
+//     }
 
-    flag=0;
-    tx=xi; ty=yi; tz=zi;
-    move=0;
-    while(flag==0){
-      move++;
-      if(move>buD) break;
-      tx--; ty--; tz++; 
-      int diag=getDiag(tx,ty,tz,flag);
-      if(diag){
-        bu++;
-      }
-    }
+//     flag=0;
+//     tx=xi; ty=yi; tz=zi;
+//     move=0;
+//     while(flag==0){
+//       move++;
+//       if(move>buD) break;
+//       tx--; ty--; tz++; 
+//       int diag=getDiag(tx,ty,tz,flag);
+//       if(diag){
+//         bu++;
+//       }
+//     }
 
-    flag=0;
-    tx=xi; ty=yi; tz=zi;
-    move=0;
-    while(flag==0){
-      move++;
-      if(move>buD) break;
-      tx--; ty--; tz--; 
-      int diag=getDiag(tx,ty,tz,flag);
-      if(diag){
-        bu++;
-      }
-    }
+//     flag=0;
+//     tx=xi; ty=yi; tz=zi;
+//     move=0;
+//     while(flag==0){
+//       move++;
+//       if(move>buD) break;
+//       tx--; ty--; tz--; 
+//       int diag=getDiag(tx,ty,tz,flag);
+//       if(diag){
+//         bu++;
+//       }
+//     }
 
-    flag=0;
-    tx=xi; ty=yi; tz=zi;
-    move=0;
-    while(flag==0){
-      move++;
-      if(move>buD) break;
-      tx++; ty--; tz--; 
-      int diag=getDiag(tx,ty,tz,flag);
-      if(diag){
-        bu++;
-      }
-    }
+//     flag=0;
+//     tx=xi; ty=yi; tz=zi;
+//     move=0;
+//     while(flag==0){
+//       move++;
+//       if(move>buD) break;
+//       tx++; ty--; tz--; 
+//       int diag=getDiag(tx,ty,tz,flag);
+//       if(diag){
+//         bu++;
+//       }
+//     }
 
-    flag=0;
-    tx=xi; ty=yi; tz=zi;
-    move=0;
-    while(flag==0){
-      move++;
-      if(move>buD) break;
-      tx++; ty--; tz++;
-      int diag=getDiag(tx,ty,tz,flag);
-      if(diag){
-        bu++;
-      }
-    }
+//     flag=0;
+//     tx=xi; ty=yi; tz=zi;
+//     move=0;
+//     while(flag==0){
+//       move++;
+//       if(move>buD) break;
+//       tx++; ty--; tz++;
+//       int diag=getDiag(tx,ty,tz,flag);
+//       if(diag){
+//         bu++;
+//       }
+//     }
 
-    if(bu>=bul){
-      m->second.bu=bu;
-      id=generateID(width,height,xi,yi,zi);
-      vrtxIdList.push_back(id);
-      ++m;
-    }else{
-      GRID.erase(m++);
-      nbu++;
-    }
-  }
-  cout<<"Removed "<<nbu<<" not burried grid points."<<endl;
-}
+//     if(bu>=bul){
+//       m->second.bu=bu;
+//       id=generateID(width,height,xi,yi,zi);
+//       vrtxIdList.push_back(id);
+//       ++m;
+//     }else{
+//       GRID.erase(m++);
+//       nbu++;
+//     }
+//   }
+//   cout<<"Removed "<<nbu<<" not burried grid points."<<endl;
+// }
 
-void Grid::writeGrid(){
-  string outg=outGridBase + tag + ".grid";
-  map<int,vertex>::iterator it;
-  FILE* fpwg;
-  int g0=0;
-  int g1=0;
-  int g2=0;
-  int g3=0;
-  fpwg = fopen(outg.c_str(),"w");
-  fprintf(fpwg,"#w %d\n#h %d\n#d %d\n#maxx %7.3f\n#maxy %7.3f\n#maxz %7.3f\n#minx %7.3f\n#miny %7.3f\n#minz %7.3f\n",width,height,depth,max_x,max_y,max_z,min_x,min_y,min_z);
-  for(it=GRID.begin();it!=GRID.end();it++){
-    if(it->second.p==1) continue;
-    if(it->second.grid[0]==1 || it->second.grid[1]==1 || it->second.grid[2]==1){
-      if(it->second.grid[0]==1) g0++;
-      if(it->second.grid[1]==1) g1++;
-      if(it->second.grid[2]==1) g2++;
-      fprintf(fpwg, "%d %d %7.3f %7.3f %7.3f %d %d %d %d %d %d\n",it->first,it->second.id,it->second.x,it->second.y,it->second.z,it->second.p,it->second.bu,it->second.grid[0],it->second.grid[1],it->second.grid[2],it->second.grid[3]);
-    }
-  }
-  fclose(fpwg);
-  cout<<"g0 "<<g0<<" g1 "<<g1<<" g2 "<<g2<<endl;
-}
+// void Grid::writeGrid(){
+//   string outg=outGridBase + tag + ".grid";
+//   map<int,vertex>::iterator it;
+//   FILE* fpwg;
+//   int g0=0;
+//   int g1=0;
+//   int g2=0;
+//   int g3=0;
+//   fpwg = fopen(outg.c_str(),"w");
+//   fprintf(fpwg,"#w %d\n#h %d\n#d %d\n#maxx %7.3f\n#maxy %7.3f\n#maxz %7.3f\n#minx %7.3f\n#miny %7.3f\n#minz %7.3f\n",width,height,depth,max_x,max_y,max_z,min_x,min_y,min_z);
+//   for(it=GRID.begin();it!=GRID.end();it++){
+//     if(it->second.p==1) continue;
+//     if(it->second.grid[0]==1 || it->second.grid[1]==1 || it->second.grid[2]==1){
+//       if(it->second.grid[0]==1) g0++;
+//       if(it->second.grid[1]==1) g1++;
+//       if(it->second.grid[2]==1) g2++;
+//       fprintf(fpwg, "%d %d %7.3f %7.3f %7.3f %d %d %d %d %d %d\n",it->first,it->second.id,it->second.x,it->second.y,it->second.z,it->second.p,it->second.bu,it->second.grid[0],it->second.grid[1],it->second.grid[2],it->second.grid[3]);
+//     }
+//   }
+//   fclose(fpwg);
+//   cout<<"g0 "<<g0<<" g1 "<<g1<<" g2 "<<g2<<endl;
+// }
 
-int Grid::readGrid(){
-  string line;
-  string tmp;
-  ifstream infile(gridFile.c_str());
-  while(getline(infile,line)){
-    if(line.compare("")==0) continue;
-    string start = line.substr(0,2);
-    if(start.compare("#w")==0){
-      tmp=line.substr(3);
-      width=atoi(tmp.c_str());
-    }else if(start.compare("#h")==0){
-      tmp=line.substr(3);
-      height=atoi(tmp.c_str());
-    }else if(start.compare("#d")==0){
-      tmp=line.substr(3);
-      depth=atoi(tmp.c_str());
-    }else if(start.compare("#maxx")==0){
-      tmp=line.substr(6);
-      max_x=atof(tmp.c_str());
-    }else if(start.compare("#maxy")==0){
-      tmp=line.substr(6);
-      max_y=atof(tmp.c_str());
-    }else if(start.compare("#maxz")==0){
-      tmp=line.substr(6);
-      max_z=atof(tmp.c_str());
-    }else if(start.compare("#minx")==0){
-      tmp=line.substr(6);
-      min_x=atof(tmp.c_str());
-    }else if(start.compare("#miny")==0){
-      tmp=line.substr(6);
-      min_y=atof(tmp.c_str());
-    }else if(start.compare("#minz")==0){
-      tmp=line.substr(6);
-      min_z=atof(tmp.c_str());
-    }else{
-      stringstream test(line);
-      vertex vrtx;
-      // vrtx.ints=new int[nbOfProbes];              
-      // if(vrtx.ints==NULL){
-      //   printf("\n\nCan't malloc int**\nGoodbye.\n");
-      //   return(24);
-      // }
-      // vrtx.nrgs=new float[nbOfProbes];              
-      // if(vrtx.nrgs==NULL){
-      //   printf("\n\nCan't malloc int**\nGoodbye.\n");
-      //   return(24);
-      // }
-      // vrtx.angles=new float[nbOfProbes];              
-      // if(vrtx.angles==NULL){
-      //   printf("\n\nCan't malloc int**\nGoodbye.\n");
-      //   return(24);
-      // }
-      int zi=0;
-      float zf=0.0;
-      for(int i=0; i<nbOfProbes; i++){
-        vrtx.ints.push_back(zi); vrtx.nrgs.push_back(zf); vrtx.angles.push_back(zf);
-      }
-      // for(int i=0; i<nbOfProbes; i++){  }
-      // for(int i=0; i<nbOfProbes; i++){  }
-      for(int i=0; i<4; i++){ vrtx.grid[i]=0; }
-      int gid;
-      test >> gid >> vrtx.id >> vrtx.x >> vrtx.y >> vrtx.z >> vrtx.p >> vrtx.bu >> vrtx.grid[0] >> vrtx.grid[1] >> vrtx.grid[2] >> vrtx.grid[3];
-      if(vrtx.grid[0]==1){
-        vrtx200++;
-      }else if(vrtx.grid[1]==1){
-        vrtx150++;
-      }else if(vrtx.grid[2]==1){
-        vrtx100++;
-      }else if(vrtx.grid[3]==1){
-        vrtx050++;
-      }
-      GRID.insert(pair<int,vertex>(gid,vrtx));
-      vrtxIdList.push_back(gid);
-    }
-  }
-  cout<<"Grid points [2.0] "<<vrtx200<<" [1.5] "<<vrtx150<<" [1.0] "<<vrtx100<<" [0.5] "<<vrtx050<<"."<<endl;
-  return(0);
-}
+// int Grid::readGrid(){
+//   string line;
+//   string tmp;
+//   ifstream infile(gridFile.c_str());
+//   while(getline(infile,line)){
+//     if(line.compare("")==0) continue;
+//     string start = line.substr(0,2);
+//     if(start.compare("#w")==0){
+//       tmp=line.substr(3);
+//       width=atoi(tmp.c_str());
+//     }else if(start.compare("#h")==0){
+//       tmp=line.substr(3);
+//       height=atoi(tmp.c_str());
+//     }else if(start.compare("#d")==0){
+//       tmp=line.substr(3);
+//       depth=atoi(tmp.c_str());
+//     }else if(start.compare("#maxx")==0){
+//       tmp=line.substr(6);
+//       max_x=atof(tmp.c_str());
+//     }else if(start.compare("#maxy")==0){
+//       tmp=line.substr(6);
+//       max_y=atof(tmp.c_str());
+//     }else if(start.compare("#maxz")==0){
+//       tmp=line.substr(6);
+//       max_z=atof(tmp.c_str());
+//     }else if(start.compare("#minx")==0){
+//       tmp=line.substr(6);
+//       min_x=atof(tmp.c_str());
+//     }else if(start.compare("#miny")==0){
+//       tmp=line.substr(6);
+//       min_y=atof(tmp.c_str());
+//     }else if(start.compare("#minz")==0){
+//       tmp=line.substr(6);
+//       min_z=atof(tmp.c_str());
+//     }else{
+//       stringstream test(line);
+//       vertex vrtx;
+//       // vrtx.ints=new int[nbOfProbes];              
+//       // if(vrtx.ints==NULL){
+//       //   printf("\n\nCan't malloc int**\nGoodbye.\n");
+//       //   return(24);
+//       // }
+//       // vrtx.nrgs=new float[nbOfProbes];              
+//       // if(vrtx.nrgs==NULL){
+//       //   printf("\n\nCan't malloc int**\nGoodbye.\n");
+//       //   return(24);
+//       // }
+//       // vrtx.angles=new float[nbOfProbes];              
+//       // if(vrtx.angles==NULL){
+//       //   printf("\n\nCan't malloc int**\nGoodbye.\n");
+//       //   return(24);
+//       // }
+//       int zi=0;
+//       float zf=0.0;
+//       for(int i=0; i<nbOfProbes; i++){
+//         vrtx.ints.push_back(zi); vrtx.nrgs.push_back(zf); vrtx.angles.push_back(zf);
+//       }
+//       // for(int i=0; i<nbOfProbes; i++){  }
+//       // for(int i=0; i<nbOfProbes; i++){  }
+//       for(int i=0; i<4; i++){ vrtx.grid[i]=0; }
+//       int gid;
+//       test >> gid >> vrtx.id >> vrtx.x >> vrtx.y >> vrtx.z >> vrtx.p >> vrtx.bu >> vrtx.grid[0] >> vrtx.grid[1] >> vrtx.grid[2] >> vrtx.grid[3];
+//       if(vrtx.grid[0]==1){
+//         vrtx200++;
+//       }else if(vrtx.grid[1]==1){
+//         vrtx150++;
+//       }else if(vrtx.grid[2]==1){
+//         vrtx100++;
+//       }else if(vrtx.grid[3]==1){
+//         vrtx050++;
+//       }
+//       GRID.insert(pair<int,vertex>(gid,vrtx));
+//       vrtxIdList.push_back(gid);
+//     }
+//   }
+//   cout<<"Grid points [2.0] "<<vrtx200<<" [1.5] "<<vrtx150<<" [1.0] "<<vrtx100<<" [0.5] "<<vrtx050<<"."<<endl;
+//   return(0);
+// }
 
 int Grid::getDiag(int tx, int ty, int tz, int& flag){
   int id=generateID(width,height,tx,ty,tz);
@@ -1892,15 +1901,30 @@ void stripSpace(string &str) {
 void getAtomRef(){
   string fn=basePath + "/forcefield_files/"+ff+"/atoms";
   ifstream infile(fn.c_str());
-  string line;
+  string s;
   string res;
   string atom;
   string type;
 
-  while(getline(infile,line)){
-    stringstream test(line);
-    test >> res >> atom >> type;
-    atomTypes[res + "_" + atom]=type;
+  while(getline(infile,s)){
+    istringstream iss(s);
+    vector<string> tokens;
+    copy(istream_iterator<string>(iss), istream_iterator<string>(), back_inserter<vector<string> >(tokens));
+    atomTypes[tokens[0] + "_" + tokens[1]]=tokens[2];
+
+    angRef naf;
+    naf.r1="";
+    naf.r2="";
+    if(tokens.size()==5){
+      naf.r1=tokens[3];
+      naf.rDir=atoi(tokens[4].c_str());
+    }else if(tokens.size()==7){
+      naf.r1=tokens[3];
+      naf.r2=tokens[4];
+      naf.rDir=atoi(tokens[5].c_str());
+      naf.ring=atoi(tokens[6].c_str());
+    }
+    atomRef.insert(pair<string,angRef>(tokens[0] + "_" + tokens[1],naf));
   }
 }
 
@@ -2059,34 +2083,21 @@ void getMif(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
       int flag=0;
       for(int probe=0; probe<nbOfProbes; probe++){ //Iterate each probe
         float enrg_sum=0.00;
-        float angle_sum=0.00;
-        int angleC=0;
         int countAtms=0;
-        // float angAvrg=0.0;
+        float closest=10000;
 
         if(printDetails==1){ cout<<endl<<"### PROBE "<<probe<<" ###"<<endl; }
         for(int j=0; j<prot.size(); j++){ //Iterate each atom for this probe at this grid intersection
           if(prot.at(j).mif!=1) continue;
-          enrg_sum+=calcNrg(m,prot.at(j),probe,countAtms,angle_sum,angleC);
+          enrg_sum+=calcNrg(m,prot.at(j),probe,countAtms,closest);
         }
         if(countAtms>0){
+          m.nrgs[probe]=enrg_sum;
           if(enrg_sum<nrgT[probes[probe]] || (fabs(enrg_sum-nrgT[probes[probe]]))<0.001){
             m.ints[probe]=1;
-            m.nrgs[probe]=enrg_sum;
-            if(angleC>0){
-              m.angles[probe]=angle_sum/(float)angleC;
-            }
-            if(printDetails==1){ cout<<"NRG "<<probe<<" "<< enrg_sum<<" angleSum: "<<angle_sum<<" / "<<angleC<<" = "<<m.angles[probe]<<endl; }
-            flag=1;
-            if(printDetails==1){ cout<<m.grid[0]<<" "<<m.grid[1]<<" "<<m.grid[2]<<" "<<m.grid[3]<<"NRG "<<probe<<" "<< enrg_sum<<" angleSum: "<<angle_sum<<" / "<<angleC<<" = "<<m.angles[probe]<<endl; }
-          }else{
-            m.ints[probe]=0;
-            m.nrgs[probe]=enrg_sum;
-            if(angleC>0){
-              m.angles[probe]=angle_sum/(float)angleC;
-            }
-            if(printDetails==1){ cout<<"NRG "<<probe<<" "<< enrg_sum<<" NRG BELOW threshold "<<angle_sum<<" / "<<angleC<<" = "<<m.angles[probe]<<endl; }
+            flag=1;            
           }
+          if(printDetails==1){ cout<<m.grid[0]<<" "<<m.grid[1]<<" "<<m.grid[2]<<" "<<m.grid[3]<<" probe "<<probe<<" nrg "<< enrg_sum<<" int "<<m.ints[probe]<<endl; }
         }else{
           if(printDetails==1){ cout<<"NRG "<<probe<<" no atoms"<<endl; }
         }
@@ -2104,121 +2115,72 @@ void getMif(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
   }
 }
 
-double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms, float& angSum, int& angC){
+double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms, float& closest){
   float dist,alpha,epsilon,angle;
   int atomAtId,pbAtId;
   double energy;
   energy=0.0;
   alpha=1.0;
   angle=1.0;
-  float angleThresh=60.00;
-  int tVrtxId=-1;
+  float angleThresh=90.00;
   float rDist,rpDist;
 
   //Get distance between probe and atom
   dist=dist_3d(atm.x,atm.y,atm.z,vrtx.x,vrtx.y,vrtx.z);
+  if(dist > maxD[probes[pbId]] || dist < minD[probes[pbId]] || dist > atmPbMaxDist) return(energy);
 
-  if(dist > maxD[probes[pbId]] || dist < minD[probes[pbId]] || dist > atmPbMaxDist){
-    return(energy);
-  }else{
-    string at=atomTypes[atm.resn+"_"+atm.atomn];
-    string pat=probes[pbId];
-    epsilon=eps[at+"_"+pat];
+  string at=atomTypes[atm.resn+"_"+atm.atomn];
+  string pat=probes[pbId];
+  epsilon=eps[at+"_"+pat];
 
-    if(ff.compare("FlexAID")==0){
-      energy=(epsilon)*(exp(-1.0*dist*alpha));
-      // cout<<atm.resn<<" "<<atm.atomn<<" "<<at<<" "<<pat<<" ("<<pbId<<") "<<epsilon<<" "<<dist<<" "<<energy<<endl;
-      count_atoms++;
-    }else{
-      //Hbond Donnor/Acceptor
-      if((acc[at]==1 && don[pat]==1) || (acc[pat]==1 && don[at]==1)){
+  cout<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<" dist "<<dist<<endl;
+  if(((acc[at]==1 && don[pat]==1) || (acc[pat]==1 && don[at]==1)) && atm.dir==1){
 
-        rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
-        rpDist=dist_3d(vrtx.x,vrtx.y,vrtx.z,atm.xr,atm.yr,atm.zr);
+    rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
+    rpDist=dist_3d(vrtx.x,vrtx.y,vrtx.z,atm.xr,atm.yr,atm.zr);
+    angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
+    angle=acos(angle)* 180.0 / PI;
 
-        angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
-        angle=acos(angle)* 180.0 / PI;
-        if(atm.rDir==0){ angle=180.00-angle; }
-
-        // if(atm.resn.compare("ASN")==0 && atm.atomn.compare("OD1")==0){
-        //   angleThresh=80.00;
-        // }else if(atm.resn.compare("ASN")==0 && atm.atomn.compare("ND2")==0){
-        //   angleThresh=80.00;
-        // }else if(atm.resn.compare("GLN")==0 && atm.atomn.compare("OE1")==0){
-        //   angleThresh=80.00;
-        // }else if(atm.resn.compare("GLN")==0 && atm.atomn.compare("NE2")==0){
-        //   angleThresh=80.00;
-        // }else if(atm.resn.compare("SER")==0 && atm.atomn.compare("OG")==0){
-        //   angleThresh=80.00;
-        // }else if(atm.resn.compare("THR")==0 && atm.atomn.compare("OG1")==0){
-        //   angleThresh=80.00;
-        // }else if(atm.resn.compare("ARG")==0 && atm.atomn.compare("NH1")==0){
-        //   angleThresh=80.00;
-        // }else if(atm.resn.compare("ARG")==0 && atm.atomn.compare("NH2")==0){
-        //   angleThresh=80.00;
-        // }else if(atm.resn.compare("LYS")==0 && atm.atomn.compare("NZ")==0){
-        //   angleThresh=80.00;
-        // }else if(atm.resn.compare("ASP")==0 && atm.atomn.compare("OD1")==0){
-        //   angleThresh=80.00;
-        // }else if(atm.resn.compare("ASP")==0 && atm.atomn.compare("OD2")==0){
-        //   angleThresh=80.00;
-        // }else if(atm.resn.compare("GLU")==0 && atm.atomn.compare("OE1")==0){
-        //   angleThresh=80.00;
-        // }else if(atm.resn.compare("GLU")==0 && atm.atomn.compare("OE2")==0){
-        //   angleThresh=80.00;
-        // }
-
-        if(printDetails==1){ cout<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<endl <<"Hbond "<<"Angle "<< angle << " Thresh " << angleThresh <<endl; }
-        if(printDetails==1){ cout<< "Dist "<< dist << " rDist "<< rDist<< " rpDist "<< rpDist<<" rDir "<< atm.rDir <<endl; }
-        if(angle>angleThresh){
-          if(printDetails==1){ cout<<"Angle over threshold"<<endl; }
-          return(energy);
-        }
-        alpha=1.0;
-        energy=(epsilon)*(exp(-1.0*dist*alpha));
-        count_atoms++;
-
-        angSum+=angle;
-        angC++;
-      }else if(arm[at]==1 && arm[pat]==1){ //aromatic interaction
-        if(printDetails==1){ cout<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<endl<< "Aromatic"<<endl; }
-        if(atm.dir==1){
-          rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
-          rpDist=dist_3d(vrtx.x,vrtx.y,vrtx.z,atm.xr,atm.yr,atm.zr);
-          angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
-          angle=acos(angle)* 180.0 / PI;
-          if(angle>90 || fabs(180.00-angle) < 0.001){
-            angle=180-angle;
-          }
-          if(angle>35.00 && angle<55.00){
-            if(printDetails==1){ cout <<"angle between 35 and 55"<<endl; }
-            return(energy);
-          }
-          if(printDetails==1){ cout<<"angle "<<angle<<endl; }
-          angSum+=angle;
-          angC++;
-        }else{
-          if(printDetails==1){ cout<<"No angle to alculate"<<endl; }
-        }
-
-        alpha=1.0;
-        energy=(epsilon)*(exp(-1.0*dist*alpha));
-        count_atoms++;
-        if(printDetails==1){  cout<< "epsilon: " << epsilon<< " alpha: "<< alpha<< " dist: "<< dist<< " -> NRG: "<< energy<< endl<<endl; }
-      }else if(chr[at]==1 && chr[pat]==1){ //charged interaction
-        if(printDetails==1){ cout<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<endl << "Charged couple"<< endl; }
-        alpha=1.0;
-        energy=(epsilon)*(exp(-1.0*dist*alpha));
-        count_atoms++;
-      }else if(hyd[pat]==1 && hyd[at]==1){//if its a hydrophoic probe
-        if(printDetails==1){ cout << "Hydrophobic"<< endl<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<endl; }
-        alpha=1.0;
-        energy=(epsilon)*(exp(-1.0*dist*alpha));
-        count_atoms++;
-      }
+    if(atm.rDir==0){ angle=180.00-angle; }
+    if(printDetails==1){ cout<<"Hbond Angle "<< angle <<endl; }
+    if(angle>angleThresh){
+      if(printDetails==1){ cout<<"Angle over threshold"<<endl; }
+      return(energy);
     }
-    return(energy);
+    if(dist<closest){
+      closest=dist;
+      vrtx.angles[pbId]=angle;
+      cout<<" closest "<<dist<<" new angle "<<vrtx.angles[pbId]<<endl;
+    }
+  }else if(arm[at]==1 && arm[pat]==1 && atm.dir==1){ //aromatic interaction
+    if(atm.dir==1){
+      rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
+      rpDist=dist_3d(vrtx.x,vrtx.y,vrtx.z,atm.xr,atm.yr,atm.zr);
+      angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
+      angle=acos(angle)* 180.0 / PI;
+      if(printDetails==1){ cout<<"Aromatic Angle "<< angle<<endl; }
+      if(angle>90 || fabs(180.00-angle) < 0.001) angle=180-angle;
+      // if(angle>35.00 && angle<55.00){
+      //   if(printDetails==1){ cout <<"angle between 35 and 55"<<endl; }
+      //   return(energy);
+      // }
+      if(dist<closest){
+        closest=dist;
+        vrtx.angles[pbId]=angle;
+        cout<<" closest "<<dist<<" new angle "<<vrtx.angles[pbId]<<endl;
+      }
+    }else{
+      if(printDetails==1){ cout<<"Both aromatic but no angle to calculate."<<endl; }
+    }
+  }else if(chr[at]==1 && chr[pat]==1){ //charged interaction
+    if(printDetails==1){ cout<<"Charged couple "<<endl; }
+  }else if(hyd[pat]==1 && hyd[at]==1){//if its a hydrophoic probe
+    if(printDetails==1){ cout << "Hydrophobic "<<endl; }
   }
+  count_atoms++;
+  energy=(epsilon)*(exp(-1.0*dist*alpha));
+  cout<<"Epsilon "<<epsilon<<" NRG "<<energy<<endl;
+  return(energy);
 }
 
 void getPseudo(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){

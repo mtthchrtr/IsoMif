@@ -31,6 +31,7 @@ struct pwRun{
   string mif2;
   string rnc1;
   string rnc2;
+  int getrmsd;
 };
 
 struct vertex {
@@ -42,7 +43,6 @@ struct vertex {
   vector<float> nrg;
   vector<float> ang;
   vector<int> m;
-  int bu;
   int id;
 };
 
@@ -68,6 +68,17 @@ struct pseudoC{
   int id;
 };
 
+struct mif {
+  vector<vertex> mif;
+  vector<atom> prot;
+  vector<int> ss;
+  vector<int> ssm;
+  int caSize;
+  vector<pseudoC> pseudoL;
+  string rnc;
+  vector<atom> lig;
+};
+
 typedef struct nodes node;
 typedef node *pNode;
 struct nodes{
@@ -77,11 +88,10 @@ struct nodes{
   atom* cb;
   pseudoC* pa;
   pseudoC* pb;
-  float cosd;
+  float cosim;
   int nbi;
-  // float** nrgs;
-  // int* pbPass;
-  // int neibrs;
+  int nbiw;
+  float nrg;
 };
 
 typedef struct CliqueStruct Clique;
@@ -92,13 +102,14 @@ struct CliqueStruct{
   vector<vertex> vb;
   int nbNodes;
   int nbNodesM;
+  float nbNodesMW;
   float normNodes;
   float normNodesRMSD;
   float tani;
   float taniM;
+  float taniMW;
   float taniNorm;
   float rmsd;
-  float cosdBu;
   float ligRMSD;
   float nrg;
   gsl_matrix *mat_r;
@@ -158,16 +169,18 @@ vector<int> list1;
 vector<int> list2;
 vector<int> steps;
 int wrfn=0; //write sim in filename
-int ss1[4];
-int ss2[4];
-int ss1m[4];
-int ss2m[4];
+vector<int> ss1;
+vector<int> ss2;
+vector<int> ss1m;
+vector<int> ss2m;
 int totalVrtx=0;
 map<int,int> topCliques;
+map<string,mif> mifs;
 vector<atom> lig1;
 vector<atom> lig2;
 string rnc1;
 string rnc2;
+int getrmsd=0;
 vector<pwRun> pw;
 FILE* fpout;
 
@@ -184,7 +197,7 @@ float dist3d(float[], float[]);
 void clearStep(int);
 void printNodes();
 int read_commandline(int, char*[]);
-int createVrtxVec(string, vector<vertex>&, vector<atom>&, int*, int*, int&, vector<pseudoC>&, string, vector<atom>&);
+int createVrtxVec(string, vector<vertex>&, vector<atom>&, vector<int>&, vector<int>&, int&, vector<pseudoC>&, string, vector<atom>&);
 void createNodes(int, vector<node>&, int);
 void rem_spaces(char*);
 int get_info(string, string);

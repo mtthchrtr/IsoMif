@@ -65,68 +65,80 @@ my $cc=0;
 if($sm ne ""){
   open IN, "<".$matchIn or die "Cant open match file";
   while($line=<IN>){
-    if($line=~/^REMARK CLIQUE CG ([0-9]+)\s+NODES\s+([0-9]+)\s+NODESM\s+([0-9]+)\s+NORMNODES\s+([\.0-9]+)\s+NORMNODESRMSD\s+([\.0-9]+)\s+TANI\s+([\.0-9]+)\s+TANIM\s+([\.0-9]+)\s+TANINORM\s+([\.0-9]+)\s+RMSD\s+([\.0-9]+)\s+NRG\s+-?([\.0-9]+)\s+SS1\s+([0-9]+)\s+SS2\s+([0-9]+)\s+SS1M\s+([0-9]+)\s+SS2M\s+([0-9]+)\s+LIGRMSD\s+([\.0-9]+)$/){
-      next unless ($1 eq $cg);
+    if($line=~/^REMARK CLIQUE CG/){
+      my @s=split(/\s+/,$line);
+      next unless ($s[3] eq $cg);
+
+        # fprintf(fpout,"REMARK CLIQUE CG %d NODES %d NODESM %d NODESMW %6.4f NORMNODES %6.4f NORMNODESRMSD %6.4f TANI %5.4f TANIM %5.4f TANIMW %5.4f TANINORM %5.4f NRG %.3f SS1 %d SS2 %d SS1M %d SS2M %d LIGRMSD %5.3f\n");
+        $data{$k1}{$k2}{"nodes"}[$c]=$s[5];
+        $data{$k1}{$k2}{"nodesm"}[$c]=$s[7];
+        $data{$k1}{$k2}{"nodesmw"}[$c]=$s[9];
+        $data{$k1}{$k2}{"normnodes"}[$c]=$s[11];
+        $data{$k1}{$k2}{"normnodesrmsd"}[$c]=$s[13];
+        $data{$k1}{$k2}{"tani"}[$c]=$s[15];
+        $data{$k1}{$k2}{"tanim"}[$c]=$s[17];
+        $data{$k1}{$k2}{"tanimw"}[$c]=$s[19];
+        $data{$k1}{$k2}{"taninorm"}[$c]=$s[21];
+        $data{$k1}{$k2}{"nrg"}[$c]=$s[23];
+        $data{$k1}{$k2}{"ss1"}[$c]=$s[25];
+        $data{$k1}{$k2}{"ss2"}[$c]=$s[27];
+        $data{$k1}{$k2}{"ss1m"}[$c]=$s[29];
+        $data{$k1}{$k2}{"ss2m"}[$c]=$s[31];
+        $data{$k1}{$k2}{"ligrmsd"}[$c]=$s[33];
       if($cc==0){
         $best{"nodes"}[0]=$cc;
-        $best{"nodes"}[1]=$2;
+        $best{"nodes"}[1]=$s[5];
         $best{"nodesm"}[0]=$cc;
-        $best{"nodesm"}[1]=$3;
+        $best{"nodesm"}[1]=$s[7];
         $best{"normnodes"}[0]=$cc;
-        $best{"normnodes"}[1]=$4;
+        $best{"normnodes"}[1]=$s[11];
         $best{"normnodesrmsd"}[0]=$cc;
-        $best{"normnodesrmsd"}[1]=$5;
+        $best{"normnodesrmsd"}[1]=$s[13];
         $best{"tani"}[0]=$cc;
-        $best{"tani"}[1]=$6;
+        $best{"tani"}[1]=$s[15];
         $best{"tanim"}[0]=$cc;
-        $best{"tanim"}[1]=$7;
+        $best{"tanim"}[1]=$s[17];
         $best{"taninorm"}[0]=$cc;
-        $best{"taninorm"}[1]=$8;
-        $best{"rmsd"}[0]=$cc;
-        $best{"rmsd"}[1]=$9;
+        $best{"taninorm"}[1]=$s[21];
         $best{"nrg"}[0]=$cc;
-        $best{"nrg"}[1]=$10;
+        $best{"nrg"}[1]=$s[23];
         $best{"ligrmsd"}[0]=$cc;
-        $best{"ligrmsd"}[1]=$15;
+        $best{"ligrmsd"}[1]=$s[33];
       }else{
-        if($2>$best{"nodes"}[1]){
-          $best{"nodes"}[1]=$2;
+        if($s[5]>$best{"nodes"}[1]){
+          $best{"nodes"}[1]=$s[5];
           $best{"nodes"}[0]=$cc;
         }
-        if($3>$best{"nodesm"}[1]){
-          $best{"nodesm"}[1]=$3;
+        if($s[7]>$best{"nodesm"}[1]){
+          $best{"nodesm"}[1]=$s[7];
           $best{"nodesm"}[0]=$cc;
         }
-        if($4>$best{"normnodes"}[1]){
-          $best{"normnodes"}[1]=$4;
+        if($s[11]>$best{"normnodes"}[1]){
+          $best{"normnodes"}[1]=$s[11];
           $best{"normnodes"}[0]=$cc;
         }
-        if($5>$best{"normnodesrmsd"}[1]){
-          $best{"normnodesrmsd"}[1]=$5;
+        if($s[13]>$best{"normnodesrmsd"}[1]){
+          $best{"normnodesrmsd"}[1]=$s[13];
           $best{"normnodesrmsd"}[0]=$cc;
         }
-        if($6>$best{"tani"}[1]){
-          $best{"tani"}[1]=$6;
+        if($s[15]>$best{"tani"}[1]){
+          $best{"tani"}[1]=$s[15];
           $best{"tani"}[0]=$cc;
         }
-        if($7>$best{"tanim"}[1]){
-          $best{"tanim"}[1]=$7;
+        if($s[17]>$best{"tanim"}[1]){
+          $best{"tanim"}[1]=$s[17];
           $best{"tanim"}[0]=$cc;
         }
-        if($8>$best{"taninorm"}[1]){
-          $best{"taninorm"}[1]=$8;
+        if($s[21]>$best{"taninorm"}[1]){
+          $best{"taninorm"}[1]=$s[21];
           $best{"taninorm"}[0]=$cc;
         }
-        if($9<$best{"rmsd"}[1]){
-          $best{"rmsd"}[1]=$9;
-          $best{"rmsd"}[0]=$cc;
-        }
-        if($10>$best{"nrg"}[1]){
-          $best{"nrg"}[1]=$10;
+        if($s[23]>$best{"nrg"}[1]){
+          $best{"nrg"}[1]=$s[23];
           $best{"nrg"}[0]=$cc;
         }
-        if($15<$best{"ligrmsd"}[1]){
-          $best{"ligrmsd"}[1]=$15;
+        if($s[33]<$best{"ligrmsd"}[1]){
+          $best{"ligrmsd"}[1]=$s[33];
           $best{"ligrmsd"}[0]=$cc;
         }
       }

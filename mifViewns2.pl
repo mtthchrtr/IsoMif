@@ -160,8 +160,8 @@ for(my $i=0; $i<$nbpb; $i++){ #Loop each probe
       print NPML "cmd.read_pdbstr(\"\"\"";
       for(my $j=0; $j<@{$probes[$i]}; $j+=9){ #For each node
         if($probes[$i][$j+3+$g]==1){ #If its in this grid resolution
-          printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",0,$i,$probes[$i][$j],$probes[$i][$j+1],$probes[$i][$j+2];
-          $it++;
+          printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",$it,$i,$probes[$i][$j],$probes[$i][$j+1],$probes[$i][$j+2];
+          $it++ unless($it==99999);
         }
       }
       print NPML "TER \\\n\"\"\",\"".$probesLab[$i]."_".$gridLab[$g]."\")\n";
@@ -172,10 +172,12 @@ for(my $i=0; $i<$nbpb; $i++){ #Loop each probe
 print "grids $grids gride $gride\n";
 #print grid points
 for(my $i=$grids; $i<=$gride; $i++){
+  my $it=0;
   if(exists $grid[$i] && scalar @{$grid[$i]} > 0){
     print NPML "cmd.read_pdbstr(\"\"\"";
     for(my $j=0; $j<@{$grid[$i]}; $j+=4){       
-      printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00%6.2f           N\\\n",0,$gridLab[$i],$grid[$i][$j],$grid[$i][$j+1],$grid[$i][$j+2],$grid[$i][$j+3];
+      printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00%6.2f           N\\\n",$it,$gridLab[$i],$grid[$i][$j],$grid[$i][$j+1],$grid[$i][$j+2],$grid[$i][$j+3];
+      $it++ unless($it==99999);
     }
     print NPML "TER \\\n\"\"\",\"".$gridLab[$i]."\")\n";
   }

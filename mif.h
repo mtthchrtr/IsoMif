@@ -46,8 +46,6 @@ struct atoms{
 typedef struct vertexes vertex;
 struct vertexes{
   float x,y,z;
-  // float** nrg;
-  // int** pb_bool;
   int p;
   int bu;
   vector<int> ints;
@@ -59,8 +57,14 @@ struct vertexes{
   int modulo;
 };
 
-struct pseudovrtx
-{
+struct angRef{
+    string r1;
+    string r2;
+    int rDir;
+    int ring;
+};
+
+struct pseudovrtx{
     float x,y,z;
     float dist;
     string type;
@@ -98,8 +102,8 @@ string ff="original";
 string statsF="original";
 float distpbV=2.0;
 float stepsize=0.5;
-float maxGridDist=4.5;
-float minGridDist=1.5;
+float maxGridDist=4.0;
+float minGridDist=2.5;
 float atmPbMaxDist=8.0;
 float gridLigDist=2.0;
 float caT=5.0;
@@ -119,6 +123,7 @@ int bul=0;
 int buD=40;
 float* epsilons;
 map<string,string> atomTypes;
+map<string,angRef> atomRef;
 map<int,string> idAt;
 map<string,string> pseudoC;
 map<string,string> ligAt;
@@ -187,7 +192,7 @@ int is_coord_in_cube(float,float,float,float,float,float,float);
 void stripSpace(string &);
 void getStats(map<int,vertex>&, vector<atom>&, vector<int>&);
 float roundCoord(float, int);
-double calcNrg(vertex&, atom&, int, int&, float&, int&);
+double calcNrg(vertex&, atom&, int, int&, float&);
 void getAtomRef();
 void getPseudoC();
 void getEpsilons();
