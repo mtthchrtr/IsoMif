@@ -838,9 +838,9 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   // cout<<endl<<"cen_a: "<<cliques.back().cen_a[0]<<" "<<cliques.back().cen_a[1]<<" "<<cliques.back().cen_a[2];
   // cout<<endl<<"cen_b: "<<cliques.back().cen_b[0]<<" "<<cliques.back().cen_b[1]<<" "<<cliques.back().cen_b[2]<<endl;
   
-  if(cliques.back().taniNorm>topT){
+  if(cliques.back().taniM>topT){
     cout<<"NEW TOP CLIQUE CG "<<cg<<" nodes "<<cliques.back().nbNodes<<" nodesM "<<cliques.back().nbNodesM<<" nodesMW "<<cliques.back().nbNodesMW<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" tani "<<cliques.back().tani<<" taniM "<<cliques.back().taniM<<" taniMW "<<cliques.back().taniMW<<" taniNormNodes "<<cliques.back().taniNorm<<" RMSD "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
-    topT=cliques.back().taniNorm;
+    topT=cliques.back().taniM;
     topN=cliques.back().nbNodes;
     topCliques[cg]=cliques.size()-1;
   }else{
