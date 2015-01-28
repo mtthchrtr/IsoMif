@@ -14,6 +14,7 @@ my $mifJobsF="";
 my $tag="pipeIsoMif";
 my $jobsDir="";
 my $nbFiles=0;
+my $sleep=60;
 my $outDir="";
 my $cmdMode=0;
 my @mifParam=();
@@ -22,6 +23,7 @@ my @casesHT=();
 my @cmds=();
 my $batch=6;
 my $paramString="";
+my $run="";
 
 #Read command line
 for(my $i=0; $i<=$#ARGV; $i++){
@@ -31,10 +33,12 @@ for(my $i=0; $i<=$#ARGV; $i++){
   if($ARGV[$i] eq "-j"){ $mifJobsF=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-c"){ $cmdMode=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-b"){ $batch=$ARGV[$i+1]; }
+  if($ARGV[$i] eq "-sleep"){ $sleep=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-t"){ $tag=$tag.$ARGV[$i+1]; }
   if($ARGV[$i] eq "-f"){ $jobsDir=$ARGV[$i+1]."/"; }
   if($ARGV[$i] eq "-x"){ $nbFiles=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-o"){ $outDir=$ARGV[$i+1]; }
+  if($ARGV[$i] eq "-r"){ $run=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-h"){
     print "##################\nWelcome to pipeIsoMif\n##################\n";
     print "-e         <path to IsoMif program>\n";
@@ -42,10 +46,12 @@ for(my $i=0; $i<=$#ARGV; $i++){
     print "-j         <file with the list of isoMif jobs>\n";
     print "-c         <cmd mode [nrg (batch qsub on nrg), print (print cmds only), local (run locally) use -b for nb of forks]>\n";
     print "-b         <Nb of cmds per job file / forks if local>\n";
+    print "-sleep     <sleep>\n";
     print "-t         <tag of this job batch>\n";
     print "-f         <dir where to print the job files>\n";
     print "-x         <nb of output files expected in jobsdir>\n";
     print "-o         <dir of the output files>\n";
+    print "-r         <run tag to put on filenames>\n";
     print "-h         <print help menu>\n";
     exit;
   }
@@ -58,6 +64,31 @@ for(my $i=0; $i<=$#ARGV; $i++){
 # &recur(0,"",0);
 
 &runCmds();
+
+
+sub storeCases{
+  if($cmdMode eq "ht"){
+    open IN, "<".$mifJobsF or die "Cant open ".$mifJobsF;
+    while(my $line=<IN>){
+      chomp($line);
+      next if($line=~/^$/);
+      if($line=~/^#param/){
+        $line=~s/^#param\s+//;
+        $paramString=$line;
+      }else{ push @cmds, $line; }
+    }
+    close IN;  
+  }else{
+    open IN, "<".$mifJobsF or die "Cant open ".$mifJobsF;
+    while(my $line=<IN>){
+      if($line!~/^$/){
+        chomp($line);
+        push @cases, $mifPath." ".$line;
+      }
+    }
+    close IN;      
+  }
+}
 
 sub runCmds{
   if($cmdMode eq "nrg"){
@@ -96,18 +127,17 @@ sub runCmds{
     system("rm ".$jobsDir."/*");
     system("rm ".$jobsDir."/ht/*");
     open OUT, ">".$jobsDir.$filenb.".pbs" or die "cant open".$jobsDir.$filenb.".pbs";
-    print OUT "#!/bin/sh\n#PBS -l nodes=1:ppn=1\n#PBS -N ".$tag.$filenb."\n".$mifPath." -pp ".$jobsDir."ht/".$filenb." ".$paramString;
-    open OUTHT, ">".$jobsDir."ht/".$filenb or die "cant open".$jobsDir."ht/".$filenb;
+    print OUT "#!/bin/sh\n#PBS -l nodes=1:ppn=1\n#PBS -N ".$tag.$filenb."\n".$mifPath." -pp ".$jobsDir."ht/".$filenb.$run." ".$paramString;
+    open OUTHT, ">".$jobsDir."ht/".$filenb.$run or die "cant open".$jobsDir."ht/".$filenb;
     for(my $i=0; $i<@cmds; $i++){
       if($count==$batch){
         $count=0;
         close OUT;
         system("qsub ".$jobsDir.$filenb.".pbs -o /dev/null -e /dev/null");
-        sleep 5;
         $filenb++;
         open OUT, ">".$jobsDir.$filenb.".pbs" or die "cant open".$jobsDir.$filenb.".pbs";
-        print OUT "#!/bin/sh\n#PBS -l nodes=1:ppn=1\n#PBS -N ".$tag.$filenb."\n".$mifPath." -pp ".$jobsDir."ht/".$filenb." ".$paramString;
-        open OUTHT, ">".$jobsDir."ht/".$filenb or die "cant open".$jobsDir."ht/".$filenb;
+        print OUT "#!/bin/sh\n#PBS -l nodes=1:ppn=1\n#PBS -N ".$tag.$filenb."\n".$mifPath." -pp ".$jobsDir."ht/".$filenb.$run." ".$paramString;
+        open OUTHT, ">".$jobsDir."ht/".$filenb.$run or die "cant open".$jobsDir."ht/".$filenb;
       }
       print OUTHT "$cmds[$i]";
       $count++;
@@ -117,7 +147,7 @@ sub runCmds{
     close OUTHT;
     system("qsub ".$jobsDir.$filenb.".pbs -o /dev/null -e /dev/null");
 
-    # &areJobsDone("ht",$tag);
+    &areJobsDone("ht",$tag);
   }elsif($cmdMode eq "print"){
     for(my $i=0; $i<@cmds; $i++){
       print $cmds[$i]."\n";
@@ -161,30 +191,6 @@ sub runCmds{
     }
     my $end_call="echo \"echo end\"  | bqsub_accumulator --submit -q qfbb"."@"."mp2 -l walltime=120:00:00";
     system($end_call);
-  }
-}
-
-sub storeCases{
-  if($cmdMode eq "ht"){
-    open IN, "<".$mifJobsF or die "Cant open ".$mifJobsF;
-    while(my $line=<IN>){
-      chomp($line);
-      next if($line=~/^$/);
-      if($line=~/^#param/){
-        $line=~s/^#param\s+//;
-        $paramString=$line;
-      }else{ push @cmds, $line; }
-    }
-    close IN;  
-  }else{
-    open IN, "<".$mifJobsF or die "Cant open ".$mifJobsF;
-    while(my $line=<IN>){
-      if($line!~/^$/){
-        chomp($line);
-        push @cases, $mifPath." ".$line;
-      }
-    }
-    close IN;      
   }
 }
 
@@ -278,8 +284,8 @@ sub areJobsDone{
     }
   }elsif($sys eq "ht"){
     while(1){
-      sleep 240;
-      $time+=240;
+      sleep $sleep;
+      $time+=$sleep;
       my $got=0;
       my @nbb=glob $outDir."*";
       foreach my $f (@nbb){

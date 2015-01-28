@@ -159,9 +159,9 @@ while($line=<IN>){
   if($line=~/^REMARK\s+mif_file_1:\s+([-_\.\/a-z0-9]+)/i){
     $mifFilePath1=$1;
     $m1Path=$mifFilePath1 unless($m1Path ne "");
-    if($mifFilePath1=~/\/([_\.a-z0-9]+)$/i){
+    if($mifFilePath1=~/\/([-_\.a-z0-9]+)$/i){
       $mif1=$1;
-    }elsif($mifFilePath1=~/^([_\.a-z0-9]+)$/i){
+    }elsif($mifFilePath1=~/^([-_\.a-z0-9]+)$/i){
       $mif1=$1;
     }
     unless($p1Path ne ""){
@@ -173,9 +173,9 @@ while($line=<IN>){
   if($line=~/^REMARK\s+mif_file_2:\s+([-_\.\/a-z0-9]+)/i){
     $mifFilePath2=$1;
     $m2Path=$mifFilePath2 unless($m2Path ne "");
-    if($mifFilePath2=~/\/([_\.a-z0-9]+)$/i){
+    if($mifFilePath2=~/\/([-_\.a-z0-9]+)$/i){
       $mif2=$1;
-    }elsif($mifFilePath2=~/^([_\.a-z0-9]+)$/i){
+    }elsif($mifFilePath2=~/^([-_\.a-z0-9]+)$/i){
       $mif2=$1;
     }
     unless($p2Path ne ""){
@@ -277,7 +277,7 @@ my $mif2str=&printMif(2,\@mifV2,\@mifV2int);
 sub printMif{
   # open OUT, ">".$outDir.$tag."_mif".$_[0].".pdb" or die "Cant open mif1 out file";
   my $it=0;
-  print "\n\nprinting mif $_[0]\n";
+  # print "\n\nprinting mif $_[0]\n";
   my $pdbstr="cmd.read_pdbstr(\"\"\"";
   for(my $i=0; $i<@{$_[1]}; $i++){ #Loop each probe
     if(scalar @{$_[1]}){
@@ -358,7 +358,7 @@ close IN;
 $p2str.="TER \\\n\"\"\",\"".$mif2."\")\n";
 
 open NPML, ">".$outDir.$tag.".pml";
-print NPML $p1str.$p2str."remove (resn HOH)\nshow cartoon\nhide lines\nset connect_mode,1\n".$mif1str.$mif2str;
+print NPML $p1str.$p2str."show cartoon\nhide lines\nset connect_mode,1\n".$mif1str.$mif2str;
 
 # system("cp ".$p2Path." ".$outDir.$tag."_2.pdb");
 # open PML3, ">".$outDir.$tag.".pml" or die "Cant open ".$tag.".pml";
@@ -510,7 +510,8 @@ sub printMifPml{
         if(${$_[1]}[$i][$res][0]!=${$_[1]}[$i][$res][1]){
           $str.="create mif_".$_[3]."_".$probeNames[$i].", id ${$_[1]}[$i][$res][0]-${$_[1]}[$i][$res][1] & ".$tag."_mif".$_[2]."\n";
           $str.="show spheres, mif_".$_[3]."_".$probeNames[$i]."\nset sphere_scale,".$_[4].",mif_".$_[3]."_".$probeNames[$i]."\nset sphere_transparency,0.6,mif_".$_[3]."_".$probeNames[$i]."\nrebuild\n";
-          $str.="color $pbColors[$i],mif_".$_[3]."_".$probeNames[$i]."\nhide nonbonded,mif_".$_[3]."_".$probeNames[$i]."\n";
+          $str.="color $pbColors[$i],mif_".$_[3]."_".$probeNames[$i]."\n";
+          $str.="hide nonbonded,mif_".$_[3]."_".$probeNames[$i]."\n";
         }
     }
   }
@@ -518,7 +519,8 @@ sub printMifPml{
   # print PML3 "delete ".$tag."_mif".$_[2]."\n";
   return($str);
 }
-print NPML "remove hydrogens\nhide nonbonded\nshow sticks, HET\ndelete ".$tag."_1_nodes\ndelete ".$tag."_2_nodes\n";
+print NPML "remove hydrogens\nshow sticks, HET\ndelete ".$tag."_1_nodes\ndelete ".$tag."_2_nodes\n";
+# print NPML "hide nonbonded\n";
 
 my @pseudoLab=("HYD","ARM","DON","ACC","DOA");
 

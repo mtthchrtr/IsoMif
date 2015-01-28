@@ -54,6 +54,7 @@ struct atoms{
   string resn;
   string atomn;
   string chain;
+  string alt;
   int resnb; //residue ID in PDB
   int atomnb; //atomnb in PDB
   int id;
@@ -107,6 +108,7 @@ struct CliqueStruct{
   float normNodesRMSD;
   float tani;
   float taniM;
+  vector<int> pbweight;
   float taniMW;
   float taniNorm;
   float rmsd;
@@ -140,6 +142,7 @@ char cmdLine[550];
 char outbase[200];
 int commonInt=1;
 
+int pc=0;
 int wc=0;
 int jttt=5;
 int jtt[20][20];

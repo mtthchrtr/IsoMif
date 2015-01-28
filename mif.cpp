@@ -318,6 +318,7 @@ void Protein::readPDB(string filename){
       stripSpace(fields[2]);
       stripSpace(fields[3]);
       stripSpace(fields[4]);
+      stripSpace(fields[5]);
       stripSpace(fields[6]);
 
       atomnb=atoi(fields[1].c_str());
@@ -333,6 +334,7 @@ void Protein::readPDB(string filename){
       atm.y=y;
       atm.z=z;
       atm.chain=fields[5];
+      atm.alt=fields[3];
       atm.atomnb=atomnb;
       atm.resnb=resnb;
       atm.atomn=fields[2];
@@ -340,6 +342,9 @@ void Protein::readPDB(string filename){
       atm.bs=0;
       atm.mif=1;
       atm.h=0;
+
+      if(atm.alt.compare("")==0){ atm.alt="-"; }
+      if(atm.chain.compare("")==0){ atm.chain="-"; }
 
       try{
         fields[11] = line.substr(76,2); // atom symbol
@@ -356,7 +361,9 @@ void Protein::readPDB(string filename){
       if((fields[3].compare("A")!=0) && (fields[3].compare("")!=0)){ atm.mif=0; }
 
       if(resnumc.compare("")!=0){
-        thisresnumc = line.substr(17,3) + line.substr(22,4) + line.substr(21,1) + line.substr(16,1);
+        stringstream sss;
+        sss << atm.resnb;
+        thisresnumc = atm.resn + sss.str() + atm.chain + atm.alt;
         stripSpace(thisresnumc);
         // cout<< resnumc<< " to "<< thisresnumc <<" "<<fields[2]<< " "<< atof((line.substr(30,8).c_str()))<<" "<< atof((line.substr(38,8).c_str()))<<" "<<atof((line.substr(46,8).c_str()))<<endl;
         if(resnumc.compare(thisresnumc)==0 && found==string::npos){
@@ -398,6 +405,8 @@ void Protein::readPDB(string filename){
 
   cout<<"PROTEIN min/max values: minx: "<< min_x<< " miny: "<< min_y<< " minz: "<<min_z<<" maxx: "<<max_x<<" maxy: "<<max_y<<" maxz: "<<max_z<<endl;
   cout<<"PROTEIN Width "<<width<<" Height "<< height << endl;
+  cout<<"ligand size: "<<LIGAND.size()<<endl;
+
 }
 
 void Protein::getAtomDir(){
@@ -982,6 +991,7 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
     getline(ifs,line);
         
     if(line.compare(0,6,"ATOM  ") == 0 || line.compare(0,6,"HETATM") == 0){
+      cout<< line<<endl;
       fields[0] = line.substr(30,8);   // x-coord
       fields[1] = line.substr(38,8);   // y-coord
       fields[2] = line.substr(46,8);   // z-coord
@@ -1027,14 +1037,19 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
               minDist=10000.0;
               for(i=0; i<ligVec.size(); i+=3){
                 dist=((abs(nx-ligVec.at(i))*abs(nx-ligVec.at(i)))+(abs(ny-ligVec.at(i+1))*abs(ny-ligVec.at(i+1)))+(abs(nz-ligVec.at(i+2))*abs(nz-ligVec.at(i+2))));
-                //cout<< ligVec.at(i) << " "<< ligVec.at(i+1) << " "<< ligVec.at(i+2) << " grid: "<<nx<<" "<<ny<<" "<<nz<< " dist:"<< dist<< endl;
+                // cout<< ligVec.at(i) << " "<< ligVec.at(i+1) << " "<< ligVec.at(i+2) << " grid: "<<nx<<" "<<ny<<" "<<nz<< " dist:"<< dist<< endl;
                 if(dist<minDist){
                   minDist=dist;
-                  //cout<< "New mindist: "<< minDist<<endl;
+                  // cout<< "New mindist: "<< minDist<<endl;
                 }
               }
               //Skip to next grid intersection if too far from the ligand
-              if(minDist>gridLigDist) continue;
+              if(minDist>gridLigDist){
+                // cout<<nx<<" "<<ny<<" "<<nz<<"to far "<<minDist<<endl;
+                continue;
+              }else{
+
+              }
             }
 
             vertex vrtx;
@@ -1843,7 +1858,7 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
     cout<<endl<< "Writing atoms"<<endl;
     if(zip==1){
       for(i=0; i<lig.size(); i++){
-        fprintf(fpNew,"#ATOM %3s %4d %4s %5d %s %8.3f %8.3f %8.3f %d %d\n",lig[i].resn.c_str(),lig[i].resnb,lig[i].atomn.c_str(),lig[i].atomnb,lig[i].chain.c_str(),lig[i].x,lig[i].y,lig[i].z,lig[i].mif,lig[i].bs);
+        fprintf(fpNew,"#ATOM %3s %4d %4s %5d %s %s %8.3f %8.3f %8.3f %d %d\n",lig[i].resn.c_str(),lig[i].resnb,lig[i].atomn.c_str(),lig[i].atomnb,lig[i].chain.c_str(),lig[i].alt.c_str(),lig[i].x,lig[i].y,lig[i].z,lig[i].mif,lig[i].bs);
       }
     }else{
       int step=(int)(caT/stepsize);

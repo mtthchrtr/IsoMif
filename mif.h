@@ -31,6 +31,7 @@ struct atoms{
   string resn;
   string atomn;
   string chain;
+  string alt;
   string pseudo;
   string at;
   int resnb; //residue ID in PDB
