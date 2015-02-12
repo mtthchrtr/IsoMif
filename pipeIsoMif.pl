@@ -67,7 +67,7 @@ for(my $i=0; $i<=$#ARGV; $i++){
 
 
 sub storeCases{
-  if($cmdMode eq "ht"){
+  if($cmdMode eq "ht" || $cmdMode eq "print"){
     open IN, "<".$mifJobsF or die "Cant open ".$mifJobsF;
     while(my $line=<IN>){
       chomp($line);
@@ -133,6 +133,7 @@ sub runCmds{
       if($count==$batch){
         $count=0;
         close OUT;
+        # print "qsub ".$jobsDir.$filenb.".pbs -o /dev/null -e /dev/null\n";
         system("qsub ".$jobsDir.$filenb.".pbs -o /dev/null -e /dev/null");
         $filenb++;
         open OUT, ">".$jobsDir.$filenb.".pbs" or die "cant open".$jobsDir.$filenb.".pbs";
@@ -145,12 +146,15 @@ sub runCmds{
     }
     close OUT;
     close OUTHT;
+    # print "qsub ".$jobsDir.$filenb.".pbs -o /dev/null -e /dev/null\n";
     system("qsub ".$jobsDir.$filenb.".pbs -o /dev/null -e /dev/null");
 
     &areJobsDone("ht",$tag);
   }elsif($cmdMode eq "print"){
+    print "printing\n";
+    print scalar @cmds."\n";
     for(my $i=0; $i<@cmds; $i++){
-      print $cmds[$i]."\n";
+      print $cmds[$i]." ".$paramString."\n";
     }
   }elsif($cmdMode eq "local"){
     my $nProcess = $batch; # Number of threads allowed simultaneously

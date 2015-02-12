@@ -123,6 +123,7 @@ int zip=-1;
 int bul=0;
 int buD=40;
 float* epsilons;
+float angThresh=90.0;
 map<string,string> atomTypes;
 map<string,angRef> atomRef;
 map<int,string> idAt;

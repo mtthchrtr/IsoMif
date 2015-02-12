@@ -126,6 +126,7 @@ int readCmdLine(int argc, char **argv){
   usage << "-ff                  : \t force field to use\n";
   usage << "-mat                 : \t epsilon matrix to use\n";
   usage << "-pb                  : \t probes threshold file to use\n";
+  usage << "-a                   : \t angle threshold\n";
   usage << "-t                   : \t filename (tag) [pdb name by default]\n";
   usage << "-lf                  : \t ligand file with atom types\n";
   usage << "-dpv                 : \t distance probe-Vrtx to consider a vrtx to be true-positive\n";
@@ -195,6 +196,9 @@ int readCmdLine(int argc, char **argv){
     }
     if(strcmp(argv[nb_arg],"-w")==0){
       sscanf(argv[nb_arg+1], "%f", &minGridDist);
+    }
+    if(strcmp(argv[nb_arg],"-a")==0){
+      sscanf(argv[nb_arg+1], "%f", &angThresh);
     }
     if(strcmp(argv[nb_arg],"-r")==0){
       sscanf(argv[nb_arg+1], "%f", &gridLigDist);
@@ -991,7 +995,7 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
     getline(ifs,line);
         
     if(line.compare(0,6,"ATOM  ") == 0 || line.compare(0,6,"HETATM") == 0){
-      cout<< line<<endl;
+      // cout<< line<<endl;
       fields[0] = line.substr(30,8);   // x-coord
       fields[1] = line.substr(38,8);   // y-coord
       fields[2] = line.substr(46,8);   // z-coord
@@ -2137,7 +2141,6 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms, float& close
   energy=0.0;
   alpha=1.0;
   angle=1.0;
-  float angleThresh=90.00;
   float rDist,rpDist;
 
   //Get distance between probe and atom
@@ -2158,9 +2161,11 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms, float& close
 
     if(atm.rDir==0){ angle=180.00-angle; }
     if(printDetails==1){ cout<<"Hbond Angle "<< angle <<endl; }
-    if(angle>angleThresh){
+    if(angle>angThresh){
       if(printDetails==1){ cout<<"Angle over threshold"<<endl; }
       return(energy);
+    }else{
+      cout<<"Hbond Angle "<< angle <<" threshold "<<angThresh<<endl;
     }
     if(dist<closest){
       closest=dist;

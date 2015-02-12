@@ -59,7 +59,9 @@ int main(int argc, char *argv[]){
   getrmsd=pw[pwr].getrmsd;
   topT=-1.0;
   topN=-1;
-  cout<<pwr<<" mif1 "<<pw[pwr].mif1<<" mif2 "<<pw[pwr].mif2<<" rnc1 "<<pw[pwr].rnc1<<" rnc2 "<<pw[pwr].rnc2<<" getrmsd "<<getrmsd<<endl;
+  cout<<"mif1 "<<pw[pwr].mif1<<" rnc1 "<<pw[pwr].rnc1<<endl;
+  cout<<"mif2 "<<pw[pwr].mif2<<" rnc2 "<<pw[pwr].rnc2<<endl;
+  cout<<"getrmsd "<<getrmsd<<endl;
   if(get_info(nrg_file1,nrg_file2)==24){ return(24); }
 
   if(emptOut==1){
@@ -722,6 +724,9 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
 
   for(int i=0; i<nb_of_probes; i++){
     cliques.back().pbweight.push_back(0);
+    cliques.back().nrgsum.push_back(0.0);
+    cliques.back().angCount.push_back(0);
+    cliques.back().angSum.push_back(0.0);
   }
 
   //Rotate mif 1 onto mif 2
@@ -793,12 +798,21 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
       cliques.back().normNodes+=(*it).cosim;
 
       for(int pb=0; pb<nb_of_probes; pb++){
-        cout<<(*it).a->pb[pb]<<" "<<(*it).b->pb[pb]<<" |";
+        // cout<<(*it).a->pb[pb]<<" "<<(*it).b->pb[pb]<<" |";
         if((*it).a->pb[pb]==1 && (*it).b->pb[pb]==1){
           cliques.back().pbweight[pb]++;
+          cliques.back().nrgsum[pb]+=(*it).a->nrg[pb]+(*it).b->nrg[pb];
+          if(fabs((*it).a->ang[pb]-0.0)>0.01){
+            cliques.back().angSum[pb]+=(*it).a->ang[pb];
+            cliques.back().angCount[pb]++;
+          }
+          if(fabs((*it).b->ang[pb]-0.0)>0.01){
+            cliques.back().angSum[pb]+=(*it).b->ang[pb];
+            cliques.back().angCount[pb]++;
+          }
         }
       }
-      cout<<endl;
+      // cout<<endl;
 
       // printf("A %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).a->nrg[0],(*it).a->ang[0],(*it).a->nrg[1],(*it).a->ang[1],(*it).a->nrg[2],(*it).a->ang[2],(*it).a->nrg[3],(*it).a->ang[3],(*it).a->nrg[4],(*it).a->ang[4],(*it).a->nrg[5],(*it).a->ang[5]);
       // printf("B %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f %6.3f\n",(*it).b->nrg[0],(*it).b->ang[0],(*it).b->nrg[1],(*it).b->ang[1],(*it).b->nrg[2],(*it).b->ang[2],(*it).b->nrg[3],(*it).b->ang[3],(*it).b->nrg[4],(*it).b->ang[4],(*it).b->nrg[5],(*it).b->ang[5]);
@@ -851,11 +865,11 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   // }
   // cout<<endl<<"cen_a: "<<cliques.back().cen_a[0]<<" "<<cliques.back().cen_a[1]<<" "<<cliques.back().cen_a[2];
   // cout<<endl<<"cen_b: "<<cliques.back().cen_b[0]<<" "<<cliques.back().cen_b[1]<<" "<<cliques.back().cen_b[2]<<endl;
-  cout<<"ssm1 "<<ss1m[cg]<<" ssm2 "<<ss2m[cg]<<endl;
+  // cout<<"ssm1 "<<ss1m[cg]<<" ssm2 "<<ss2m[cg]<<endl;
   for(int pb=0; pb<nb_of_probes; pb++){
-    cout<<pb<<" "<<cliques.back().pbweight[pb]<<" ";
+    // cout<<pb<<" "<<cliques.back().pbweight[pb]<<" ";
   }
-  cout<<endl;
+  // cout<<endl;
 
   if(cliques.back().taniM>topT){
     cout<<"NEW TOP CLIQUE CG "<<cg<<" nodes "<<cliques.back().nbNodes<<" nodesM "<<cliques.back().nbNodesM<<" nodesMW "<<cliques.back().nbNodesMW<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" tani "<<cliques.back().tani<<" taniM "<<cliques.back().taniM<<" taniMW "<<cliques.back().taniMW<<" taniNormNodes "<<cliques.back().taniNorm<<" RMSD "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
@@ -891,76 +905,86 @@ void printNodes(){
     open_file_ptr(&fpout,out_file,1);
   }
 
+  fprintf(fpout,"%s",outH);
+
   if(pc==1){
     int istart=0;
     int iend=cliques.size();
     for(int i=istart; i<iend; i++){
-      if(cliques[i].ligRMSD==0.0 || fabs(cliques[i].ligRMSD-0.0) < 0.0001) continue;
+      // if(cliques[i].ligRMSD==0.0 || fabs(cliques[i].ligRMSD-0.0) < 0.0001) continue;
+      fprintf(fpout,"REMARK CI %s %s ",tag1.c_str(),tag2.c_str());
       for(int j=0; j<nb_of_probes; ++j){
         fprintf(fpout,"%4d ",cliques[i].pbweight[j]);
       }
-      fprintf(fpout,"%5d %5d %5.4f %5.3f\n",ss1m[cliques[i].cg],ss2m[cliques[i].cg],cliques[i].taniM,cliques[i].ligRMSD);
+      for(int j=0; j<nb_of_probes; ++j){
+        fprintf(fpout,"%10.3f ",cliques[i].nrgsum[j]);
+      }
+      for(int j=1; j<4; ++j){
+        float avg=0.0;
+        if(cliques[i].angCount[j]>0) avg=cliques[i].angSum[j]/(float)cliques[i].angCount[j];
+        fprintf(fpout,"%10.3f %3d %10.3f ",cliques[i].angSum[j],cliques[i].angCount[j],avg);
+      }
+      fprintf(fpout,"%5d %5d %6.3f %d %6.3f\n",ss1m[cliques[i].cg],ss2m[cliques[i].cg],cliques[i].taniM,getrmsd,cliques[i].ligRMSD);
 
     }
-  }else{
-    fprintf(fpout,"%s",outH);
-    for(int cs=0; cs<steps.size(); cs++){
-      int istart=0;
-      int iend=cliques.size();
-      if(wc==0){
-        istart=topCliques[steps[cs]];
-        iend=topCliques[steps[cs]]+1;
-      }
-      for(int i=istart; i<iend; i++){
-        if(steps[cs]==-2){
-          fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cg2],ss2[cg2]);
-          if(emptOut!=1){
-            for(int j=0; j<cliques[i].va.size(); j++){
-              fprintf(fpout, "A %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].va[j].ncoor[0],cliques[i].va[j].ncoor[1],cliques[i].va[j].ncoor[2],cliques[i].va[j].m[0],cliques[i].va[j].m[1],cliques[i].va[j].m[2],cliques[i].va[j].m[3],cliques[i].va[j].m[4],cliques[i].va[j].m[5]);
-            }
-            for(int j=0; j<cliques[i].vb.size(); j++){
-              fprintf(fpout, "B %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].vb[j].coor[0],cliques[i].vb[j].coor[1],cliques[i].vb[j].coor[2],cliques[i].vb[j].m[0],cliques[i].vb[j].m[1],cliques[i].vb[j].m[2],cliques[i].vb[j].m[3],cliques[i].vb[j].m[4],cliques[i].vb[j].m[5]);
-            }
+  }
+
+  for(int cs=0; cs<steps.size(); cs++){
+    int istart=0;
+    int iend=cliques.size();
+    if(wc==0){
+      istart=topCliques[steps[cs]];
+      iend=topCliques[steps[cs]]+1;
+    }
+    for(int i=istart; i<iend; i++){
+      if(steps[cs]==-2){
+        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,ss1[cg2],ss2[cg2]);
+        if(emptOut!=1){
+          for(int j=0; j<cliques[i].va.size(); j++){
+            fprintf(fpout, "A %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].va[j].ncoor[0],cliques[i].va[j].ncoor[1],cliques[i].va[j].ncoor[2],cliques[i].va[j].m[0],cliques[i].va[j].m[1],cliques[i].va[j].m[2],cliques[i].va[j].m[3],cliques[i].va[j].m[4],cliques[i].va[j].m[5]);
           }
-        }else if(steps[cs]==-1){
-          fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)prot1.size(),(int)prot2.size());
-          if(emptOut!=1){
-            for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
-              fprintf(fpout, "%3s %4d %4s %5d %s %8.3f %8.3f %8.3f %3s %4d %4s %5d %s %8.3f %8.3f %8.3f\n",(*it).ca->resn.c_str(),(*it).ca->resnb,(*it).ca->atomn.c_str(),(*it).ca->atomnb,(*it).ca->chain.c_str(),(*it).ca->coor[0],(*it).ca->coor[1],(*it).ca->coor[2],(*it).cb->resn.c_str(),(*it).cb->resnb,(*it).cb->atomn.c_str(),(*it).cb->atomnb,(*it).cb->chain.c_str(),(*it).cb->coor[0],(*it).cb->coor[1],(*it).cb->coor[2]);
-            }
+          for(int j=0; j<cliques[i].vb.size(); j++){
+            fprintf(fpout, "B %8.3f %8.3f %8.3f %d %d %d %d %d %d\n",cliques[i].vb[j].coor[0],cliques[i].vb[j].coor[1],cliques[i].vb[j].coor[2],cliques[i].vb[j].m[0],cliques[i].vb[j].m[1],cliques[i].vb[j].m[2],cliques[i].vb[j].m[3],cliques[i].vb[j].m[4],cliques[i].vb[j].m[5]);
           }
-        }else if(steps[cs]==-3){
-          fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)pseudoL1.size(),(int)pseudoL2.size());
-          if(emptOut!=1){
-            for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
-              fprintf(fpout, "%3s %8.3f %8.3f %8.3f %3s %8.3f %8.3f %8.3f\n",(*it).pa->type.c_str(),(*it).pa->coor[0],(*it).pa->coor[1],(*it).pa->coor[2],(*it).pb->type.c_str(),(*it).pb->coor[0],(*it).pb->coor[1],(*it).pb->coor[2]);
-            }
+        }
+      }else if(steps[cs]==-1){
+        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)prot1.size(),(int)prot2.size());
+        if(emptOut!=1){
+          for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
+            fprintf(fpout, "%3s %4d %4s %5d %s %8.3f %8.3f %8.3f %3s %4d %4s %5d %s %8.3f %8.3f %8.3f\n",(*it).ca->resn.c_str(),(*it).ca->resnb,(*it).ca->atomn.c_str(),(*it).ca->atomnb,(*it).ca->chain.c_str(),(*it).ca->coor[0],(*it).ca->coor[1],(*it).ca->coor[2],(*it).cb->resn.c_str(),(*it).cb->resnb,(*it).cb->atomn.c_str(),(*it).cb->atomnb,(*it).cb->chain.c_str(),(*it).cb->coor[0],(*it).cb->coor[1],(*it).cb->coor[2]);
           }
-        }else{
-          fprintf(fpout,"REMARK CLIQUE CG %d NODES %d NODESM %d NODESMW %6.4f NORMNODES %6.4f NORMNODESRMSD %6.4f TANI %5.4f TANIM %5.4f TANIMW %5.4f TANINORM %5.4f NRG %.3f SS1 %d SS2 %d SS1M %d SS2M %d LIGRMSD %5.3f\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].nbNodesM,cliques[i].nbNodesMW,cliques[i].normNodes,cliques[i].normNodesRMSD,cliques[i].tani,cliques[i].taniM,cliques[i].taniMW,cliques[i].taniNorm,cliques[i].nrg,ss1[cliques[i].cg],ss2[cliques[i].cg],ss1m[cliques[i].cg],ss2m[cliques[i].cg],cliques[i].ligRMSD);
-          if(emptOut!=1){
-            for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
-              for(int j=0; j<nb_of_probes; ++j){
-                if((*it).a->pb[j]==1 && (*it).b->pb[j]==1){
-                  fprintf(fpout, "%d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",j,(*it).a->coor[0],(*it).a->coor[1],(*it).a->coor[2],(*it).b->coor[0],(*it).b->coor[1],(*it).b->coor[2]);
-                }
+        }
+      }else if(steps[cs]==-3){
+        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d TANI %5.3f SS1 %d SS2 %d\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].tani,(int)pseudoL1.size(),(int)pseudoL2.size());
+        if(emptOut!=1){
+          for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
+            fprintf(fpout, "%3s %8.3f %8.3f %8.3f %3s %8.3f %8.3f %8.3f\n",(*it).pa->type.c_str(),(*it).pa->coor[0],(*it).pa->coor[1],(*it).pa->coor[2],(*it).pb->type.c_str(),(*it).pb->coor[0],(*it).pb->coor[1],(*it).pb->coor[2]);
+          }
+        }
+      }else{
+        fprintf(fpout,"REMARK CLIQUE CG %d NODES %d NODESM %d NODESMW %6.4f NORMNODES %6.4f NORMNODESRMSD %6.4f TANI %5.4f TANIM %5.4f TANIMW %5.4f TANINORM %5.4f NRG %.3f SS1 %d SS2 %d SS1M %d SS2M %d LIGRMSD %5.3f\n",cliques[i].cg,cliques[i].nbNodes,cliques[i].nbNodesM,cliques[i].nbNodesMW,cliques[i].normNodes,cliques[i].normNodesRMSD,cliques[i].tani,cliques[i].taniM,cliques[i].taniMW,cliques[i].taniNorm,cliques[i].nrg,ss1[cliques[i].cg],ss2[cliques[i].cg],ss1m[cliques[i].cg],ss2m[cliques[i].cg],cliques[i].ligRMSD);
+        if(emptOut!=1){
+          for(it=cliques[i].nodes.begin(); it!=cliques[i].nodes.end(); ++it){
+            for(int j=0; j<nb_of_probes; ++j){
+              if((*it).a->pb[j]==1 && (*it).b->pb[j]==1){
+                fprintf(fpout, "%d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",j,(*it).a->coor[0],(*it).a->coor[1],(*it).a->coor[2],(*it).b->coor[0],(*it).b->coor[1],(*it).b->coor[2]);
               }
             }
           }
         }
-        if(emptOut!=1){
-          fprintf(fpout,"REMARK ROTMAT ");
-          for(int m=0; m<3; m++) {
-            for(int n=0; n<3; n++){
-              fprintf(fpout," %9.4f",gsl_matrix_get(cliques[i].mat_r,m,n));
-            }
-          }
-          fprintf(fpout,"\nREMARK CENTRES %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n",cliques[i].cen_a[0],cliques[i].cen_a[1],cliques[i].cen_a[2],cliques[i].cen_b[0],cliques[i].cen_b[1],cliques[i].cen_b[2]);
-          fprintf(fpout,"REMARK DET %g\n",cliques[i].det);
-        }
       }
-      fprintf(fpout,"REMARK END\n");
-    }  
+      if(emptOut!=1){
+        fprintf(fpout,"REMARK ROTMAT ");
+        for(int m=0; m<3; m++) {
+          for(int n=0; n<3; n++){
+            fprintf(fpout," %9.4f",gsl_matrix_get(cliques[i].mat_r,m,n));
+          }
+        }
+        fprintf(fpout,"\nREMARK CENTRES %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n",cliques[i].cen_a[0],cliques[i].cen_a[1],cliques[i].cen_a[2],cliques[i].cen_b[0],cliques[i].cen_b[1],cliques[i].cen_b[2]);
+        fprintf(fpout,"REMARK DET %g\n",cliques[i].det);
+      }
+    }
+    fprintf(fpout,"REMARK END\n");
   }
 
   return;

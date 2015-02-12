@@ -109,6 +109,9 @@ struct CliqueStruct{
   float tani;
   float taniM;
   vector<int> pbweight;
+  vector<float> nrgsum;
+  vector<int> angCount;
+  vector<float> angSum;
   float taniMW;
   float taniNorm;
   float rmsd;
