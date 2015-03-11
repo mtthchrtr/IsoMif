@@ -5,9 +5,18 @@ University of Sherbrooke
 Faculty of Medicine and Health Sciences
 Québec, Canada
 
-To run IsoMif locally on mac or linux, you need 3 programs (GetCleft, Mif and IsoMif). All included in the download. Use the binary files for your architecture.
+To run IsoMif locally on mac or linux, you need 3 programs (GetCleft, Mif and IsoMif). All included in the download. Use the binary files for your architecture. You can also compile the Mif and IsoMIF program on your machine.
 
-On a terminal or console, change directory to the root directory where the download folder was unzipped:
+--- Compile Mif ---
+g++ /home/john/IsoMif/mif.cpp -o /home/john/IsoMif/mif -O3
+
+--- Compile IsoMIF ---
+Requires GSL installed and its library (-L) and include (-I) dirs specified like so:
+
+g++ /home/john/IsoMif/isomif.cpp -o /home/john/IsoMif/isomif -O3 -lm -lgsl -lgslcblas -L/path/to/gsl/lib/ -I/path/to/gsl/include/
+
+--- Binaries ---
+To use the binaries, open a terminal or console and change directory to the root directory where the download folder was unzipped:
 
 cd /home/john/IsoMif
 
