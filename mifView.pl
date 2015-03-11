@@ -125,7 +125,7 @@ while(my $line=<IN>){
 }
 close IN;
 
-print $ff."\n";
+# print $ff."\n";
 
 open NPML, ">".$mifViewFolder."/".$mifName.$ot.".pml";
 
@@ -182,7 +182,7 @@ for(my $i=$grids; $i<=$gride; $i++){
     print NPML "TER \\\n\"\"\",\"".$gridLab[$i]."\")\n";
   }
 }
-
+print NPML "\n";
 #print protein grid points
 if(scalar @protgrid){
   print NPML "cmd.read_pdbstr(\"\"\"";
@@ -192,20 +192,21 @@ if(scalar @protgrid){
   }
   print NPML "TER \\\n\"\"\",\"".$mifName."_grid\")\n";
 }
-
+print NPML "\n";
 print NPML "feedback enable,all,output\norient\nshow cartoon, ".$mifName."\nremove (resn HOH)\nshow sticks, HET & ".$mifName."\ncolor white,".$mifName."_grid\nshow nonbonded,".$mifName."_grid\n";
-
+print NPML "\n";
 for(my $i=0; $i<$nbpb; $i++){
   if(@{$probes[$i]}){
     for(my $g=$grids; $g<=$gride; $g++){
       if($probesInt[$i][$g][0]!=$probesInt[$i][$g][1]){
         print NPML "show spheres, ".$probesLab[$i]."_".$gridLab[$g]."\nset sphere_scale,0.2,".$probesLab[$i]."_".$gridLab[$g]."\nrebuild\n";
-        print NPML "color $pbColors[$i],".$probesLab[$i]."_".$gridLab[$g]."\n" if($ff eq "original");
-        print NPML "hide nonbonded,".$probesLab[$i]."_".$gridLab[$g]."\n";
+        print NPML "color $pbColors[$i],".$probesLab[$i]."_".$gridLab[$g]."\n";
+        print NPML "hide nonbonded,".$probesLab[$i]."_".$gridLab[$g]."\n\n";
       }
     }
   }
 }
+print NPML "\n";
 for(my $i=0; $i<3; $i++){
   if(exists $grid[$i] && scalar @{$grid[$i]} > 0){
     if($grid[$i][0]!=$grid[$i][1]){
@@ -227,7 +228,7 @@ for(my $i=0; $i<3; $i++){
 
 # my @pbColors=("aquamarine","brightorange","blue","red","limegreen","lightmagenta");
 # print NPML "color deepteal, ca\nset sphere_scale, 0.3, ca\nshow spheres, ca\n";
-print NPML "set sphere_scale, 0.3, pseudocenter\ncolor aquamarine, resn HYD & pseudocenters\ncolor brightorange, resn ARM & pseudocenters\n";
+print NPML "\nset sphere_scale, 0.3, pseudocenter\ncolor aquamarine, resn HYD & pseudocenters\ncolor brightorange, resn ARM & pseudocenters\n";
 print NPML "color blue, resn DON & pseudocenters\ncolor red, resn ACC & pseudocenters\ncolor limegreen, resn DOA & pseudocenters\nshow spheres, pseudocenters\n";
 
 # print NPML "set sphere_scale, 0.3, 100\nshow spheres, 100\n";

@@ -895,9 +895,9 @@ void printNodes(){
   if(pairwiseF.compare("")==0){
     if(wrfn==1){ //Add similarity score to filename
       if(rnc1.compare("")!=0 && rnc2.compare("")!=0){
-        sprintf(suffix,"_%d_%5.4f_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].tani,cliques[topCliques[steps.back()]].ligRMSD);
+        sprintf(suffix,"_%d_%5.4f_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].taniM,cliques[topCliques[steps.back()]].ligRMSD);
       }else{
-        sprintf(suffix,"_%d_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].tani);
+        sprintf(suffix,"_%d_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].taniM);
       }
       strcat(out_file,suffix);
     }
