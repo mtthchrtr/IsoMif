@@ -12,6 +12,15 @@
 #include <gsl/gsl_linalg.h>
 #include <map>
 
+// #ifdef _OPENMP
+// # include <omp.h>
+// // multi-processors
+// # define CHUNKSIZE 1
+// # define SCHEDULE dynamic
+// // #  define SCHEDULE static
+// # define NUM_THREADS 12
+// #endif
+
 using namespace std;
 
 typedef struct clefts cleft;
@@ -121,6 +130,7 @@ struct CliqueStruct{
   float cen_a[3];
   float cen_b[3];
   double det;
+  double detOri;
 };
 
 int *compsub = NULL;
@@ -132,6 +142,7 @@ float topT=-1.0;
 float topN=-1;
 int bkAll = 0;
 int nCliques=0;
+int nCliquesExplored=0;
 int maxCliques=200;
 vector<Clique> cliques;
 
@@ -145,6 +156,7 @@ char cmdLine[550];
 char outbase[200];
 int commonInt=1;
 
+int skipDet=1;
 int pc=0;
 int wc=0;
 int jttt=5;
@@ -207,8 +219,8 @@ int createVrtxVec(string, vector<vertex>&, vector<atom>&, vector<int>&, vector<i
 void createNodes(int, vector<node>&, int);
 void rem_spaces(char*);
 int get_info(string, string);
-double calcRot(vector<float>, vector<float>, float*, float*, gsl_matrix *);
-double SupSVD(gsl_matrix *);
+double calcRot(vector<float>, vector<float>, float*, float*, gsl_matrix *, double&);
+double SupSVD(gsl_matrix *, double&);
 double gsl_matrix_Det3D(gsl_matrix *);
 long long ConnID(int, int);
 void setJTT(int);

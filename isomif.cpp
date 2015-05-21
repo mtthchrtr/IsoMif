@@ -51,315 +51,320 @@ int main(int argc, char *argv[]){
     }
   }
 
+// #pragma omp parallel for schedule(SCHEDULE) num_threads(NUM_THREADS)
   for(int pwr=0; pwr<pw.size(); pwr++){
-  nrg_file1=pw[pwr].mif1;
-  nrg_file2=pw[pwr].mif2;
-  rnc1=pw[pwr].rnc1;
-  rnc2=pw[pwr].rnc2;
-  getrmsd=pw[pwr].getrmsd;
-  topT=-1.0;
-  topN=-1;
-  cout<<"mif1 "<<pw[pwr].mif1<<" rnc1 "<<pw[pwr].rnc1<<endl;
-  cout<<"mif2 "<<pw[pwr].mif2<<" rnc2 "<<pw[pwr].rnc2<<endl;
-  cout<<"getrmsd "<<getrmsd<<endl;
-  if(get_info(nrg_file1,nrg_file2)==24){ return(24); }
+// #ifdef _OPENMP
+// int th_id = omp_get_thread_num();
+// #endif
+    nrg_file1=pw[pwr].mif1;
+    nrg_file2=pw[pwr].mif2;
+    rnc1=pw[pwr].rnc1;
+    rnc2=pw[pwr].rnc2;
+    getrmsd=pw[pwr].getrmsd;
+    topT=-1.0;
+    topN=-1;
+    cout<<"mif1 "<<pw[pwr].mif1<<" rnc1 "<<pw[pwr].rnc1<<endl;
+    cout<<"mif2 "<<pw[pwr].mif2<<" rnc2 "<<pw[pwr].rnc2<<endl;
+    cout<<"getrmsd "<<getrmsd<<endl;
+    if(get_info(nrg_file1,nrg_file2)==24){ return(24); }
 
-  if(emptOut==1){
-    sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK wsimfn: %d\nREMARK tag1: %s\nREMARK tag2: %s\nREMARK rnc1: %s\nREMARK rnc2: %s\n",cmdLine,nrg_file1.c_str(),nrg_file2.c_str(),wrfn,tag1.c_str(),tag2.c_str(),rnc1.c_str(),rnc2.c_str());  
-  }else{
-    sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK nb_of_probes: %d\nREMARK C-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nREMARK dDist: %5.2f\nREMARK jtt_threshold: %d\nREMARK max_nodes: %d\nREMARK commont int : %d\nREMARK wsimfn: %d\nREMARK tag1: %s\nREMARK tag2: %s\nREMARK rnc1: %s\nREMARK rnc2: %s\n",cmdLine,nrg_file1.c_str(),nrg_file2.c_str(),nb_of_probes,ca_dDist,ps_dDist,dDist,jttt,maxNodes,commonInt,wrfn,tag1.c_str(),tag2.c_str(),rnc1.c_str(),rnc2.c_str());  
-  }
-  
-  strcpy(outH,tmp);
-
-  //Print info to User
-  // printf("--# Get Info #--\n\nEnergy file 1: %s\nEnergy file 2: %s\nOutfile: %s\nNumber of probes: %d\n\n--# Parameter Values #--\n\nC-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nNode dDist: %5.2f\nneibr dDist: %5.2f\nJTT threshold: %d\nMaximum nodes: %d\nGet all C-alpha cliques: %d\nMinimum number of Common interaction: %d\nPrint details: %d\n",nrg_file1.c_str(),nrg_file2.c_str(),out_file,nb_of_probes,ca_dDist,ps_dDist,dDist,neibr_dDist,jttt,maxNodes,bkAll,commonInt,printDetails);
-  // cout<<"CG begin "<<steps.front()<<" cg_start "<<cg_start<<" end "<<steps.back()<<endl<<endl;
-  // cout<<rnc1<<" "<<rnc2<<endl;
-  // createVrtxVec(nrg_file1,mif1,prot1,ss1,ss1m,caSize1,pseudoL1,rnc1,lig1);
-  // createVrtxVec(nrg_file2,mif2,prot2,ss2,ss2m,caSize2,pseudoL2,rnc2,lig2);
-  mif1=mifs[nrg_file1].mif;
-  mif2=mifs[nrg_file2].mif;
-  prot1=mifs[nrg_file1].prot;
-  prot2=mifs[nrg_file2].prot;
-  ss1=mifs[nrg_file1].ss;
-  ss2=mifs[nrg_file2].ss;
-  ss1m=mifs[nrg_file1].ssm;
-  ss2m=mifs[nrg_file2].ssm;
-  caSize1=mifs[nrg_file1].caSize;
-  caSize2=mifs[nrg_file2].caSize;
-  pseudoL1=mifs[nrg_file1].pseudoL;
-  pseudoL2=mifs[nrg_file2].pseudoL;
-  rnc1=mifs[nrg_file1].rnc;
-  rnc2=mifs[nrg_file2].rnc;
-  lig1=mifs[nrg_file1].lig;
-  lig2=mifs[nrg_file2].lig;
-  cout<<"mif1 size: "<<mif1.size()<<endl;
-  cout<<"mif2 size: "<<mif2.size()<<endl;
-
-  cout<<"lig1 "<<lig1.size()<<endl;
-  for(int l=0; l<lig1.size(); l++){
-    cout<<lig1[l].atomn<<endl;
-  }
-  cout<<"lig2 "<<lig2.size()<<endl;
-  for(int l=0; l<lig2.size(); l++){
-    cout<<lig2[l].atomn<<endl;
-  }
-  
-  //Set which vertices to be considered if cg_start > 0
-  if(cg_start>-1){
-    for(i=0; i<mif1.size(); ++i){
-      mif1.at(i).cg[cg_start]=1;
+    if(emptOut==1){
+      sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK wsimfn: %d\nREMARK tag1: %s\nREMARK tag2: %s\nREMARK rnc1: %s\nREMARK rnc2: %s\n",cmdLine,nrg_file1.c_str(),nrg_file2.c_str(),wrfn,tag1.c_str(),tag2.c_str(),rnc1.c_str(),rnc2.c_str());  
+    }else{
+      sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK nb_of_probes: %d\nREMARK C-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nREMARK dDist: %5.2f\nREMARK jtt_threshold: %d\nREMARK max_nodes: %d\nREMARK commont int : %d\nREMARK wsimfn: %d\nREMARK tag1: %s\nREMARK tag2: %s\nREMARK rnc1: %s\nREMARK rnc2: %s\n",cmdLine,nrg_file1.c_str(),nrg_file2.c_str(),nb_of_probes,ca_dDist,ps_dDist,dDist,jttt,maxNodes,commonInt,wrfn,tag1.c_str(),tag2.c_str(),rnc1.c_str(),rnc2.c_str());  
     }
-    for(i=0; i<mif2.size(); ++i){
-      mif2.at(i).cg[cg_start]=1;
+    
+    strcpy(outH,tmp);
+
+    //Print info to User
+    // printf("--# Get Info #--\n\nEnergy file 1: %s\nEnergy file 2: %s\nOutfile: %s\nNumber of probes: %d\n\n--# Parameter Values #--\n\nC-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nNode dDist: %5.2f\nneibr dDist: %5.2f\nJTT threshold: %d\nMaximum nodes: %d\nGet all C-alpha cliques: %d\nMinimum number of Common interaction: %d\nPrint details: %d\n",nrg_file1.c_str(),nrg_file2.c_str(),out_file,nb_of_probes,ca_dDist,ps_dDist,dDist,neibr_dDist,jttt,maxNodes,bkAll,commonInt,printDetails);
+    // cout<<"CG begin "<<steps.front()<<" cg_start "<<cg_start<<" end "<<steps.back()<<endl<<endl;
+    // cout<<rnc1<<" "<<rnc2<<endl;
+    // createVrtxVec(nrg_file1,mif1,prot1,ss1,ss1m,caSize1,pseudoL1,rnc1,lig1);
+    // createVrtxVec(nrg_file2,mif2,prot2,ss2,ss2m,caSize2,pseudoL2,rnc2,lig2);
+    mif1=mifs[nrg_file1].mif;
+    mif2=mifs[nrg_file2].mif;
+    prot1=mifs[nrg_file1].prot;
+    prot2=mifs[nrg_file2].prot;
+    ss1=mifs[nrg_file1].ss;
+    ss2=mifs[nrg_file2].ss;
+    ss1m=mifs[nrg_file1].ssm;
+    ss2m=mifs[nrg_file2].ssm;
+    caSize1=mifs[nrg_file1].caSize;
+    caSize2=mifs[nrg_file2].caSize;
+    pseudoL1=mifs[nrg_file1].pseudoL;
+    pseudoL2=mifs[nrg_file2].pseudoL;
+    rnc1=mifs[nrg_file1].rnc;
+    rnc2=mifs[nrg_file2].rnc;
+    lig1=mifs[nrg_file1].lig;
+    lig2=mifs[nrg_file2].lig;
+    cout<<"mif1 size: "<<mif1.size()<<endl;
+    cout<<"mif2 size: "<<mif2.size()<<endl;
+
+    // cout<<"lig1 "<<lig1.size()<<endl;
+    for(int l=0; l<lig1.size(); l++){
+      cout<<lig1[l].atomn<<endl;
     }
-  }
-
-  cout << "--# Starting coarsegrain steps #--\n";
-
-  //Start the coarsegrain steps
-  for(int cs=0; cs<steps.size(); cs++){
-    nCliques=0;
-    cout<<endl<<"Coarse-Grain Step "<<steps[cs]<<endl;
-
-    //Step 2, superimpose mifs using rotation matrix derived from atom list superimposition
-    if(steps[cs]==-2){
-      vector<float> la;
-      vector<float> lb;
-
-      if(list1.size()==0){
-        cout<<"You must provide two lists of corresponding atom IDs to superimpose for stage -2 using argument -q. Ex: -q 0,1,2,3 38,46,47,53"<<endl;
+    // cout<<"lig2 "<<lig2.size()<<endl;
+    for(int l=0; l<lig2.size(); l++){
+      cout<<lig2[l].atomn<<endl;
+    }
+    
+    //Set which vertices to be considered if cg_start > 0
+    if(cg_start>-1){
+      for(i=0; i<mif1.size(); ++i){
+        mif1.at(i).cg[cg_start]=1;
       }
+      for(i=0; i<mif2.size(); ++i){
+        mif2.at(i).cg[cg_start]=1;
+      }
+    }
 
-      //Create coords lists
-      for(int i=0; i<list1.size(); i++){
-        for(int j=0; j<prot1.size(); j++){
-          if(prot1[j].atomnb==list1[i]){
-            for(int c=0; c<3; c++){
-              la.push_back(prot1[j].coor[c]);
+    cout <<endl<< "--# Starting coarsegrain steps #--\n";
+
+    //Start the coarsegrain steps
+    for(int cs=0; cs<steps.size(); cs++){
+      nCliques=0;
+      nCliquesExplored=0;
+      cout<<endl<<"Coarse-Grain Step "<<steps[cs]<<endl;
+
+      //Step 2, superimpose mifs using rotation matrix derived from atom list superimposition
+      if(steps[cs]==-2){
+        vector<float> la;
+        vector<float> lb;
+
+        if(list1.size()==0){
+          cout<<"You must provide two lists of corresponding atom IDs to superimpose for stage -2 using argument -q. Ex: -q 0,1,2,3 38,46,47,53"<<endl;
+        }
+
+        //Create coords lists
+        for(int i=0; i<list1.size(); i++){
+          for(int j=0; j<prot1.size(); j++){
+            if(prot1[j].atomnb==list1[i]){
+              for(int c=0; c<3; c++){
+                la.push_back(prot1[j].coor[c]);
+              }
+              break;
             }
-            break;
           }
-        }
-        for(int j=0; j<prot2.size(); j++){
-          if(prot2[j].atomnb==list2[i]){
-            for(int c=0; c<3; c++){
-              lb.push_back(prot2[j].coor[c]);
+          for(int j=0; j<prot2.size(); j++){
+            if(prot2[j].atomnb==list2[i]){
+              for(int c=0; c<3; c++){
+                lb.push_back(prot2[j].coor[c]);
+              }
+              break;
             }
-            break;
           }
         }
-      }
 
-      if(la.size()!=lb.size()) cout<<"The -2 superimposition requires to have same number of coordinates."<<endl;
+        if(la.size()!=lb.size()) cout<<"The -2 superimposition requires to have same number of coordinates."<<endl;
 
-      Clique nc;
-      nc.cg=-2;
-      nc.mat_r=gsl_matrix_alloc(3,3);
-      for(int i=0; i<3; i++) {
-        nc.cen_a[i]=0.0;
-        nc.cen_b[i]=0.0;
-      }
-      gsl_matrix_set_zero(nc.mat_r);
+        Clique nc;
+        nc.cg=-2;
+        nc.mat_r=gsl_matrix_alloc(3,3);
+        for(int i=0; i<3; i++) {
+          nc.cen_a[i]=0.0;
+          nc.cen_b[i]=0.0;
+        }
+        gsl_matrix_set_zero(nc.mat_r);
 
-      nc.det=calcRot(la,lb,nc.cen_a,nc.cen_b,nc.mat_r);
+        nc.det=calcRot(la,lb,nc.cen_a,nc.cen_b,nc.mat_r,nc.detOri);
 
-      // for(int i=0; i<3; i++) {
-      //   cout<<"cen_a "<<i<<" "<<nc.cen_a[i]<<endl;
-      //   cout<<"cen_b "<<i<<" "<<nc.cen_b[i]<<endl;
-      // }
+        // for(int i=0; i<3; i++) {
+        //   cout<<"cen_a "<<i<<" "<<nc.cen_a[i]<<endl;
+        //   cout<<"cen_b "<<i<<" "<<nc.cen_b[i]<<endl;
+        // }
 
-      // for(int i=0; i<3; i++) {
-      //   for(int j=0; j<3; j++) {
-      //     cout<<i<<" "<<j<<" "<<gsl_matrix_get(nc.mat_r,i,j)<<endl;
-      //   }
-      // }
+        // for(int i=0; i<3; i++) {
+        //   for(int j=0; j<3; j++) {
+        //     cout<<i<<" "<<j<<" "<<gsl_matrix_get(nc.mat_r,i,j)<<endl;
+        //   }
+        // }
 
-      // cout<<"Rotating vertexes of Mif 1 onto Mif 2 using list of atoms..."<<endl;
-      //Rotate mif 1 onto mif 2
-      for(int v=0; v<mif1.size(); v++){
-        for(int i=0; i<3; i++){
-          mif1[v].ncoor[i]=nc.cen_b[i];
-          for(int j=0; j<3; j++){
-            mif1[v].ncoor[i]+=(mif1[v].coor[j]-nc.cen_a[j])*gsl_matrix_get(nc.mat_r,i,j);
+        // cout<<"Rotating vertexes of Mif 1 onto Mif 2 using list of atoms..."<<endl;
+        //Rotate mif 1 onto mif 2
+        for(int v=0; v<mif1.size(); v++){
+          for(int i=0; i<3; i++){
+            mif1[v].ncoor[i]=nc.cen_b[i];
+            for(int j=0; j<3; j++){
+              mif1[v].ncoor[i]+=(mif1[v].coor[j]-nc.cen_a[j])*gsl_matrix_get(nc.mat_r,i,j);
+            }
           }
         }
-      }
 
-      // cout<<"Finding corresponding vertexes..."<<endl;
-      float dist=0.0;
-      for(int u=0; u<mif1.size(); u++){
-        if(mif1[u].grid[cg2]!=1) continue;
-        for(int v=0; v<mif2.size(); v++){
-          if(mif2[v].grid[cg2]!=1) continue;
-          dist=dist3d(mif1[u].ncoor,mif2[v].coor);        
-          if(dist < dDist || fabs(dist-dDist)<0.001){ //If passes distance threshold
-            for(int i=0; i<nb_of_probes; i++){
-              if(mif1[u].pb[i]==1 && mif2[v].pb[i]==1){
-                // cout<<i<<" - "<<mif1[u].ncoor[0]<<" "<<mif1[u].ncoor[1]<<" "<<mif1[u].ncoor[2]<<" "<<mif2[v].coor[0]<<" "<<mif2[v].coor[1]<<" "<<mif2[v].coor[2]<<" - "<<mif1[u].pb[i]<<" "<<mif2[v].pb[i]<<endl;  
-                mif1[u].m[i]=1;
-                mif2[v].m[i]=1;
+        // cout<<"Finding corresponding vertexes..."<<endl;
+        float dist=0.0;
+        for(int u=0; u<mif1.size(); u++){
+          if(mif1[u].grid[cg2]!=1) continue;
+          for(int v=0; v<mif2.size(); v++){
+            if(mif2[v].grid[cg2]!=1) continue;
+            dist=dist3d(mif1[u].ncoor,mif2[v].coor);        
+            if(dist < dDist || fabs(dist-dDist)<0.001){ //If passes distance threshold
+              for(int i=0; i<nb_of_probes; i++){
+                if(mif1[u].pb[i]==1 && mif2[v].pb[i]==1){
+                  // cout<<i<<" - "<<mif1[u].ncoor[0]<<" "<<mif1[u].ncoor[1]<<" "<<mif1[u].ncoor[2]<<" "<<mif2[v].coor[0]<<" "<<mif2[v].coor[1]<<" "<<mif2[v].coor[2]<<" - "<<mif1[u].pb[i]<<" "<<mif2[v].pb[i]<<endl;  
+                  mif1[u].m[i]=1;
+                  mif2[v].m[i]=1;
+                }
               }
             }
           }
         }
-      }
 
-      for(int u=0; u<mif1.size(); u++){
-        for(int i=0; i<nb_of_probes; i++){
-          if(mif1[u].m[i]==1){
-            nc.va.push_back(mif1[u]);
-            break;
-          }
-        }
-      }
-      for(int v=0; v<mif2.size(); v++){
-        for(int i=0; i<nb_of_probes; i++){
-          if(mif2[v].m[i]==1){
-            nc.vb.push_back(mif2[v]);
-            break;
-          }
-        }
-      }
-
-      nc.nbNodes=nc.va.size()+nc.vb.size();
-      nc.tani=( ((float)nc.va.size()/(float)ss1[cg2]) + ((float)nc.vb.size()/(float)ss2[cg2]) ) / 2.0;
-      // cout<<"NEW CLIQUE CG "<<steps[cs]<<" NODES "<<nc.nbNodes<<" TANI "<<nc.tani<<endl;
-      cliques.push_back(nc);
-    }else{
-      bool* conn=NULL;
-      vector<node> graph;
-
-      if(steps[cs]!=steps[cs-1]){
-        cout<<"Resetting top clique score"<<endl;
-        topT=-1.0;
-        topN=-1;
-      }
-      cg=steps[cs];
-
-      //If its not the first stage and its a different grid resolution than previous stage
-      //rotate the vertexes using the previous rotation matrix
-      if(cs>0 && steps[cs]!=steps[cs-1]){
-
-        //Print Matrix and centers
-        // for(int i=0; i<3; i++) {
-        //   cout<<"cen_a "<<i<<" "<<cliques.back().cen_a[i]<<endl;
-        //   cout<<"cen_b "<<i<<" "<<cliques.back().cen_b[i]<<endl;
-        // }
-        // for(int i=0; i<3; i++) {
-        //   for(int j=0; j<3; j++) {
-        //     cout<<i<<" "<<j<<" "<<gsl_matrix_get(cliques.back().mat_r,i,j)<<endl;
-        //   }
-        // }
-
-        // cout<<"Rotating Mif 1 onto Mif 2 using previous stage..."<<endl;
-        for(int v=0; v<mif1.size(); v++){
-          for(int i=0; i<3; i++){
-            mif1[v].ncoor[i]=cliques.back().cen_b[i];
-            for(int j=0; j<3; j++){
-              mif1[v].ncoor[i]+=(mif1[v].coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
+        for(int u=0; u<mif1.size(); u++){
+          for(int i=0; i<nb_of_probes; i++){
+            if(mif1[u].m[i]==1){
+              nc.va.push_back(mif1[u]);
+              break;
             }
           }
         }
-        cgs=1; //Wee need to check distance between rotated vertex and remaining vrtx     
+        for(int v=0; v<mif2.size(); v++){
+          for(int i=0; i<nb_of_probes; i++){
+            if(mif2[v].m[i]==1){
+              nc.vb.push_back(mif2[v]);
+              break;
+            }
+          }
+        }
+
+        nc.nbNodes=nc.va.size()+nc.vb.size();
+        nc.tani=( ((float)nc.va.size()/(float)ss1[cg2]) + ((float)nc.vb.size()/(float)ss2[cg2]) ) / 2.0;
+        // cout<<"NEW CLIQUE CG "<<steps[cs]<<" NODES "<<nc.nbNodes<<" TANI "<<nc.tani<<endl;
+        cliques.push_back(nc);
       }else{
-        cgs=0;
-        // cout<<"Not rotating vertexes"<<endl;
+        bool* conn=NULL;
+        vector<node> graph;
+
+        if(steps[cs]!=steps[cs-1]){
+          cout<<"Resetting top clique score"<<endl;
+          topT=-1.0;
+          topN=-1;
+        }
+        cg=steps[cs];
+
+        //If its not the first stage and its a different grid resolution than previous stage
+        //rotate the vertexes using the previous rotation matrix
+        if(cs>0 && steps[cs]!=steps[cs-1]){
+
+          //Print Matrix and centers
+          // for(int i=0; i<3; i++) {
+          //   cout<<"cen_a "<<i<<" "<<cliques.back().cen_a[i]<<endl;
+          //   cout<<"cen_b "<<i<<" "<<cliques.back().cen_b[i]<<endl;
+          // }
+          // for(int i=0; i<3; i++) {
+          //   for(int j=0; j<3; j++) {
+          //     cout<<i<<" "<<j<<" "<<gsl_matrix_get(cliques.back().mat_r,i,j)<<endl;
+          //   }
+          // }
+
+          // cout<<"Rotating Mif 1 onto Mif 2 using previous stage..."<<endl;
+          for(int v=0; v<mif1.size(); v++){
+            for(int i=0; i<3; i++){
+              mif1[v].ncoor[i]=cliques.back().cen_b[i];
+              for(int j=0; j<3; j++){
+                mif1[v].ncoor[i]+=(mif1[v].coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
+              }
+            }
+          }
+          cgs=1; //Wee need to check distance between rotated vertex and remaining vrtx     
+        }else{
+          cgs=0;
+          // cout<<"Not rotating vertexes"<<endl;
+        }
+
+        //Create nodes
+        cout<<"Creating nodes..."<<endl;
+        createNodes(cg,graph,cgs);
+
+        numNodes=graph.size();
+        cout<<"NbNodes "<<numNodes<<endl;
+
+        // cout<<"g.size: "<<graph.size()<<endl;
+
+        // for(i=0; i<graph.size(); i++){
+        //   cout<< graph.at(i).uid << " "<< graph.at(i).id << " " << graph.at(i).similarity <<endl;
+        // }
+
+        //Sort nodes by similarity
+        // sort(graph.begin(), graph.end(), &compareSim);
+
+        cout << "Graph has "<<graph.size() << " nodes."<< endl;
+
+        //If there is too much nodes, sort the list by similarity and keep the max num of nodes with the best similarity
+        if(graph.size()>maxNodes){
+          int extra=0;
+          extra=graph.size()-maxNodes;
+          cout<<"Too much nodes must detele some."<<endl<< "There is "<<extra<<" extra nodes"<<endl;
+          for(i=0; i<extra; ++i){ graph.pop_back(); }
+          numNodes=maxNodes;
+          cout << "Graph was shrinked to "<<graph.size() << " nodes."<< endl;
+        }
+
+        //reset node ids from 0 to maxNodes
+        // for(i=0; i<graph.size(); ++i){
+        //   graph.at(i).id=i;
+        //   cout<<j<<" id: "<<graph.at(j).id<<endl;
+        // }
+
+        //Create adjacency matrix
+        adjMat(graph,conn,cg);
+        cout<<"numEdges: "<<numEdges<<endl;
+
+        //Find cliques
+        cout<<"Entering Bron Kerbosch"<<endl;
+        bk(cg,graph,conn);
+
+        //Print nodes in the output file
+        clearStep(cg);
+
+        //Delete graph and adjacency matrix
+        delete[] conn;
+        conn=NULL;
+
+        for(vit1=graph.begin(); vit1<graph.end(); ++vit1){ graph.erase(vit1); }
+        vector<node>().swap(graph);
       }
-
-      //Create nodes
-      cout<<"Creating nodes..."<<endl;
-      createNodes(cg,graph,cgs);
-
-      numNodes=graph.size();
-      cout<<"NbNodes "<<numNodes<<endl;
-
-      // cout<<"g.size: "<<graph.size()<<endl;
-
-      // for(i=0; i<graph.size(); i++){
-      //   cout<< graph.at(i).uid << " "<< graph.at(i).id << " " << graph.at(i).similarity <<endl;
-      // }
-
-      //Sort nodes by similarity
-      // sort(graph.begin(), graph.end(), &compareSim);
-
-      cout << "Graph has "<<graph.size() << " nodes."<< endl;
-
-      //If there is too much nodes, sort the list by similarity and keep the max num of nodes with the best similarity
-      if(graph.size()>maxNodes){
-        int extra=0;
-        extra=graph.size()-maxNodes;
-        cout<<"Too much nodes must detele some."<<endl<< "There is "<<extra<<" extra nodes"<<endl;
-        for(i=0; i<extra; ++i){ graph.pop_back(); }
-        numNodes=maxNodes;
-        cout << "Graph was shrinked to "<<graph.size() << " nodes."<< endl;
-      }
-
-      //reset node ids from 0 to maxNodes
-      // for(i=0; i<graph.size(); ++i){
-      //   graph.at(i).id=i;
-      //   cout<<j<<" id: "<<graph.at(j).id<<endl;
-      // }
-
-      //Create adjacency matrix
-      adjMat(graph,conn,cg);
-      cout<<"numEdges: "<<numEdges<<endl;
-
-      //Find cliques
-      cout<<"Entering Bron Kerbosch"<<endl;
-      bk(cg,graph,conn);
-
-      //Print nodes in the output file
-      clearStep(cg);
-
-      //Delete graph and adjacency matrix
-      delete[] conn;
-      conn=NULL;
-
-      for(vit1=graph.begin(); vit1<graph.end(); ++vit1){ graph.erase(vit1); }
-      vector<node>().swap(graph);
     }
-  }
 
-  printNodes();
+    printNodes();
 
-  for(int v=0; v<mif1.size(); v++){
-    mif1[v].nrg.clear();
-    mif1[v].ang.clear();
-    mif1[v].pb.clear();
-    mif1[v].m.clear();
-  }
-  for(int v=0; v<mif2.size(); v++){
-    mif2[v].nrg.clear();
-    mif2[v].ang.clear();
-    mif2[v].pb.clear();
-    mif2[v].m.clear();
-  }
+    for(int v=0; v<mif1.size(); v++){
+      mif1[v].nrg.clear();
+      mif1[v].ang.clear();
+      mif1[v].pb.clear();
+      mif1[v].m.clear();
+    }
+    for(int v=0; v<mif2.size(); v++){
+      mif2[v].nrg.clear();
+      mif2[v].ang.clear();
+      mif2[v].pb.clear();
+      mif2[v].m.clear();
+    }
 
-  mif1.clear();
-  // vector<vertex>().swap(mif1);
-  mif2.clear();
-  // vector<vertex>().swap(mif2);
-  prot1.clear();
-  // vector<atom>().swap(prot1);
-  prot2.clear();
-  // vector<atom>().swap(prot2);
-  caSize1=0;
-  caSize2=0;
-  pseudoL1.clear();
-  // vector<pseudoC>().swap(pseudoL1);
-  pseudoL2.clear();
-  // vector<pseudoC>().swap(pseudoL2);
-  lig1.clear();
-  // vector<atom>().swap(lig1);
-  lig2.clear();
-  // vector<atom>().swap(lig2);
-  cliques.clear();
-  vector<Clique>().swap(cliques);
-  for(int k=0; k<4; k++){ ss1[k]=0; ss2[k]=0; ss1m[k]=0; ss2m[k]=0; }
+    mif1.clear();
+    // vector<vertex>().swap(mif1);
+    mif2.clear();
+    // vector<vertex>().swap(mif2);
+    prot1.clear();
+    // vector<atom>().swap(prot1);
+    prot2.clear();
+    // vector<atom>().swap(prot2);
+    caSize1=0;
+    caSize2=0;
+    pseudoL1.clear();
+    // vector<pseudoC>().swap(pseudoL1);
+    pseudoL2.clear();
+    // vector<pseudoC>().swap(pseudoL2);
+    lig1.clear();
+    // vector<atom>().swap(lig1);
+    lig2.clear();
+    // vector<atom>().swap(lig2);
+    cliques.clear();
+    vector<Clique>().swap(cliques);
+    for(int k=0; k<4; k++){ ss1[k]=0; ss2[k]=0; ss1m[k]=0; ss2m[k]=0; }
 
-  cout<< "Finished printing nodes and clearing"<<endl;
+    cout<< "Finished printing nodes and clearing"<<endl;
 
   }
   fclose(fpout);
@@ -664,9 +669,6 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   vector<float> la;
   vector<float> lb;
 
-  nCliques++;
-  // cout<<nCliques<<endl;
-
   Clique newClique;
   newClique.cg=cg;
   newClique.nbNodes=n;
@@ -681,6 +683,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   newClique.rmsd=0.0;
   newClique.nrg=0.0;
   newClique.det=0.0;
+  newClique.detOri=0.0;
 
   for(int i=0; i<n; i++){ newClique.nodes.push_back(graph.at(list[i])); }
   cliques.push_back(newClique);
@@ -720,7 +723,19 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     cliques.back().cen_a[i]=0.0;
     cliques.back().cen_b[i]=0.0;
   }
-  cliques.back().det=calcRot(la,lb,cliques.back().cen_a,cliques.back().cen_b,cliques.back().mat_r);
+  cliques.back().det=calcRot(la,lb,cliques.back().cen_a,cliques.back().cen_b,cliques.back().mat_r,cliques.back().detOri);
+
+  nCliquesExplored++;
+
+  //If determinant is not -1 (mirror image) and we skip cliques with a Det -1
+  
+  // }else{
+  if((cliques.back().detOri > 0.00 && skipDet==1) || (skipDet==0)){
+    nCliques++;
+  }else{
+    cliques.pop_back();
+    return;
+  }
 
   for(int i=0; i<nb_of_probes; i++){
     cliques.back().pbweight.push_back(0);
@@ -866,18 +881,22 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   // cout<<endl<<"cen_a: "<<cliques.back().cen_a[0]<<" "<<cliques.back().cen_a[1]<<" "<<cliques.back().cen_a[2];
   // cout<<endl<<"cen_b: "<<cliques.back().cen_b[0]<<" "<<cliques.back().cen_b[1]<<" "<<cliques.back().cen_b[2]<<endl;
   // cout<<"ssm1 "<<ss1m[cg]<<" ssm2 "<<ss2m[cg]<<endl;
-  for(int pb=0; pb<nb_of_probes; pb++){
+  // for(int pb=0; pb<nb_of_probes; pb++){
     // cout<<pb<<" "<<cliques.back().pbweight[pb]<<" ";
-  }
+  // }
   // cout<<endl;
 
-  if(cliques.back().taniM>topT){
-    cout<<"NEW TOP CLIQUE CG "<<cg<<" nodes "<<cliques.back().nbNodes<<" nodesM "<<cliques.back().nbNodesM<<" nodesMW "<<cliques.back().nbNodesMW<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" tani "<<cliques.back().tani<<" taniM "<<cliques.back().taniM<<" taniMW "<<cliques.back().taniMW<<" taniNormNodes "<<cliques.back().taniNorm<<" RMSD "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
+  if(cliques.back().taniM>topT && ((cliques.back().detOri > 0.00 && skipDet==1) || skipDet==0)){
+    // cout<<" detori "<<cliques.back().detOri<<endl;
+    // cout<<"NEW TOP CLIQUE CG "<<cg<<" nodesM "<<cliques.back().nbNodesM<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" taniM "<<cliques.back().taniM<<" taniNormNodes "<<cliques.back().taniNorm<<" RMSD "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<" detori "<<cliques.back().detOri<<endl;
+    cout<<nCliquesExplored<<" "<<nCliques<<" NEW TOP CLIQUE CG "<<cg<<" taniM "<<cliques.back().taniM<<" detori "<<cliques.back().detOri<<endl;
     topT=cliques.back().taniM;
     topN=cliques.back().nbNodes;
     topCliques[cg]=cliques.size()-1;
   }else{
-    cout<<"CLIQUE CG "<<cg<<" nodes "<<cliques.back().nbNodes<<" nodesM "<<cliques.back().nbNodesM<<" nodesMW "<<cliques.back().nbNodesMW<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" tani "<<cliques.back().tani<<" taniM "<<cliques.back().taniM<<" taniMW "<<cliques.back().taniMW<<" taniNormNodes "<<cliques.back().taniNorm<<" RMSD "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<endl;
+    // cout<<" detori "<<cliques.back().detOri<<endl;
+    // cout<<"CLIQUE CG "<<cg<<" nodesM "<<cliques.back().nbNodesM<<" normNodes "<<cliques.back().normNodes<<" normNodesRMSD "<<cliques.back().normNodesRMSD<<" taniM "<<cliques.back().taniM<<" taniNormNodes "<<cliques.back().taniNorm<<" RMSD "<<cliques.back().rmsd<<" ligRMSD "<<cliques.back().ligRMSD<<" detori "<<cliques.back().detOri<<endl;
+    cout<<nCliquesExplored<<" "<<nCliques<<" CLIQUE CG "<<cg<<" taniM "<<cliques.back().taniM<<" detori "<<cliques.back().detOri<<endl;
   }
 
   return;
@@ -894,7 +913,7 @@ void printNodes(){
 
   if(pairwiseF.compare("")==0){
     if(wrfn==1){ //Add similarity score to filename
-      if(rnc1.compare("")!=0 && rnc2.compare("")!=0){
+      if(rnc1.compare("")!=0 && rnc2.compare("")!=0){ //Add ligand RMSD if rnc1 and rnc2 are provided
         sprintf(suffix,"_%d_%5.4f_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].taniM,cliques[topCliques[steps.back()]].ligRMSD);
       }else{
         sprintf(suffix,"_%d_%5.4f",cliques[topCliques[steps.back()]].nbNodes,cliques[topCliques[steps.back()]].taniM);
@@ -905,7 +924,8 @@ void printNodes(){
     open_file_ptr(&fpout,out_file,1);
   }
 
-  fprintf(fpout,"%s",outH);
+  fprintf(fpout,"%s",outH); //Print header
+  fprintf(fpout,"REMARK ncliques_scored: %d\nREMARK ncliques_explored: %d\n",nCliques,nCliquesExplored);
 
   if(pc==1){
     int istart=0;
@@ -983,6 +1003,7 @@ void printNodes(){
         fprintf(fpout,"\nREMARK CENTRES %9.4f %9.4f %9.4f %9.4f %9.4f %9.4f\n",cliques[i].cen_a[0],cliques[i].cen_a[1],cliques[i].cen_a[2],cliques[i].cen_b[0],cliques[i].cen_b[1],cliques[i].cen_b[2]);
         fprintf(fpout,"REMARK DET %g\n",cliques[i].det);
       }
+      fprintf(fpout,"REMARK DETORI %g\n",cliques[i].detOri);
     }
     fprintf(fpout,"REMARK END\n");
   }
@@ -1015,6 +1036,7 @@ void clearStep(int cg){
       newClique.cen_b[i]=0.0;
     }
     newClique.det=0.0;
+    newClique.detOri=0.0;
     gsl_matrix_set_zero(newClique.mat_r);
     cliques.push_back(newClique);
     topCliques[cg]=cliques.size()-1;
@@ -1027,7 +1049,7 @@ void clearStep(int cg){
 /*234567890123456789012345678901234567890123456789012345678901234567890*/
 /*        1         2         3         4         5         6         7*/
 /***********************************************************************/
-double calcRot(vector<float> lista, vector<float> listb, float* cen_a, float* cen_b, gsl_matrix *mat_r){
+double calcRot(vector<float> lista, vector<float> listb, float* cen_a, float* cen_b, gsl_matrix *mat_r, double &detOri){
   int i,j,k;
   
   // for(j=0; j<lista.size(); j+=3){
@@ -1061,14 +1083,14 @@ double calcRot(vector<float> lista, vector<float> listb, float* cen_a, float* ce
     }
     // printf("\n");
   }
-  return(SupSVD(mat_r));
+  return(SupSVD(mat_r,detOri));
 }
 /***********************************************************************/
 /*        1         2         3         4         5         6         7*/
 /*234567890123456789012345678901234567890123456789012345678901234567890*/
 /*        1         2         3         4         5         6         7*/
 /***********************************************************************/
-double SupSVD(gsl_matrix *mat_u){
+double SupSVD(gsl_matrix *mat_u, double &detOri){
   int i,j,k,m;
   double val;
   double eps = 0.0001;
@@ -1122,7 +1144,16 @@ double SupSVD(gsl_matrix *mat_u){
 
   double DetU;
   DetU = gsl_matrix_Det3D(mat_u);
-  if (DetU < 0.0) { 
+  detOri=DetU;
+  if (DetU < 0.0) {
+    // cout<<endl<<"Det is < 0"<<endl;
+    // cout<<"Before"<<endl;
+    // for(i=0;i<3;i++) {
+    //   for(j=0;j<3;j++){
+    //     cout<<gsl_matrix_get(mat_u,i,j)<<" ";
+    //   }
+    //   cout<<endl;
+    // }
     gsl_matrix_set(mat_v,0,2,-1.0 * gsl_matrix_get(mat_v,0,2));
     gsl_matrix_set(mat_v,1,2,-1.0 * gsl_matrix_get(mat_v,1,2));
     gsl_matrix_set(mat_v,2,2,-1.0 * gsl_matrix_get(mat_v,2,2));
@@ -1137,6 +1168,14 @@ double SupSVD(gsl_matrix *mat_u){
         gsl_matrix_set(mat_u,i,j,val);      
       }
     }
+    // cout<<"After"<<endl;
+    // for(i=0;i<3;i++) {
+    //   for(j=0;j<3;j++){
+    //     cout<<gsl_matrix_get(mat_u,i,j)<<" ";
+    //   }
+    //   cout<<endl;
+    // }
+    // cout<<endl;
   }
 
   gsl_matrix_free(mat_ut);
@@ -1419,7 +1458,7 @@ int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, vector<int
       sss << resnb;
       thisresnumc = resn + sss.str() + chain + alt;
       // cout<<line<<endl;
-      cout<<rnc<<" "<<thisresnumc<<endl;
+      // cout<<rnc<<" "<<thisresnumc<<endl;
       if(rnc.compare(thisresnumc)==0){
         // size_t found;
         // found = atomn.find("H");
@@ -1586,25 +1625,27 @@ int read_commandline(int argc, char *argv[]){
   strcat(usage,tmp_line);
   sprintf(tmp_line,"-l2         : \t Resnumc of ligand 2\n");
   strcat(usage,tmp_line);
-  sprintf(tmp_line,"-l          : \t Calculate RMSD [0 or 1]\n");
+  sprintf(tmp_line,"-l          : \t Calculate ligand RMSD [0 or 1]\n");
   strcat(usage,tmp_line);  
-  sprintf(tmp_line,"-q          : \t List of atoms from p1 and p2 to superimpose for step -2\n");
+  sprintf(tmp_line,"-q          : \t List of atoms IDs from p1 and p2 to superimpose for step c -2\n");
   strcat(usage,tmp_line);
   sprintf(tmp_line,"-w          : \t Print similarity in filename\n");
   strcat(usage,tmp_line);
   sprintf(tmp_line,"-e          : \t Empty result file\n");
   strcat(usage,tmp_line);
-  sprintf(tmp_line,"-a          : \t Max Cliques\n");
+  sprintf(tmp_line,"-a          : \t Max nCliques to score\n");
   strcat(usage,tmp_line);
-  sprintf(tmp_line,"-n          : \t Number of common interactions for a vector to be similar\n");
+  sprintf(tmp_line,"-n          : \t Min nb of common interactions for a vertex pair to create a node\n");
   strcat(usage,tmp_line);
-  sprintf(tmp_line,"-j          : \t JTT matrix rank threhsold [default 5]\n");
+  sprintf(tmp_line,"-j          : \t JTT matrix rank threhsold [default 5] for C-alpha superimposition\n");
   strcat(usage,tmp_line);
-  sprintf(tmp_line,"-wc         : \t write all the cliques found and their info without the nodes [default 0]\n");
+  sprintf(tmp_line,"-wc         : \t Write all the cliques scored found and their info without the nodes [default 0]\n");
   strcat(usage,tmp_line);
-  sprintf(tmp_line,"-pc         : \t print clique info only\n");
+  sprintf(tmp_line,"-pc         : \t Print clique info only\n");
   strcat(usage,tmp_line);
-  sprintf(tmp_line,"-pr         : \t print details on console\n");
+  sprintf(tmp_line,"-k          : \t Skip cliques with Det -1\n");
+  strcat(usage,tmp_line);
+  sprintf(tmp_line,"-pr         : \t Print details on console\n");
   strcat(usage,tmp_line);
 
 
@@ -1645,6 +1686,10 @@ int read_commandline(int argc, char *argv[]){
 
     if(strcmp(argv[nb_arg],"-pc")==0){
       pc=1;
+    }
+
+    if(strcmp(argv[nb_arg],"-k")==0){
+      skipDet=atoi(argv[nb_arg+1]);
     }
 
     if(strcmp(argv[nb_arg],"-q")==0){

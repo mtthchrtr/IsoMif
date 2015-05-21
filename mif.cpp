@@ -241,6 +241,8 @@ int readCmdLine(int argc, char **argv){
     outBase = outBase + "/";
   }
 
+  resnumcShort=resnumc.substr(0,resnumc.length()-1);
+
   cout<<endl;
   cout<< "ProteinFile: "<< proteinFile <<endl;
   cout<< "CleftFile: "<< cleftFile <<endl;
@@ -254,6 +256,7 @@ int readCmdLine(int argc, char **argv){
   cout<< "MaxGridDist: "<< maxGridDist <<endl;
   cout<< "AtmPbMaxDist: "<< atmPbMaxDist <<endl;
   cout<< "RESNUMC: "<< resnumc <<endl;
+  cout<< "RESNUMC short: "<< resnumcShort <<endl;
   cout<< "gridLigDist: "<< gridLigDist <<endl;
   gridLigDist=gridLigDist*gridLigDist;
   maxGridDist=maxGridDist*maxGridDist;
@@ -283,6 +286,7 @@ void Protein::readPDB(string filename){
   string line;
   string fields[13];
   string thisresnumc;
+  string thisresnumcShort;
   float x,y,z;
   int atomnb;
   int resnb;
@@ -362,15 +366,18 @@ void Protein::readPDB(string filename){
       if(atomTypes.find(atm.resn+"_"+atm.atomn) == atomTypes.end()){ atm.mif=0; }
       if(fields[5].compare(chain)!=0 && chain.compare("none")!=0){ atm.mif=0; }
       if(line.compare(0,6,"HETATM") == 0){ atm.mif=0; }
-      if((fields[3].compare("A")!=0) && (fields[3].compare("")!=0)){ atm.mif=0; }
+      if((fields[3].compare("A")!=0) && (fields[3].compare("")!=0)){ atm.mif=0; } //Keep only alternate atoms A for the protein
 
       if(resnumc.compare("")!=0){
         stringstream sss;
         sss << atm.resnb;
         thisresnumc = atm.resn + sss.str() + atm.chain + atm.alt;
+        thisresnumcShort = atm.resn + sss.str() + atm.chain;
         stripSpace(thisresnumc);
+
         // cout<< resnumc<< " to "<< thisresnumc <<" "<<fields[2]<< " "<< atof((line.substr(30,8).c_str()))<<" "<< atof((line.substr(38,8).c_str()))<<" "<<atof((line.substr(46,8).c_str()))<<endl;
-        if(resnumc.compare(thisresnumc)==0 && found==string::npos){
+        if(atm.h==0 && (resnumc.compare(thisresnumc)==0 || (resnumcShort.compare(thisresnumcShort)==0 && atm.alt.compare("-")==0))){
+          cout<<line<<endl;
           LIGAND.push_back(atof((line.substr(30,8).c_str())));
           LIGAND.push_back(atof((line.substr(38,8).c_str())));
           LIGAND.push_back(atof((line.substr(46,8).c_str())));
@@ -1812,6 +1819,7 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
   }
   fprintf(fpNew,"#zip %d\n",zip);
   fprintf(fpNew,"#stepsize %4.2f\n",stepsize);
+  fprintf(fpNew,"#angThreshold %6.2f\n",angThresh);
   fprintf(fpNew,"#atom_probe_distance_threshold %7.4f\n",atmPbMaxDist);
   fprintf(fpNew,"#protein_grid_distance %7.4f to %7.4f\n",sqrt(minGridDist),sqrt(maxGridDist));
   fprintf(fpNew,"#grid_width %d\n",width);
@@ -2165,7 +2173,7 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms, float& close
       if(printDetails==1){ cout<<"Angle over threshold"<<endl; }
       return(energy);
     }else{
-      cout<<"Hbond Angle "<< angle <<" threshold "<<angThresh<<endl;
+      if(printDetails==1){ cout<<"Hbond Angle "<< angle <<" threshold "<<angThresh<<endl; }
     }
     if(dist<closest){
       closest=dist;

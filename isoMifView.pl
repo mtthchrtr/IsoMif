@@ -22,6 +22,8 @@ my @mifV1int=();
 my @mifV2=();
 my @mifV2int=();
 my $sm="taninorm";
+my $cid="";
+my $detori="";
 
 #Read command line
 for(my $i=0; $i<=$#ARGV; $i++){
@@ -34,6 +36,7 @@ for(my $i=0; $i<=$#ARGV; $i++){
   if($ARGV[$i] eq "-m2"){ $m2Path=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-g"){ $cg=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-s"){ $sm=$ARGV[$i+1]; }
+  if($ARGV[$i] eq "-c"){ $cid=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-h"){
     print "##################\nWelcome to pipeIsoMifView\n##################\n";
     print "-m         <path to isoMif file>\n";
@@ -45,6 +48,7 @@ for(my $i=0; $i<=$#ARGV; $i++){
     print "-m2        <mif 2 path>\n";
     print "-g         <coarse grain step>\n";
     print "-s         <similarity measure to find best clique>\n";
+    print "-c         <clique ID to use for superimposition>\n";
     print "-h         <print help menu>\n";
     exit;
   }
@@ -187,7 +191,7 @@ while($line=<IN>){
   if($line=~/^REMARK CLIQUE CG ([0-9-]+)/){
     $tcg=$1;
     last if($flagStore==1);
-    $flagStore=1 if($sm ne "" && $best{$sm}[0]==$cc);
+    $flagStore=1 if(($sm ne "" && $best{$sm}[0]==$cc && $cid eq "") || ($cid ne "" && $cc==$cid));
     $cc++ if($tcg==$cg);
   }
 
@@ -196,6 +200,10 @@ while($line=<IN>){
     $rot[0][0]=$rd[0]; $rot[0][1]=$rd[1]; $rot[0][2]=$rd[2];
     $rot[1][0]=$rd[3]; $rot[1][1]=$rd[4]; $rot[1][2]=$rd[5];
     $rot[2][0]=$rd[6]; $rot[2][1]=$rd[7]; $rot[2][2]=$rd[8];
+  }
+
+  if($line=~/^REMARK DETORI\s+([-0-9]+)$/i && $tcg==$cg){
+    $detori=$1;
   }
 
   if($line=~/^REMARK CENTRES\s+([-\.\/0-9\s+]+)$/i && $tcg==$cg){
@@ -229,6 +237,16 @@ while($line=<IN>){
   }
 }
 close IN;
+
+for(my $i=0; $i<3; $i++){
+  for(my $j=0; $j<3; $j++){
+    print $rot[$i][$j]." ";
+  }
+}
+print "\n";
+print "$cen[0][0] $cen[0][1] $cen[0][2]\n";
+print "$cen[1][0] $cen[1][1] $cen[1][2]\n";
+print "detori: ".$detori."\n";
 
 &storeMif($m1Path,\@mifV1) if(-e $m1Path);
 &storeMif($m2Path,\@mifV2) if(-e $m2Path);

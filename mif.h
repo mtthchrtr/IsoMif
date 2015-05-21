@@ -96,6 +96,7 @@ string tag="";
 string chain="";
 string basePath="";
 string resnumc="";
+string resnumcShort="";
 string matrixF="";
 string probesF="";
 string ligFile="";
