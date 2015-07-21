@@ -168,7 +168,10 @@ int printDetails=0;
 string pairwiseF;
 string nrg_file1;
 string nrg_file2;
+char exePath[150];
 char cmdLine[550];
+char cmdArgs[550];
+int flagpp=0; //To store if cmdline is -pp or -p1 -p2
 char outbase[200];
 int commonInt=1;
 

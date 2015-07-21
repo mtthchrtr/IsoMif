@@ -84,10 +84,16 @@ int main(int argc, char *argv[]){
     cout<<"getrmsd "<<getrmsd<<endl;
     if(get_info(nrg_file1,nrg_file2)==24){ return(24); }
 
+    char cmdLineJob[550];
+    strcpy(cmdLineJob,exePath);
+    strcat(cmdLineJob," -p1 "); strcat(cmdLineJob,nrg_file1.c_str());
+    strcat(cmdLineJob," -p2 "); strcat(cmdLineJob,nrg_file2.c_str());
+    strcat(cmdLineJob," "); strcat(cmdLineJob,cmdArgs);
+
     if(emptOut==1){
-      sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK wsimfn: %d\nREMARK tag1: %s\nREMARK tag2: %s\nREMARK rnc1: %s\nREMARK rnc2: %s\n",cmdLine,nrg_file1.c_str(),nrg_file2.c_str(),wrfn,tag1.c_str(),tag2.c_str(),rnc1.c_str(),rnc2.c_str());  
+      sprintf(tmp,"REMARK command: %s\nREMARK commandJob: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK wsimfn: %d\nREMARK tag1: %s\nREMARK tag2: %s\nREMARK rnc1: %s\nREMARK rnc2: %s\n",cmdLine,cmdLineJob,nrg_file1.c_str(),nrg_file2.c_str(),wrfn,tag1.c_str(),tag2.c_str(),rnc1.c_str(),rnc2.c_str());  
     }else{
-      sprintf(tmp,"REMARK command: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK nb_of_probes: %d\nREMARK C-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nREMARK dDist: %5.2f\nREMARK jtt_threshold: %d\nREMARK max_nodes: %d\nREMARK commont int : %d\nREMARK wsimfn: %d\nREMARK tag1: %s\nREMARK tag2: %s\nREMARK rnc1: %s\nREMARK rnc2: %s\n",cmdLine,nrg_file1.c_str(),nrg_file2.c_str(),nb_of_probes,ca_dDist,ps_dDist,dDist,jttt,maxNodes,commonInt,wrfn,tag1.c_str(),tag2.c_str(),rnc1.c_str(),rnc2.c_str());  
+      sprintf(tmp,"REMARK command: %s\nREMARK commandJob: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK nb_of_probes: %d\nREMARK C-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nREMARK dDist: %5.2f\nREMARK jtt_threshold: %d\nREMARK max_nodes: %d\nREMARK commont int : %d\nREMARK wsimfn: %d\nREMARK tag1: %s\nREMARK tag2: %s\nREMARK rnc1: %s\nREMARK rnc2: %s\n",cmdLine,cmdLineJob,nrg_file1.c_str(),nrg_file2.c_str(),nb_of_probes,ca_dDist,ps_dDist,dDist,jttt,maxNodes,commonInt,wrfn,tag1.c_str(),tag2.c_str(),rnc1.c_str(),rnc2.c_str());  
     }
     
     strcpy(outH,tmp);
@@ -627,7 +633,7 @@ bool myfunction (nodeI i,nodeI j) { return (i.neibrs<j.neibrs); }
           AddNewClique(c,compsub,cg,graph);
           stopBk = 1;
           // cout<< nCliques<<endl;
-          if(bkAll == 1 && (nCliques<maxCliques)){
+          if((bkAll == 1 && (nCliques<maxCliques)) || bkAll == 0 && nCliques == 0){
             stopBk = 0;
           }
         }
@@ -1040,10 +1046,15 @@ void clearStep(int cg){
     Clique newClique;
     newClique.cg=cg;
     newClique.nbNodes=0;
+    newClique.nbNodesM=0;
+    newClique.nbNodesMW=0;
     newClique.normNodes=0.0;
     newClique.normNodesRMSD=0.0;
     newClique.taniNorm=0.0;
     newClique.tani=0.0;
+    newClique.taniM=0.0;
+    newClique.taniMW=0.0;
+    newClique.rmsd=0.0;
     newClique.ligRMSD=0.0;
     newClique.ligRMSD=0.0;
     newClique.mat_r=gsl_matrix_alloc(3,3);
@@ -1665,7 +1676,19 @@ int read_commandline(int argc, char *argv[]){
   strcat(usage,tmp_line);
 
 
-  //print command line in cmdLine
+  //print command line Args
+  strcpy(exePath,argv[0]);
+  for(nb_arg=1; nb_arg<argc; nb_arg++){
+    if(strcmp(argv[nb_arg],"-pp")==0){
+      flagpp=1;
+    }else if(flagpp==1){ flagpp=2; }else{
+      strcat(cmdArgs,argv[nb_arg]);
+      if(nb_arg<argc-1){
+        strcat(cmdArgs," ");
+      }
+    }
+  }
+  //print cmdLine
   strcpy(cmdLine,argv[0]);
   strcat(cmdLine," ");
   for(nb_arg=1; nb_arg<argc; nb_arg++){
@@ -1674,7 +1697,6 @@ int read_commandline(int argc, char *argv[]){
       strcat(cmdLine," ");
     }
   }
-  //printf("\nCommand line: '%s'\n",cmdLine);
 
   // copy argv values to the respective global arguments
   for(nb_arg=1; nb_arg<argc; nb_arg++){
