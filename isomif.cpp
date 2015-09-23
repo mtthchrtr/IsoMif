@@ -82,6 +82,8 @@ int main(int argc, char *argv[]){
     cout<<"mif1 "<<pw[pwr].mif1<<" rnc1 "<<pw[pwr].rnc1<<endl;
     cout<<"mif2 "<<pw[pwr].mif2<<" rnc2 "<<pw[pwr].rnc2<<endl;
     cout<<"getrmsd "<<getrmsd<<endl;
+    cout<<"ol "<<ol<<endl;
+    cout<<"olDist "<<olDist<<endl;
     if(get_info(nrg_file1,nrg_file2)==24){ return(24); }
 
     char cmdLineJob[550];
@@ -122,6 +124,13 @@ int main(int argc, char *argv[]){
     lig2=mifs[nrg_file2].lig;
     cout<<"mif1 size: "<<mif1.size()<<endl;
     cout<<"mif2 size: "<<mif2.size()<<endl;
+    cout<<"ssm1 size: "<<ss1m[1]<<endl;
+    cout<<"ssm2 size: "<<ss2m[1]<<endl;
+
+    // cout<<"ss1 "<<ss1[0]<<" "<<ss1[1]<<" "<<ss1[2]<<" "<<ss1[3]<<endl;
+    // cout<<"ss2 "<<ss2[0]<<" "<<ss2[1]<<" "<<ss2[2]<<" "<<ss2[3]<<endl;
+    // cout<<"ss1m "<<ss1m[0]<<" "<<ss1m[1]<<" "<<ss1m[2]<<" "<<ss1m[3]<<endl;
+    // cout<<"ss2m "<<ss2m[0]<<" "<<ss2m[1]<<" "<<ss2m[2]<<" "<<ss2m[3]<<endl;
 
     // cout<<"lig1 "<<lig1.size()<<endl;
     for(int l=0; l<lig1.size(); l++){
@@ -690,6 +699,7 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   vector<nodes>::iterator it;
   vector<float> la;
   vector<float> lb;
+  float overlap=0;
 
   Clique newClique;
   newClique.cg=cg;
@@ -767,13 +777,52 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
   }
 
   //Rotate mif 1 onto mif 2
-  for(int v=0; v<mif1.size(); v++){
+  for(int u=0; u<mif1.size(); u++){
     for(int i=0; i<3; i++){
-      mif1[v].ncoor[i]=cliques.back().cen_b[i];
+      mif1[u].ncoor[i]=cliques.back().cen_b[i];
       for(int j=0; j<3; j++){
-        mif1[v].ncoor[i]+=(mif1[v].coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
+        mif1[u].ncoor[i]+=(mif1[u].coor[j]-cliques.back().cen_a[j])*gsl_matrix_get(cliques.back().mat_r,i,j);
       }
     }
+
+    if(ol<0) continue;
+    if(mif1[u].grid[ol]==0) continue;
+    for(int v=0; v<mif2.size(); v++){
+      if(mif2[v].grid[ol]==0) continue;
+      // cout<<mif1[u].ncoor[0]<<" "<<mif1[u].ncoor[1]<<" "<<mif1[u].ncoor[2]<<" "<<mif1[u].grid[0]<<" "<<mif1[u].grid[1]<<" "<<mif1[u].grid[2]<<" "<<mif1[u].grid[3]<<endl;  
+      // cout<<mif2[v].coor[0]<<" "<<mif2[v].coor[1]<<" "<<mif2[v].coor[2]<<" "<<mif2[v].grid[0]<<" "<<mif2[v].grid[1]<<" "<<mif2[v].grid[2]<<" "<<mif2[v].grid[3]<<endl;
+      float dist=dist3dnosqrt(mif1[u].ncoor,mif2[v].coor);
+      if(dist < olDistsq || fabs(dist-olDistsq)<0.001){
+        for(int pb=0; pb<nb_of_probes; pb++){
+          if(mif1[u].pb[pb]==1 && mif2[v].pb[pb]==1){
+            mif1[u].ol[pb]=1;
+            mif2[v].ol[pb]=1;
+          }
+        }
+      }
+    }
+  }
+
+  if(ol>-1){
+    //Calculate overlap
+    int ol1=0;
+    int ol2=0;
+    for(int u=0; u<mif1.size(); u++){
+      if(mif1[u].grid[ol]==0) continue;
+      for(int pb=0; pb<nb_of_probes; pb++){
+        if(mif1[u].ol[pb]==1) ol1++;
+        mif1[u].ol[pb]=0;
+      }
+    }
+    for(int v=0; v<mif2.size(); v++){
+      if(mif2[v].grid[ol]==0) continue;
+      for(int pb=0; pb<nb_of_probes; pb++){
+        if(mif2[v].ol[pb]==1) ol2++;
+        mif2[v].ol[pb]=0;
+      }
+    }
+    overlap=((float)ol1+(float)ol2)/((float)ss1m[ol]+(float)ss2m[ol]);
+    // cout<<ol1<<" / "<<ss1m[ol]<<" - "<<ol2<<" / "<<ss2m[ol]<<" "<<overlap<<endl;
   }
 
   // Rotate ligand and calculate RMSD
@@ -889,7 +938,12 @@ void AddNewClique(int n, int* list, int cg, vector<node> &graph){
     cliques.back().tani=(float)n/((float)cliques.back().rmsd);
   }else{
     cliques.back().tani=(float)n/((float)ss1[cg]+(float)ss2[cg]-(float)n);
-    cliques.back().taniM=(float)cliques.back().nbNodesM/((float)ss1m[cg]+(float)ss2m[cg]-(float)cliques.back().nbNodesM);
+    if(ol>-1){ //If the tanimoto is the overlap measure
+      cliques.back().taniM=overlap;
+    }else{
+      cout<<(float)cliques.back().nbNodesM<<" "<<(float)ss1m[cg]<<" "<<(float)ss2m[cg]<<endl;
+      cliques.back().taniM=(float)cliques.back().nbNodesM/((float)ss1m[cg]+(float)ss2m[cg]-(float)cliques.back().nbNodesM);
+    }
     cliques.back().taniMW=(float)cliques.back().nbNodesMW/((float)ss1m[cg]+(float)ss2m[cg]-(float)cliques.back().nbNodesMW);
     cliques.back().taniNorm=cliques.back().normNodes/((float)ss1[cg]+(float)ss2[cg]-cliques.back().normNodes);
   }
@@ -1517,6 +1571,10 @@ int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, vector<int
       nvrtx.coor[0]=atof(tokens[0].c_str());
       nvrtx.coor[1]=atof(tokens[1].c_str());
       nvrtx.coor[2]=atof(tokens[2].c_str());
+      nvrtx.grid[0]=atoi(tokens[tokens.size()-5].c_str());
+      nvrtx.grid[1]=atoi(tokens[tokens.size()-4].c_str());
+      nvrtx.grid[2]=atoi(tokens[tokens.size()-3].c_str());
+      nvrtx.grid[3]=atoi(tokens[tokens.size()-2].c_str());
 
       int pb=0;
       int intf=0;
@@ -1535,13 +1593,10 @@ int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, vector<int
         nvrtx.nrg.push_back(atof(tokens[pbi+1].c_str()));
         nvrtx.ang.push_back(atof(tokens[pbi+2].c_str()));
         nvrtx.m.push_back(0);
+        nvrtx.ol.push_back(0);
         pb++;
       }
 
-      nvrtx.grid[0]=atoi(tokens[tokens.size()-5].c_str());
-      nvrtx.grid[1]=atoi(tokens[tokens.size()-4].c_str());
-      nvrtx.grid[2]=atoi(tokens[tokens.size()-3].c_str());
-      nvrtx.grid[3]=atoi(tokens[tokens.size()-2].c_str());
       nvrtx.cg.push_back(0);
       nvrtx.cg.push_back(0);
       nvrtx.cg.push_back(0);
@@ -1603,6 +1658,21 @@ float dist3d(float a[], float b[]){
     dist += (a[i]-b[i])*(a[i]-b[i]);
   }
   dist = sqrt(dist);
+
+  return dist;
+}
+/***********************************************************************/
+/*        1         2         3         4         5         6         7*/
+/*234567890123456789012345678901234567890123456789012345678901234567890*/
+/*        1         2         3         4         5         6         7*/
+/***********************************************************************/
+float dist3dnosqrt(float a[], float b[]){
+  float dist=0.0;
+  int i;
+
+  for(i=0;i<3;i++){
+    dist += (a[i]-b[i])*(a[i]-b[i]);
+  }
 
   return dist;
 }
@@ -1673,6 +1743,10 @@ int read_commandline(int argc, char *argv[]){
   sprintf(tmp_line,"-k          : \t Skip cliques with Det -1\n");
   strcat(usage,tmp_line);
   sprintf(tmp_line,"-pr         : \t Print details on console\n");
+  strcat(usage,tmp_line);
+  sprintf(tmp_line,"-ol         : \t Grid res. to use for overlap tanimoto (0 to 3)\n");
+  strcat(usage,tmp_line);
+  sprintf(tmp_line,"-olDist     : \t Distance threshold for overlap measure\n");
   strcat(usage,tmp_line);
 
 
@@ -1753,6 +1827,11 @@ int read_commandline(int argc, char *argv[]){
       sscanf(argv[nb_arg+1],"%f",&dDist);
     }
 
+    if(strcmp(argv[nb_arg],"-olDist")==0){
+      sscanf(argv[nb_arg+1],"%f",&olDist);
+      olDistsq=olDist*olDist;
+    }
+
     if(strcmp(argv[nb_arg],"-dca")==0){
       sscanf(argv[nb_arg+1],"%f",&ca_dDist);
     }
@@ -1787,6 +1866,10 @@ int read_commandline(int argc, char *argv[]){
 
     if(strcmp(argv[nb_arg],"-j")==0){
       jttt=atoi(argv[nb_arg+1]);
+    }
+
+    if(strcmp(argv[nb_arg],"-ol")==0){
+      ol=atoi(argv[nb_arg+1]);
     }
 
     if(strcmp(argv[nb_arg],"-wc")==0){

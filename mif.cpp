@@ -59,7 +59,7 @@ int main(int argc, char **argv)
     resnumc=pw[pwr].rnc;
     ligFile=pw[pwr].ligF;
 
-    cout <<"pdbF "<<proteinFile<<" cleftF "<<cleftFile<<" gridF "<<gridFile<<endl;
+    // cout <<"pdbF "<<proteinFile<<" cleftF "<<cleftFile<<" gridF "<<gridFile<<endl;
 
     //Get prefix
     if(tag.compare("")==0){
@@ -93,6 +93,7 @@ int main(int argc, char **argv)
 
     tag="";
     for(int gi=0; gi<4; gi++){ ss[gi]=0; }
+    for(int gi=0; gi<4; gi++){ ssm[gi]=0; }
     protein.PROTEIN.clear();
     protein.LIGAND.clear();
     protein.LIGATOMS.clear();
@@ -390,7 +391,7 @@ void Protein::readPDB(string filename){
 
         // cout<< resnumc<< " to "<< thisresnumc <<" "<<fields[2]<< " "<< atof((line.substr(30,8).c_str()))<<" "<< atof((line.substr(38,8).c_str()))<<" "<<atof((line.substr(46,8).c_str()))<<endl;
         if(atm.h==0 && (resnumc.compare(thisresnumc)==0 || (resnumcShort.compare(thisresnumcShort)==0 && atm.alt.compare("-")==0))){
-          cout<<line<<endl;
+          // cout<<line<<endl;
           LIGAND.push_back(atof((line.substr(30,8).c_str())));
           LIGAND.push_back(atof((line.substr(38,8).c_str())));
           LIGAND.push_back(atof((line.substr(46,8).c_str())));
@@ -1104,6 +1105,8 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
   cout<<"Grid points added: "<<newv<<endl;
 
   int chipped=0;
+  int erase200=0;
+  int keep200=0;
   cout<<"Chipping grid..."<<endl;
   it=GRID.begin();
   while(it!=GRID.end()){
@@ -1121,6 +1124,7 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
 
     if(inGridRes(it->second,2.0)==1){
       it->second.grid[0]=1;
+      // cout<<vrtx200<<" "<<it->second.grid[zip]<<" "<<zip<<" "<<minDist<<" "<<minGridDist<<" "<<maxGridDist;
       vrtx200++;
     }
 
@@ -1136,17 +1140,30 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
     
     if(inGridRes(it->second,0.5)==1){
       it->second.grid[3]=1;
-      vrtx050++;               
+      vrtx050++;
     }
 
-    if(minDist<minGridDist || minDist > maxGridDist || (it->second.grid[zip]!=1 && zip!=-1)){
+    if(minDist<minGridDist || minDist > maxGridDist || (it->second.grid[zip]==0 && zip!=-1)){
+      // if(inGridRes(it->second,2.0)==1){
+      //   cout<<"erase"<<endl;
+      //   erase200++;
+      // }
       GRID.erase(it++);
       chipped++;
     }else{
+      // if(inGridRes(it->second,2.0)==1){
+      //   cout<<"keep"<<endl;
+      //   keep200++;
+      // }
       vrtxIdList.push_back(it->second.modulo);
       ++it;
+      if(inGridRes(it->second,2.0)==1) vrtx200++;
+      if(inGridRes(it->second,1.5)==1) vrtx150++;
+      if(inGridRes(it->second,1.0)==1) vrtx100++;
+      if(inGridRes(it->second,0.5)==1) vrtx050++;
     }
   }
+
   cout<<"Chipped "<<chipped<<" grid points."<<endl;
   cout<<"Grid points [2.0] "<<vrtx200<<" [1.5] "<<vrtx150<<" [1.0] "<<vrtx100<<" [0.5] "<<vrtx050<<"."<<endl;
   return(0);
@@ -1839,6 +1856,7 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
   fprintf(fpNew,"#grid_height %d\n",height);
   fprintf(fpNew,"#gs %d %d %d %d\n",vrtx200,vrtx150,vrtx100,vrtx050);
   fprintf(fpNew,"#ss %d %d %d %d\n",ss[0],ss[1],ss[2],ss[3]);
+  fprintf(fpNew,"#ssm %d %d %d %d\n",ssm[0],ssm[1],ssm[2],ssm[3]);
 
   cout<<endl<< "Writing Mif File"<<endl;
   for(it=GRID.begin();it!=GRID.end();it++){
@@ -2118,8 +2136,9 @@ void getMif(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
     if(m.p==1){ continue; }
     // if(m.bu<bul){ continue; }
     if(m.grid[0]==1 || m.grid[1]==1 || m.grid[2]==1 || m.grid[3]==1){
-  
+    
       if(printDetails==1){ cout<<endl<<"Vertex id: "<< m.id <<" "<<m.x<<" "<<m.y<<" "<<m.z<<endl; }
+
       int flag=0;
       for(int probe=0; probe<nbOfProbes; probe++){ //Iterate each probe
         float enrg_sum=0.00;
@@ -2135,6 +2154,11 @@ void getMif(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
           m.nrgs[probe]=enrg_sum;
           if(enrg_sum<nrgT[probes[probe]] || (fabs(enrg_sum-nrgT[probes[probe]]))<0.001){
             m.ints[probe]=1;
+            for(int gi=0; gi<4; gi++){
+              if(m.grid[gi]==1){
+                ssm[gi]++;
+              }
+            }
             flag=1;            
           }
           if(printDetails==1){ cout<<m.grid[0]<<" "<<m.grid[1]<<" "<<m.grid[2]<<" "<<m.grid[3]<<" probe "<<probe<<" nrg "<< enrg_sum<<" int "<<m.ints[probe]<<endl; }

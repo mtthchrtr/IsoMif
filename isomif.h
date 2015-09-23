@@ -68,6 +68,7 @@ struct vertex {
   vector<float> nrg;
   vector<float> ang;
   vector<int> m;
+  vector<int> ol;
   int id;
 };
 
@@ -178,6 +179,9 @@ int commonInt=1;
 int skipDet=1;
 int pc=0;
 int wc=0;
+int ol=-1;
+float olDist=1.0;
+float olDistsq=olDist*olDist;
 int jttt=5;
 int jtt[20][20];
 int nb_of_probes=6;
@@ -231,6 +235,7 @@ void adjMat(vector<node>&, bool*&, int);
 void Extend(int* old,int ne,int ce, int cg, vector<node>&, bool*&, int);
 int open_file_ptr(FILE**, char*, int);
 float dist3d(float[], float[]);
+float dist3dnosqrt(float[], float[]);
 void clearStep(int);
 void printNodes();
 int read_commandline(int, char*[]);

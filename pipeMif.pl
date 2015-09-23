@@ -76,6 +76,51 @@ for(my $i=0; $i<=$#ARGV; $i++){
 
 &runCmds();
 
+sub storeParams{
+  my $p=0;
+  open IN, "<".$mifParamF or die "Can't open ".$mifParamF;
+  while(my $line=<IN>){
+    next if($line=~/^$/);
+    my @sub=split(/\s+/,$line);
+    $mifParam[$p][0]=$sub[0];
+    for(my $i=1; $i<@sub; $i++){
+      $mifParam[$p][1][$i-1]=$sub[$i];
+    }
+    $p++;
+  }
+  close IN;
+}
+
+sub storeCases{
+  open IN, "<".$mifJobsF or die "Cant open ".$mifJobsF;
+  while(my $line=<IN>){
+    if($line!~/^$/){
+      chomp($line);
+      push @cases, $mifPath." ".$line;
+    }
+  }
+  close IN;
+}
+
+sub recur{
+  my $level=$_[2];
+  $level++;
+  for(my $p=$_[0]; $p<@mifParam; $p++){
+    for(my $i=0; $i<@{$mifParam[$p][1]}; $i++){
+      my $cmd=$_[1]." ".$mifParam[$p][0]." ".$mifParam[$p][1][$i]; 
+      if($p==$#mifParam){
+        if($level==@mifParam){
+          foreach my $c (@cases){
+            push @cmds, $c.$cmd;
+          }
+        }
+      }else{
+        &recur($p+1,$cmd,$level);
+      }
+    }
+  }
+}
+
 sub runCmds{
   if($cmdMode eq "nrg"){
     my $filenb=0;
@@ -143,51 +188,6 @@ sub runCmds{
   }
 }
 
-sub storeCases{
-  open IN, "<".$mifJobsF or die "Cant open ".$mifJobsF;
-  while(my $line=<IN>){
-    if($line!~/^$/){
-      chomp($line);
-      push @cases, $mifPath." ".$line;
-    }
-  }
-  close IN;
-}
-
-sub recur{
-  my $level=$_[2];
-  $level++;
-  for(my $p=$_[0]; $p<@mifParam; $p++){
-    for(my $i=0; $i<@{$mifParam[$p][1]}; $i++){
-      my $cmd=$_[1]." ".$mifParam[$p][0]." ".$mifParam[$p][1][$i]; 
-      if($p==$#mifParam){
-        if($level==@mifParam){
-          foreach my $c (@cases){
-            push @cmds, $c.$cmd;
-          }
-        }
-      }else{
-        &recur($p+1,$cmd,$level);
-      }
-    }
-  }
-}
-
-sub storeParams{
-  my $p=0;
-  open IN, "<".$mifParamF or die "Can't open ".$mifParamF;
-  while(my $line=<IN>){
-    next if($line=~/^$/);
-    my @sub=split(/\s+/,$line);
-    $mifParam[$p][0]=$sub[0];
-    for(my $i=1; $i<@sub; $i++){
-      $mifParam[$p][1][$i-1]=$sub[$i];
-    }
-    $p++;
-  }
-  close IN;
-}
-
 sub areJobsDone{
   my $sys=$_[0];
   my $exitLoopR=0;
@@ -195,7 +195,6 @@ sub areJobsDone{
   my $exitLoopC=0;
   my $getout=0;
   my $time=0;
-  print "\n\nWaiting for jobs to terminate..";
   while(1){
     sleep 15;
     $time+=15;
@@ -203,7 +202,8 @@ sub areJobsDone{
     if($sys eq "nrg"){
       if($nbFiles!=0){
         my @nbb=glob $outDir."*.mif";
-        print "need $nbFiles, got ".scalar @nbb."\n";
+        my $percent=(scalar @nbb/$nbFiles)*100;
+        print "#! Calculated ".scalar @nbb." MIF(s) - ".$percent."% done.\n";
         if(scalar @nbb >= $nbFiles){
           $getout=1;
         }
