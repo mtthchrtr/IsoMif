@@ -224,6 +224,7 @@ string rnc2;
 int getrmsd=0;
 vector<pwRun> pw;
 FILE* fpout;
+stringstream matchFileOut;
 
 void getPairwise();
 void sortArray(int *&, int nn, bool*&);
@@ -239,6 +240,7 @@ float dist3dnosqrt(float[], float[]);
 void clearStep(int);
 void printNodes();
 int read_commandline(int, char*[]);
+bool fexists(const char*);
 int createVrtxVec(string, vector<vertex>&, vector<atom>&, vector<int>&, vector<int>&, int&, vector<pseudoC>&, string, vector<atom>&);
 void createNodes(int, vector<node>&, int);
 void rem_spaces(char*);
