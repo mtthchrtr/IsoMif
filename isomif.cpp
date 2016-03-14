@@ -634,7 +634,7 @@ bool myfunction (nodeI i,nodeI j) { return (i.neibrs<j.neibrs); }
           AddNewClique(c,compsub,cg,graph);
           stopBk = 1;
           // cout<< nCliques<<endl;
-          if((bkAll == 1 && (nCliques<maxCliques)) || bkAll == 0 && nCliques == 0){
+          if((bkAll == 1 && (nCliques<maxCliques)) || (bkAll == 0 && nCliques == 0)){
             stopBk = 0;
           }
         }
@@ -1646,11 +1646,11 @@ int read_commandline(int argc, char *argv[]){
 
   strcpy(usage,"\n!---   IsoMIF   ---!\nWelcome.Bienvenue.\n");
   strcat(usage,"\nObligatory Arguments:\n");
-  sprintf(tmp_line,"-p1          : \t Isomif energy filename of Protein 1\n");
+  sprintf(tmp_line,"-p1          : \t Mif file of Protein 1\n");
   strcat(usage,tmp_line);
-  sprintf(tmp_line,"-p2          : \t Isomif energy filename of Protein 2\n");
+  sprintf(tmp_line,"-p2          : \t Mif file of Protein 2\n");
   strcat(usage,tmp_line);
-  sprintf(tmp_line,"-pp          : \t File with highthroughput comparions\n");
+  sprintf(tmp_line,"-pp          : \t File with highthroughput comparions. The file contains a list of mif file pairs. One per line.\n");
   strcat(usage,tmp_line);
   strcat(usage,"\nOptional Arguments:\n");
   sprintf(tmp_line,"-h          : \t Print help menu\n");
@@ -1872,6 +1872,7 @@ int read_commandline(int argc, char *argv[]){
 /***********************************************************************/
 
 //This Function opens the two mif file and gets the two prefix of the proteins
+//These prefixes are used for the output file name
 int get_info(string str1, string str2){
   int i;
   const char* prefix1; //Mif file 1 prefix
@@ -1925,6 +1926,7 @@ int get_info(string str1, string str2){
       sprintf(out_file,"%s%s_match_%s",outbase,prefix1,prefix2);
     }
   }
+  return(1);
 }
 /***********************************************************************/
 /*        1         2         3         4         5         6         7*/
