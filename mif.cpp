@@ -2225,9 +2225,9 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms, float& close
       angle=acos(angle)* 180.0 / PI;
       if(printDetails==1){ cout<<"Aromatic Angle "<< angle<<endl; }
       if(angle>90 || fabs(180.00-angle) < 0.001) angle=180-angle;
-      // if(angle>35.00 && angle<55.00){
+      // if(angle>25.00 && angle<65.00){
       //   if(printDetails==1){ cout <<"angle between 35 and 55"<<endl; }
-      //   return(energy);
+        // return(energy);
       // }
       if(dist<closest){
         closest=dist;
