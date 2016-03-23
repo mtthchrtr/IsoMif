@@ -330,7 +330,15 @@ sub printMif{
               }
             } 
           }
+          if($_[0]==2){ #For Mif 2 shift probe positions so those identified at the same vertex do not perfectly overlap and can be visualized with spheres in PyMol
+            $ncoor[0]+=0.12 if($i==1); #shift x coordinate of aromatic probe position
+            $ncoor[1]+=0.12 if($i==2); #shift y coordinate of donor probe position
+            $ncoor[2]+=0.12 if($i==3); #shift z coordinate of acceptor probe position
+            $ncoor[0]-=0.12 if($i==4); #shift x coordinate of positive probe position
+            $ncoor[1]-=0.12 if($i==5); #shift y coordinate of negative probe position
+          }
           $pdbstr.=sprintf("HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",$it,$i,$ncoor[0],$ncoor[1],$ncoor[2]);
+
           # printf OUT "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\n",$it,$probeNames[$i],$ncoor[0],$ncoor[1],$ncoor[2];          
           $it++;
         }
@@ -513,6 +521,14 @@ if($cg==-1){
         # printf("%8.3f %8.3f %8.3f\n",$ncoor[0],$ncoor[1],$ncoor[2]);
         # printf NODES1 "HETATM%5d  CA  NRG A        %8.3f%8.3f%8.3f  0.00 10.00           C  \n",$ids,$ncoor[0],$ncoor[1],$ncoor[2];
         # printf NODES2 "HETATM%5d  CA  NRG A        %8.3f%8.3f%8.3f  0.00 10.00           C  \n",$ids,$info[3],$info[4],$info[5];
+
+        #For Mif similarities of Mif 2 also shift probe positions
+        $info[3]+=0.12 if($j==1); #shift x coordinate of aromatic probe position
+        $info[4]+=0.12 if($j==2); #shift y coordinate of donor probe position
+        $info[5]+=0.12 if($j==3); #shift z coordinate of acceptor probe position
+        $info[3]-=0.12 if($j==4); #shift x coordinate of positive probe position
+        $info[4]-=0.12 if($j==5); #shift y coordinate of negative probe position
+
         $str1.=sprintf("HETATM%5d  CA  NRG A        %8.3f%8.3f%8.3f  0.00 10.00           C  \\\n",$ids,$ncoor[0],$ncoor[1],$ncoor[2]);
         $str2.=sprintf("HETATM%5d  CA  NRG A        %8.3f%8.3f%8.3f  0.00 10.00           C  \\\n",$ids,$info[3],$info[4],$info[5]);
 
