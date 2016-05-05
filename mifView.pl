@@ -45,17 +45,20 @@ my $grids=0;
 my $gride=3;
 my $ff="";
 my $ot="";
+my $shift=0;
 
 #Read command line
 for(my $i=0; $i<=$#ARGV; $i++){
   if($ARGV[$i] eq "-m"){ $mifFile=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-o"){ $mifViewFolder=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-t"){ $ot=$ARGV[$i+1]; }
+  if($ARGV[$i] eq "-shift"){ $shift=$ARGV[$i+1]; }
   if($ARGV[$i] eq "-h"){
     print "##################\nWelcome to pipeIsoMifView\n##################\n";
     print "-m         <path to mif file>\n";
     print "-o         <mifView output directory>\n";
     print "-t         <output tag name>\n";
+    print "-shift     <1 yes 0 no - Slightly shift the Mif and Mif similarities so probes at same vertex can be visualised at the same time>\n";
     print "-h         <print help menu>\n";
     exit;
   }
@@ -180,6 +183,14 @@ for(my $i=0; $i<$nbpb; $i++){ #Loop each probe
       print NPML "cmd.read_pdbstr(\"\"\"";
       for(my $j=0; $j<@{$probes[$i]}; $j+=9){ #For each node
         if($probes[$i][$j+3+$g]==1){ #If its in this grid resolution
+          if($shift==1){
+            #Slightly shift coordinates of original Mifs so we can see identified probes at the same vertex in PyMol
+            $probes[$i][$j]+=0.15 if($i==1); #shift x coordinate of aromatic probe position
+            $probes[$i][$j+1]+=0.15 if($i==2); #shift y coordinate of donor probe position
+            $probes[$i][$j+2]+=0.15 if($i==3); #shift z coordinate of acceptor probe position
+            $probes[$i][$j]-=0.15 if($i==4); #shift x coordinate of positive probe position
+            $probes[$i][$j+1]-=0.15 if($i==5); #shift y coordinate of negative probe position
+          }
           printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",$it,$i,$probes[$i][$j],$probes[$i][$j+1],$probes[$i][$j+2];
           $it++ unless($it==99999);
         }
