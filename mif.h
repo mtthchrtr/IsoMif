@@ -123,7 +123,7 @@ float stepsize=0.5;
 float maxGridDist=4.0;
 float minGridDist=2.5;
 float atmPbMaxDist=8.0;
-float gridLigDist=2.0;
+float gridLigDist=3.0;
 float caT=5.0;
 int uID=0;
 int smoothDist=0;
@@ -138,8 +138,12 @@ int nbOfProbes=0;
 int ss[4];
 int ssm[4];
 int zip=-1;
-int bul=0;
+int bul=14;
 int buD=40;
+//ajout
+int sur=0;
+
+//
 float* epsilons;
 float angThresh=60.0;
 map<string,string> atomTypes;
@@ -184,8 +188,9 @@ class  Grid{
     Grid(string, Protein&);
     ~Grid(void);
     int readGetCleft(string, vector<atom>&, vector<float>&);
+    // int getSurf(Protein&);
     int generateID(int, int, int, int, int);
-    int buildGrid(vector<atom>&);
+    int buildGrid(Protein&);
     void getProtVrtx(vector<atom>&);
     void createProtVrtx(vector<atom>&);
     void getMinMax(string);

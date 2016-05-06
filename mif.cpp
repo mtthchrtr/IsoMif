@@ -29,10 +29,10 @@ int main(int argc, char **argv)
   int i;
 
   if(readCmdLine(argc, argv)==24){ return(0); }
-
+  //pour plusieurs paires
   if(pairwiseF.compare("")!=0){
     getPairwise();
-  }else{
+  }else{      //pour une paire
     pwRun npw;
     npw.pdbF= proteinFile;
     npw.cleftF= cleftFile;
@@ -126,6 +126,7 @@ int readCmdLine(int argc, char **argv){
   usage << "\n!---   IsoMIF   ---!\nWelcome.Bienvenue\n";
   usage << "-p <filename>        : \t Protein (PDB format)\n";
   usage << "-g <filename>        : \t Cleft of protein (GetCleft sphere format)\n";
+  usage << "-surf                : \t surface mode to create the grid on the whole surface\n";
   usage << "-pp <filename>       : \t File with highthroughput mif calculations\n";
   usage << "-grid <filename>     : \t Grid of protein\n";
   usage << "-s                   : \t grid spacing 0.25, 0.5, 1.0 or 2.0 (default: 0.25Angstrom)\n";
@@ -146,11 +147,12 @@ int readCmdLine(int argc, char **argv){
   usage << "-dpv                 : \t distance probe-Vrtx to consider a vrtx to be true-positive\n";
   usage << "-sf                  : \t stats output file\n";
   usage << "-l                   : \t RESNUMC of the ligand from which to crop the grid\n";
-  usage << "-r                   : \t maximum distance between the grid and the ligand\n";
+  usage << "-r                   : \t maximum distance between the grid and the ligand or residues atoms\n";
   usage << "-x                   : \t do not write atoms in mif file\n";
   usage << "-og                  : \t dir for grid file\n";
   usage << "-z                   : \t output with only vertices from the resolution specified [0-3] and lig atoms\n";
   usage << "-h                   : \t help menu\n";
+  // usage << "-la                  : \t RESNuMC of the residues from which to crop the grid then have the surface \n"; //use -l instead
 
   if(argc<5){
     cout << endl << "Missing obligatory arguments:" << usage.str() << endl;
@@ -243,6 +245,11 @@ int readCmdLine(int argc, char **argv){
     }
     if(strcmp(argv[nb_arg],"-pp")==0){
       pairwiseF=argv[nb_arg+1];
+    }
+    if(strcmp(argv[nb_arg],"-surf")==0){
+      proteinFile=string(argv[nb_arg+1]);
+      cout << "surface mode";
+      sur =1;
     }
   }
 
@@ -391,12 +398,12 @@ void Protein::readPDB(string filename){
 
         // cout<< resnumc<< " to "<< thisresnumc <<" "<<fields[2]<< " "<< atof((line.substr(30,8).c_str()))<<" "<< atof((line.substr(38,8).c_str()))<<" "<<atof((line.substr(46,8).c_str()))<<endl;
         if(atm.h==0 && (resnumc.compare(thisresnumc)==0 || (resnumcShort.compare(thisresnumcShort)==0 && atm.alt.compare("-")==0))){
-          // cout<<line<<endl;
           LIGAND.push_back(atof((line.substr(30,8).c_str())));
+          // cout <<atof((line.substr(30,8).c_str())) << " "<< atof((line.substr(38,8).c_str())) << " "<< atof((line.substr(46,8).c_str())) << endl;
           LIGAND.push_back(atof((line.substr(38,8).c_str())));
           LIGAND.push_back(atof((line.substr(46,8).c_str())));
           atm.at=ligAt[atm.atomn];
-          // cout<<"LIGAND ATOM "<<atm.atomn<<" "<<atm.at<<endl;
+          //cout<<"LIGAND ATOM "<<atm.atomn<<" "<<atm.at<<endl;
           LIGATOMS.push_back(atm);
         }
       }
@@ -422,7 +429,7 @@ void Protein::readPDB(string filename){
   }
   ifs.close();
   ofs.close();
-  min_x-=5.0; min_y-=5.0; min_z-=5.0; max_x+=5.0; max_y+=5.0; max_z+=5.0;
+  min_x-=maxGridDist+stepsize; min_y-=maxGridDist+stepsize; min_z-=maxGridDist+stepsize; max_x+=maxGridDist+stepsize; max_y+=maxGridDist+stepsize; max_z+=maxGridDist+stepsize;
 
   width=(int)(((max_x-min_x)/stepsize)+1.0);
   height=(int)(((max_y-min_y)/stepsize)+1.0);
@@ -701,7 +708,7 @@ void Protein::getAtomDir(){
       }
     }
   }
-  cout<<endl<<"Protein has "<< PROTEIN.size()<<" atoms"<<endl;
+  cout<<"Protein has "<< PROTEIN.size()<<" atoms"<<endl<<endl;
 }
 
 int Protein::getRefAtom(float& xr, float& yr, float& zr, string tresn, int tresnb, string tatomn, string tatomn2, int ring, float x, float y, float z, string chain){
@@ -818,15 +825,19 @@ Grid::Grid(string filename, Protein& prot){
   if(gridFile.compare("")==0){
     // createProtVrtx(prot.PROTEIN);
     if(filename.compare("")==0){
-      buildGrid(prot.PROTEIN);
+      buildGrid(prot);
     }else{
+      // getSurf(prot);
       // getMinMax(filename,prot);
       readGetCleft(filename, prot.PROTEIN, prot.LIGAND);
       // getProtVrtx(prot.PROTEIN);
     }
-    // getBuriedness();
+    getBuriedness();
+
+    //Write a dump of the grid data
     // if(outGridBase.compare("")!=0) writeGrid();
   }else{
+    //Read the dump of the grid data
     // readGrid();
   }
 }
@@ -896,8 +907,11 @@ void Grid::createProtVrtx(vector<atom>& prot){
   // cout<<"Protein grid points: "<<GRID.size()<<endl;
 }
 
-int Grid::buildGrid(vector<atom>& prot){
+int Grid::buildGrid(Protein& prot){ //Building the grid using the whole protein
   int i=0;
+  int pggrid2=0;
+
+  cout<< "Building Grid"<<endl;
 
   map<int,vertex>::iterator it;
   int id;
@@ -907,14 +921,16 @@ int Grid::buildGrid(vector<atom>& prot){
 
         int pg=0;
         float minDist=10000.0;
-        for(i=0; i<prot.size(); i++){
-          if(prot[i].mif==0) continue;
-          float d=((abs(x-prot[i].x)*abs(x-prot[i].x))+(abs(y-prot[i].y)*abs(y-prot[i].y))+(abs(z-prot[i].z)*abs(z-prot[i].z)));
+        for(i=0; i<prot.PROTEIN.size(); i++){
+          if(prot.PROTEIN[i].mif==0) continue; //Skip if its not an atom that we consider to calculate probe potentials
+          // cout<< prot.PROTEIN[i].x << " " << prot.PROTEIN[i].y << " "<< prot.PROTEIN[i].z <<endl;
+          float d=((abs(x-prot.PROTEIN[i].x)*abs(x-prot.PROTEIN[i].x))+(abs(y-prot.PROTEIN[i].y)*abs(y-prot.PROTEIN[i].y))+(abs(z-prot.PROTEIN[i].z)*abs(z-prot.PROTEIN[i].z)));
           if(d<minDist){ minDist=d; }
         }
-        if(minDist<minGridDist){
+        // if(minDist<100.00) cout<< x << " " << y << " "<< z << " "<<minDist<< " minGridDist "<<minGridDist<<endl;
+        if(minDist<minGridDist){ //Its a protein vertex
           pg=1;
-        }else if(minDist > maxGridDist){
+        }else if(minDist > maxGridDist){ //Its too far from the protein
           continue;
         }
 
@@ -934,22 +950,39 @@ int Grid::buildGrid(vector<atom>& prot){
             uID++;
           }else{
             vrtx.p=0;
-            // vrtx.ints=new int[nbOfProbes];              
-            // if(vrtx.ints==NULL){
-            //   printf("\n\nCan't malloc int**\nGoodbye.\n");
-            //   return(24);
-            // }
-            // vrtx.nrgs=new float[nbOfProbes];              
-            // if(vrtx.nrgs==NULL){
-            //   printf("\n\nCan't malloc int**\nGoodbye.\n");
-            //   return(24);
-            // }
-            // vrtx.angles=new float[nbOfProbes];              
-            // if(vrtx.angles==NULL){
-            //   printf("\n\nCan't malloc int**\nGoodbye.\n");
-            //   return(24);
-            // }
-            
+
+            if(inGridRes(vrtx,2.0)==1){
+                vrtx.grid[0]=1;
+                vrtx200++;
+            }else{ vrtx.grid[0]=0; }
+
+            if(inGridRes(vrtx,1.5)==1){
+              vrtx.grid[1]=1;
+              vrtx150++;
+            }else{ vrtx.grid[1]=0; }
+
+            if(inGridRes(vrtx,1.0)==1){
+              vrtx.grid[2]=1;
+              vrtx100++;
+            }else{ vrtx.grid[2]=0; }
+
+            if(inGridRes(vrtx,0.5)==1){
+              vrtx.grid[3]=1;
+              vrtx050++;
+            }else{ vrtx.grid[3]=0; }
+
+            if(vrtx.grid[zip]!=1 && zip!=-1) continue;
+
+            if(resnumc.compare("")!=0){ //We must remove grid vertex that are too far from the anchor atoms of the residue(s)
+              float minDist=10000.0;
+              for(int p=0; p < prot.LIGAND.size(); p+=3){
+                float d=((abs(x-prot.LIGAND[p])*abs(x-prot.LIGAND[p]))+(abs(y-prot.LIGAND[p+1])*abs(y-prot.LIGAND[p+1]))+(abs(z-prot.LIGAND[p+2])*abs(z-prot.LIGAND[p+2])));
+                if(d < minDist){minDist = d;}
+              }
+              if(minDist > gridLigDist) continue;
+              // cout << "   " << vrtx.x << "   " << vrtx.y << "    " << vrtx.z << "   " << minDist << "    " << gridLigDist << "TOO FAR"<< endl;
+            }
+
             int zi=0;
             float zf=0.0;
             for(int i=0; i<nbOfProbes; i++){
@@ -957,28 +990,6 @@ int Grid::buildGrid(vector<atom>& prot){
             }
 
             // for(int i=0; i<aa.size(); i++){ vrtx.env[aa[i]]=1000.0; }
-
-            if(inGridRes(vrtx,2.0)==1){
-              vrtx.grid[0]=1;
-              vrtx200++;
-            }else{ vrtx.grid[0]=0; }
-
-            if(inGridRes(vrtx,1.5)==1){
-              vrtx.grid[1]=1;
-              vrtx150++;
-            }else{ vrtx.grid[1]=0; }
-            
-            if(inGridRes(vrtx,1.0)==1){
-              vrtx.grid[2]=1;
-              vrtx100++;
-            }else{ vrtx.grid[2]=0; }
-            
-            if(inGridRes(vrtx,0.5)==1){
-              vrtx.grid[3]=1;
-              vrtx050++;               
-            }else{ vrtx.grid[3]=0; }
-
-            if(vrtx.grid[zip]!=1 && zip!=-1) continue;
 
             vrtx.id=uID;
             uID++;
@@ -989,8 +1000,172 @@ int Grid::buildGrid(vector<atom>& prot){
       }
     }
   }
+
+  cout<<"Grid points [2.0] "<<vrtx200<<" [1.5] "<<vrtx150<<" [1.0] "<<vrtx100<<" [0.5] "<<vrtx050<<"."<<endl;
+
   return(0);
 }
+
+// int Grid::getSurf(Protein& prot) {
+//   cout<<"Getting surface points"<<endl;
+//   int i=0;
+//   //distance maximale/minimale des atomes
+//   float minXA = 10000;
+//   float maxXA = -10000;
+//   float minYA = 10000;
+//   float maxYA = -10000;
+//   float minZA = 10000;
+//   float maxZA = -10000;
+
+//   float tmpMinX = 10000;
+//   float tmpMaxX = -10000;
+//   float tmpMinY = 10000;
+//   float tmpMaxY = -10000;
+//   float tmpMinZ = 10000;
+//   float tmpMaxZ = -10000;
+//   for(int p =0; p < prot.LIGAND.size();p+=3){
+
+//     tmpMinX=roundCoord(prot.LIGAND[p]-0.5,0);
+//     tmpMinY=roundCoord(prot.LIGAND[p+1]-0.5,0);
+//     tmpMinZ=roundCoord(prot.LIGAND[p+2]-0.5,0);
+//     tmpMaxX=roundCoord(prot.LIGAND[p]+0.5,1);
+//     tmpMaxY=roundCoord(prot.LIGAND[p+1]+0.5,1);
+//     tmpMaxZ=roundCoord(prot.LIGAND[p+2]+0.5,1);
+
+//     if(tmpMinX < minXA){minXA = tmpMinX;}
+//     if(tmpMaxX > maxXA){maxXA = tmpMaxX;}
+//     if(tmpMinY < minYA){minYA = tmpMinY;}
+//     if(tmpMaxY > maxYA){maxYA = tmpMaxY;}
+//     if(tmpMinZ < minZA){minZA = tmpMinZ;}
+//     if(tmpMaxZ > maxZA){maxZA = tmpMaxZ;}
+//   }
+
+// //  cout << "minx      " << minXA << "maxx     " << maxXA << endl;
+// //  cout << "mint      " << minYA << "maxy     " << maxYA << endl;
+// //  cout << "minz      " << minZA << "maxz     " << maxZA << endl;
+
+//   minXA = minXA - sqrt(gridLigDist);
+//   maxXA = maxXA + sqrt(gridLigDist);
+//   minYA = minYA - sqrt(gridLigDist);
+//   maxYA = maxYA + sqrt(gridLigDist);
+//   minZA = minZA - sqrt(gridLigDist);
+//   maxZA = maxZA + sqrt(gridLigDist);
+
+//   cout << "minx      " << minXA << "maxx     " << maxXA << endl;
+//   cout << "mint      " << minYA << "maxy     " << maxYA << endl;
+//   cout << "minz      " << minZA << "maxz     " << maxZA << endl;
+
+//   if(minXA < min_x){min_x = minXA;}
+//   if(maxXA > max_x){max_x = maxXA;}
+//   if(minYA < min_y){min_y = minYA;}
+//   if(maxYA > max_y){max_y = maxYA;}
+//   if(minZA < min_z){min_z = minZA;}
+//   if(maxZA > max_z){max_z = maxZA;}
+
+//   width=(int)(((max_x-min_x)/stepsize)+1.0);
+//   height=(int)(((max_y-min_y)/stepsize)+1.0);
+//   depth=(int)(((max_z-min_z)/stepsize)+1.0);
+
+//   map<int,vertex>::iterator it;
+//   int id;
+
+//   for(float j =minXA; j<= maxXA; j+=stepsize){
+//     for(float k = minYA; k <= maxYA; k+=stepsize){
+//       for(float l = minZA; l <= maxZA; l+=stepsize){
+
+//         cout << j << "      " << k << "     " << l << endl;
+
+//         int pg=0;
+//         float minDist=10000.0;
+//         for(i=0; i<prot.PROTEIN.size(); i++){
+//           if(prot.PROTEIN[i].mif==0) continue;
+//           float d=((abs(j-prot.PROTEIN[i].x)*abs(j-prot.PROTEIN[i].x))+(abs(k-prot.PROTEIN[i].y)*abs(k-prot.PROTEIN[i].y))+(abs(l-prot.PROTEIN[i].z)*abs(l-prot.PROTEIN[i].z)));
+//           if(d<minDist){ minDist=d; }
+//         }
+//         if(minDist<minGridDist){
+//           //si points de la grille de la proteine
+//           pg=1;
+//         }else if(minDist > maxGridDist){
+//           continue;
+//         }
+
+//         //Generate grid vertex ID
+//         id=generateID(width,height,(int)((j-min_x)/stepsize)+1,(int)((k-min_y)/stepsize)+1,(int)((l-min_z)/stepsize)+1);
+//         it = GRID.find(id);
+
+//         if(it == GRID.end()){ //If this grid point doesnt exist
+//           vertex vrtx;
+//           vrtx.x=j;
+//           vrtx.y=k;
+//           vrtx.z=l;
+
+//           if(pg==1){
+//             vrtx.p=1;
+//             vrtx.id=uID;
+//             uID++;
+//           }else{
+//             vrtx.p=0;
+//             // vrtx.ints=new int[nbOfProbes];
+//             // if(vrtx.ints==NULL){
+//             //   printf("\n\nCan't malloc int**\nGoodbye.\n");
+//             //   return(24);
+//             // }
+//             // vrtx.nrgs=new float[nbOfProbes];
+//             // if(vrtx.nrgs==NULL){
+//             //   printf("\n\nCan't malloc int**\nGoodbye.\n");
+//             //   return(24);
+//             // }
+//             // vrtx.angles=new float[nbOfProbes];
+//             // if(vrtx.angles==NULL){
+//             //   printf("\n\nCan't malloc int**\nGoodbye.\n");
+//             //   return(24);
+//             // }
+
+//             int zi=0;
+//             float zf=0.0;
+//             for(int i=0; i<nbOfProbes; i++){
+//               vrtx.ints.push_back(zi); vrtx.nrgs.push_back(zf); vrtx.angles.push_back(zf);
+//             }
+
+//             // for(int i=0; i<aa.size(); i++){ vrtx.env[aa[i]]=1000.0; }
+
+//             if(inGridRes(vrtx,2.0)==1){
+//               vrtx.grid[0]=1;
+//               vrtx200++;
+//             }else{ vrtx.grid[0]=0; }
+
+//             if(inGridRes(vrtx,1.5)==1){
+//               vrtx.grid[1]=1;
+//               vrtx150++;
+//             }else{ vrtx.grid[1]=0; }
+
+//             if(inGridRes(vrtx,1.0)==1){
+//               vrtx.grid[2]=1;
+//               vrtx100++;
+//             }else{ vrtx.grid[2]=0; }
+
+//             if(inGridRes(vrtx,0.5)==1){
+//               vrtx.grid[3]=1;
+//               vrtx050++;
+//             }else{ vrtx.grid[3]=0; }
+
+//             if(vrtx.grid[zip]!=1 && zip!=-1) continue;
+
+//             vrtx.id=uID;
+//             uID++;
+//           }
+
+
+//           GRID.insert(pair<int,vertex>(id,vrtx));
+//           vrtxIdList.push_back(id);
+//         }
+//       }
+//     }
+//   }
+//   //cout << compteID << "compte ID    " << count << "nb fois passé ds boucle    "  << endl;
+//   cout << vrtx200 << "       2A        " << vrtx150 << "      1.5A       " << vrtx100 << "   1A     "  << vrtx050 << "    .5A       ";
+//   return(0);
+// }
 
 int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& ligVec){
   ifstream ifs;
@@ -1169,346 +1344,360 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
   return(0);
 }
 
-// void Grid::getBuriedness(){
-//   map<int,vertex>::iterator it;
-//   int id;
-//   int nbu=0;
-//   //Get buriedness of each grid point
-//   cout<<"Getting buriedness..."<<endl;
-//   map<int,vertex>::iterator m=GRID.begin();
-//   while(m!=GRID.end()){
-//     if(m->second.p==1){
-//       m->second.bu=0;
-//       ++m;
-//       continue;
-//     }
-//     int bu=0;
-//     int xi=(int)((m->second.x-min_x)/stepsize)+1;
-//     int yi=(int)((m->second.y-min_y)/stepsize)+1;
-//     int zi=(int)((m->second.z-min_z)/stepsize)+1;
-//     int xl=(int)((m->second.x-min_x)/stepsize);
-//     int xr=(int)((max_x-m->second.x)/stepsize);
-//     int yd=(int)((m->second.y-min_y)/stepsize);
-//     int yu=(int)((max_y-m->second.y)/stepsize);
-//     int zb=(int)((m->second.z-min_z)/stepsize);
-//     int zf=(int)((max_z-m->second.z)/stepsize);
-//     // cout<<xi<<" "<<yi<<" "<<zi<<endl;
-//     // cout<<min_x<<" | "<<xl<<" "<<m.x<<" "<<xr<<" | "<<max_x<<" || "<<width<<endl;
-//     // cout<<min_y<<" | "<<yd<<" "<<m.y<<" "<<yu<<" | "<<max_y<<" || "<<height<<endl;
-//     // cout<<min_z<<" | "<<zb<<" "<<m.z<<" "<<zf<<" | "<<max_z<<" || "<<depth<<endl;
+ void Grid::getBuriedness(){
+   map<int,vertex>::iterator it;
+   int id;
+   int nbu=0;
+   int nbGridPts =0;
 
-//     // cout<<endl<<"going xl"<<endl;
-//     int move=0;
-//     for(int tx=xi-1; tx>=1; tx--){
-//       move++;
-//       if(move>buD) break;
-//       id=generateID(width,height,tx,yi,zi);
-//       it = GRID.find(id);
-//       if(it != GRID.end()){
-//         if(GRID[id].p==1){
-//           bu++;
-//           break;
-//         }
-//       }
-//     }
+   //Get buriedness of each grid point
+   cout<<"Getting buriedness..."<<endl;
+   map<int,vertex>::iterator m=GRID.begin();
+   while(m!=GRID.end()){
+     if(m->second.p==1){ //If its a protein vertex, put its burriedness to 0, meaning completely burried.
+       m->second.bu=0;
+       ++m;
+       continue;
+     }
+     int bu=0;
 
-//     // cout<<endl<<"going xr"<<endl;
-//     move=0;
-//     for(int tx=xi+1; tx<=width; tx++){
-//       move++;
-//       if(move>buD) break;
-//       id=generateID(width,height,tx,yi,zi);
-//       it = GRID.find(id);
-//       if(it != GRID.end()){
-//         if(GRID[id].p==1){
-//           bu++;
-//           break;
-//         }
-//       }
-//     }
+     //position of vertex in modulo
+     int xi=(int)((m->second.x-min_x)/stepsize)+1;
+     int yi=(int)((m->second.y-min_y)/stepsize)+1;
+     int zi=(int)((m->second.z-min_z)/stepsize)+1;
 
-//     // cout<<endl<<"going yd"<<endl;
-//     move=0;
-//     for(int ty=yi-1; ty>=1; ty--){
-//       move++;
-//       if(move>buD) break;
-//       id=generateID(width,height,xi,ty,zi);
-//       // cout<<xi<<" "<<ty<<" "<<zi<<endl;
-//       it = GRID.find(id);
-//       if(it != GRID.end()){
-//         if(GRID[id].p==1){
-//           bu++;
-//           break;
-//         }
-//       }
-//     }
-//     // cout<<endl<<"going yu"<<endl;
-//     move=0;
-//     for(int ty=yi+1; ty<=height; ty++){
-//       move++;
-//       if(move>buD) break;
-//       id=generateID(width,height,xi,ty,zi);
-//       // cout<<xi<<" "<<ty<<" "<<zi<<endl;
-//       it = GRID.find(id);
-//       if(it != GRID.end()){
-//         if(GRID[id].p==1){
-//           bu++;
-//           break;
-//         }
-//       }
-//     }
-//     // cout<<endl<<"going zb"<<endl;
-//     move=0;
-//     for(int tz=zi-1; tz>=1; tz--){
-//       move++;
-//       if(move>buD) break;
-//       // cout<<xi<<" "<<yi<<" "<<tz<<endl;
-//       id=generateID(width,height,xi,yi,tz);
-//       it = GRID.find(id);
-//       if(it != GRID.end()){
-//         if(GRID[id].p==1){
-//           bu++;
-//           break;
-//         }
-//       }
-//     }
-//     // cout<<endl<<"going zf"<<endl;
-//     move=0;
-//     for(int tz=zi+1; tz<=depth; tz++){
-//       move++;
-//       if(move>buD) break;
-//       // cout<<xi<<" "<<yi<<" "<<tz<<endl;
-//       id=generateID(width,height,xi,yi,tz);
-//       it = GRID.find(id);
-//       if(it != GRID.end()){
-//         if(GRID[id].p==1){
-//           bu++;
-//           break;
-//         }
-//       }
-//     }
+     //modulo limits in the 6 directions: xl (x-left), xr (x-right), yd (y-down), yu (y-up), zb (z-back), zf (z-front)
+     int xl=(int)((m->second.x-min_x)/stepsize);
+     int xr=(int)((max_x-m->second.x)/stepsize);
+     int yd=(int)((m->second.y-min_y)/stepsize);
+     int yu=(int)((max_y-m->second.y)/stepsize);
+     int zb=(int)((m->second.z-min_z)/stepsize);
+     int zf=(int)((max_z-m->second.z)/stepsize);
 
-//     //Diagonals
-//     int tx=xi;
-//     int ty=yi;
-//     int tz=zi;
-//     int flag=0;
-//     move=0;
-//     while(flag==0){
-//       move++;
-//       if(move>buD) break;
-//       tx--; ty++; tz++;
-//       int diag=getDiag(tx,ty,tz,flag);
-//       if(diag){
-//         bu++;
-//       }
-//     }
+     // cout<<xi<<" "<<yi<<" "<<zi<<endl;
+     // cout<<min_x<<" | "<<xl<<" "<<m.x<<" "<<xr<<" | "<<max_x<<" || "<<width<<endl;
+     // cout<<min_y<<" | "<<yd<<" "<<m.y<<" "<<yu<<" | "<<max_y<<" || "<<height<<endl;
+     // cout<<min_z<<" | "<<zb<<" "<<m.z<<" "<<zf<<" | "<<max_z<<" || "<<depth<<endl;
 
-//     flag=0;
-//     tx=xi; ty=yi; tz=zi;
-//     move=0;
-//     while(flag==0){
-//       move++;
-//       if(move>buD) break;
-//       tx--; ty++; tz--; 
-//       int diag=getDiag(tx,ty,tz,flag);
-//       if(diag){
-//         bu++;
-//       }
-//     }
+     //Going through the 6 directions to see if a protein vertex is in the way
+     // cout<<endl<<"going xl"<<endl;
+     int move=0;
+     for(int tx=xi-1; tx>=1; tx--){
+       move++;
+       if(move>buD) break;
+       id=generateID(width,height,tx,yi,zi);
+       it = GRID.find(id);
+       if(it != GRID.end()){
+         if(GRID[id].p==1){
+           bu++;
+           break;
+         }
+       }
+     }
 
-//     flag=0;
-//     tx=xi; ty=yi; tz=zi;
-//     move=0;
-//     while(flag==0){
-//       move++;
-//       if(move>buD) break;
-//       tx++; ty++; tz--; 
-//       int diag=getDiag(tx,ty,tz,flag);
-//       if(diag){
-//         bu++;
-//       }
-//     }
+     // cout<<endl<<"going xr"<<endl;
+     move=0;
+     for(int tx=xi+1; tx<=width; tx++){
+       move++;
+       if(move>buD) break;
+       id=generateID(width,height,tx,yi,zi);
+       it = GRID.find(id);
+       if(it != GRID.end()){
+         if(GRID[id].p==1){
+           bu++;
+           break;
+         }
+       }
+     }
 
-//     flag=0;
-//     tx=xi; ty=yi; tz=zi;
-//     move=0;
-//     while(flag==0){
-//       move++;
-//       if(move>buD) break;
-//       tx++; ty++; tz++; 
-//       int diag=getDiag(tx,ty,tz,flag);
-//       if(diag){
-//         bu++;
-//       }
-//     }
+     // cout<<endl<<"going yd"<<endl;
+     move=0;
+     for(int ty=yi-1; ty>=1; ty--){
+       move++;
+       if(move>buD) break;
+       id=generateID(width,height,xi,ty,zi);
+       // cout<<xi<<" "<<ty<<" "<<zi<<endl;
+       it = GRID.find(id);
+       if(it != GRID.end()){
+         if(GRID[id].p==1){
+           bu++;
+           break;
+         }
+       }
+     }
+     // cout<<endl<<"going yu"<<endl;
+     move=0;
+     for(int ty=yi+1; ty<=height; ty++){
+       move++;
+       if(move>buD) break;
+       id=generateID(width,height,xi,ty,zi);
+       // cout<<xi<<" "<<ty<<" "<<zi<<endl;
+       it = GRID.find(id);
+       if(it != GRID.end()){
+         if(GRID[id].p==1){
+           bu++;
+           break;
+         }
+       }
+     }
+     // cout<<endl<<"going zb"<<endl;
+     move=0;
+     for(int tz=zi-1; tz>=1; tz--){
+       move++;
+       if(move>buD) break;
+       // cout<<xi<<" "<<yi<<" "<<tz<<endl;
+       id=generateID(width,height,xi,yi,tz);
+       it = GRID.find(id);
+       if(it != GRID.end()){
+         if(GRID[id].p==1){
+           bu++;
+           break;
+         }
+       }
+     }
+     // cout<<endl<<"going zf"<<endl;
+     move=0;
+     for(int tz=zi+1; tz<=depth; tz++){
+       move++;
+       if(move>buD) break;
+       // cout<<xi<<" "<<yi<<" "<<tz<<endl;
+       id=generateID(width,height,xi,yi,tz);
+       it = GRID.find(id);
+       if(it != GRID.end()){
+         if(GRID[id].p==1){
+           bu++;
+           break;
+         }
+       }
+     }
 
-//     flag=0;
-//     tx=xi; ty=yi; tz=zi;
-//     move=0;
-//     while(flag==0){
-//       move++;
-//       if(move>buD) break;
-//       tx--; ty--; tz++; 
-//       int diag=getDiag(tx,ty,tz,flag);
-//       if(diag){
-//         bu++;
-//       }
-//     }
+     //Going through the 8 diagonals to see if a protein vertex is in the way
+     int tx=xi;
+     int ty=yi;
+     int tz=zi;
+     int flag=0;
+     move=0;
+     while(flag==0){
+       move++;
+       if(move>buD) break;
+       tx--; ty++; tz++;
+       int diag=getDiag(tx,ty,tz,flag);
+       if(diag){
+         bu++;
+       }
+     }
 
-//     flag=0;
-//     tx=xi; ty=yi; tz=zi;
-//     move=0;
-//     while(flag==0){
-//       move++;
-//       if(move>buD) break;
-//       tx--; ty--; tz--; 
-//       int diag=getDiag(tx,ty,tz,flag);
-//       if(diag){
-//         bu++;
-//       }
-//     }
+     flag=0;
+     tx=xi; ty=yi; tz=zi;
+     move=0;
+     while(flag==0){
+       move++;
+       if(move>buD) break;
+       tx--; ty++; tz--;
+       int diag=getDiag(tx,ty,tz,flag);
+       if(diag){
+         bu++;
+       }
+     }
 
-//     flag=0;
-//     tx=xi; ty=yi; tz=zi;
-//     move=0;
-//     while(flag==0){
-//       move++;
-//       if(move>buD) break;
-//       tx++; ty--; tz--; 
-//       int diag=getDiag(tx,ty,tz,flag);
-//       if(diag){
-//         bu++;
-//       }
-//     }
+     flag=0;
+     tx=xi; ty=yi; tz=zi;
+     move=0;
+     while(flag==0){
+       move++;
+       if(move>buD) break;
+       tx++; ty++; tz--;
+       int diag=getDiag(tx,ty,tz,flag);
+       if(diag){
+         bu++;
+       }
+     }
 
-//     flag=0;
-//     tx=xi; ty=yi; tz=zi;
-//     move=0;
-//     while(flag==0){
-//       move++;
-//       if(move>buD) break;
-//       tx++; ty--; tz++;
-//       int diag=getDiag(tx,ty,tz,flag);
-//       if(diag){
-//         bu++;
-//       }
-//     }
+     flag=0;
+     tx=xi; ty=yi; tz=zi;
+     move=0;
+     while(flag==0){
+       move++;
+       if(move>buD) break;
+       tx++; ty++; tz++;
+       int diag=getDiag(tx,ty,tz,flag);
+       if(diag){
+         bu++;
+       }
+     }
 
-//     if(bu>=bul){
-//       m->second.bu=bu;
-//       id=generateID(width,height,xi,yi,zi);
-//       vrtxIdList.push_back(id);
-//       ++m;
-//     }else{
-//       GRID.erase(m++);
-//       nbu++;
-//     }
-//   }
-//   cout<<"Removed "<<nbu<<" not burried grid points."<<endl;
-// }
+     flag=0;
+     tx=xi; ty=yi; tz=zi;
+     move=0;
+     while(flag==0){
+       move++;
+       if(move>buD) break;
+       tx--; ty--; tz++;
+       int diag=getDiag(tx,ty,tz,flag);
+       if(diag){
+         bu++;
+       }
+     }
 
-// void Grid::writeGrid(){
-//   string outg=outGridBase + tag + ".grid";
-//   map<int,vertex>::iterator it;
-//   FILE* fpwg;
-//   int g0=0;
-//   int g1=0;
-//   int g2=0;
-//   int g3=0;
-//   fpwg = fopen(outg.c_str(),"w");
-//   fprintf(fpwg,"#w %d\n#h %d\n#d %d\n#maxx %7.3f\n#maxy %7.3f\n#maxz %7.3f\n#minx %7.3f\n#miny %7.3f\n#minz %7.3f\n",width,height,depth,max_x,max_y,max_z,min_x,min_y,min_z);
-//   for(it=GRID.begin();it!=GRID.end();it++){
-//     if(it->second.p==1) continue;
-//     if(it->second.grid[0]==1 || it->second.grid[1]==1 || it->second.grid[2]==1){
-//       if(it->second.grid[0]==1) g0++;
-//       if(it->second.grid[1]==1) g1++;
-//       if(it->second.grid[2]==1) g2++;
-//       fprintf(fpwg, "%d %d %7.3f %7.3f %7.3f %d %d %d %d %d %d\n",it->first,it->second.id,it->second.x,it->second.y,it->second.z,it->second.p,it->second.bu,it->second.grid[0],it->second.grid[1],it->second.grid[2],it->second.grid[3]);
-//     }
-//   }
-//   fclose(fpwg);
-//   cout<<"g0 "<<g0<<" g1 "<<g1<<" g2 "<<g2<<endl;
-// }
+     flag=0;
+     tx=xi; ty=yi; tz=zi;
+     move=0;
+     while(flag==0){
+       move++;
+       if(move>buD) break;
+       tx--; ty--; tz--;
+       int diag=getDiag(tx,ty,tz,flag);
+       if(diag){
+         bu++;
+       }
+     }
 
-// int Grid::readGrid(){
-//   string line;
-//   string tmp;
-//   ifstream infile(gridFile.c_str());
-//   while(getline(infile,line)){
-//     if(line.compare("")==0) continue;
-//     string start = line.substr(0,2);
-//     if(start.compare("#w")==0){
-//       tmp=line.substr(3);
-//       width=atoi(tmp.c_str());
-//     }else if(start.compare("#h")==0){
-//       tmp=line.substr(3);
-//       height=atoi(tmp.c_str());
-//     }else if(start.compare("#d")==0){
-//       tmp=line.substr(3);
-//       depth=atoi(tmp.c_str());
-//     }else if(start.compare("#maxx")==0){
-//       tmp=line.substr(6);
-//       max_x=atof(tmp.c_str());
-//     }else if(start.compare("#maxy")==0){
-//       tmp=line.substr(6);
-//       max_y=atof(tmp.c_str());
-//     }else if(start.compare("#maxz")==0){
-//       tmp=line.substr(6);
-//       max_z=atof(tmp.c_str());
-//     }else if(start.compare("#minx")==0){
-//       tmp=line.substr(6);
-//       min_x=atof(tmp.c_str());
-//     }else if(start.compare("#miny")==0){
-//       tmp=line.substr(6);
-//       min_y=atof(tmp.c_str());
-//     }else if(start.compare("#minz")==0){
-//       tmp=line.substr(6);
-//       min_z=atof(tmp.c_str());
-//     }else{
-//       stringstream test(line);
-//       vertex vrtx;
-//       // vrtx.ints=new int[nbOfProbes];              
-//       // if(vrtx.ints==NULL){
-//       //   printf("\n\nCan't malloc int**\nGoodbye.\n");
-//       //   return(24);
-//       // }
-//       // vrtx.nrgs=new float[nbOfProbes];              
-//       // if(vrtx.nrgs==NULL){
-//       //   printf("\n\nCan't malloc int**\nGoodbye.\n");
-//       //   return(24);
-//       // }
-//       // vrtx.angles=new float[nbOfProbes];              
-//       // if(vrtx.angles==NULL){
-//       //   printf("\n\nCan't malloc int**\nGoodbye.\n");
-//       //   return(24);
-//       // }
-//       int zi=0;
-//       float zf=0.0;
-//       for(int i=0; i<nbOfProbes; i++){
-//         vrtx.ints.push_back(zi); vrtx.nrgs.push_back(zf); vrtx.angles.push_back(zf);
-//       }
-//       // for(int i=0; i<nbOfProbes; i++){  }
-//       // for(int i=0; i<nbOfProbes; i++){  }
-//       for(int i=0; i<4; i++){ vrtx.grid[i]=0; }
-//       int gid;
-//       test >> gid >> vrtx.id >> vrtx.x >> vrtx.y >> vrtx.z >> vrtx.p >> vrtx.bu >> vrtx.grid[0] >> vrtx.grid[1] >> vrtx.grid[2] >> vrtx.grid[3];
-//       if(vrtx.grid[0]==1){
-//         vrtx200++;
-//       }else if(vrtx.grid[1]==1){
-//         vrtx150++;
-//       }else if(vrtx.grid[2]==1){
-//         vrtx100++;
-//       }else if(vrtx.grid[3]==1){
-//         vrtx050++;
-//       }
-//       GRID.insert(pair<int,vertex>(gid,vrtx));
-//       vrtxIdList.push_back(gid);
-//     }
-//   }
-//   cout<<"Grid points [2.0] "<<vrtx200<<" [1.5] "<<vrtx150<<" [1.0] "<<vrtx100<<" [0.5] "<<vrtx050<<"."<<endl;
-//   return(0);
-// }
+     flag=0;
+     tx=xi; ty=yi; tz=zi;
+     move=0;
+     while(flag==0){
+       move++;
+       if(move>buD) break;
+       tx++; ty--; tz--;
+       int diag=getDiag(tx,ty,tz,flag);
+       if(diag){
+         bu++;
+       }
+     }
+
+     flag=0;
+     tx=xi; ty=yi; tz=zi;
+     move=0;
+     while(flag==0){
+       move++;
+       if(move>buD) break;
+       tx++; ty--; tz++;
+       int diag=getDiag(tx,ty,tz,flag);
+       if(diag){
+         bu++;
+       }
+     }
+      if(bu>bul){
+        nbu++;
+      }
+     nbGridPts++;
+
+     if(bu<=bul){
+       m->second.bu=bu;
+       id=generateID(width,height,xi,yi,zi);
+       vrtxIdList.push_back(id);
+       ++m;
+     }else{
+       GRID.erase(m++);
+       nbu++;
+     }
+   }
+   cout<<"Removed "<<nbu<<" burried grid points (< " << bul << ")."<<endl;
+   cout << "nb points total" << nbGridPts << endl;
+ }
+/**
+ void Grid::writeGrid(){
+   string outg=outGridBase + tag + ".grid";
+   map<int,vertex>::iterator it;
+   FILE* fpwg;
+   int g0=0;
+   int g1=0;
+   int g2=0;
+   int g3=0;
+   fpwg = fopen(outg.c_str(),"w");
+   fprintf(fpwg,"#w %d\n#h %d\n#d %d\n#maxx %7.3f\n#maxy %7.3f\n#maxz %7.3f\n#minx %7.3f\n#miny %7.3f\n#minz %7.3f\n",width,height,depth,max_x,max_y,max_z,min_x,min_y,min_z);
+   for(it=GRID.begin();it!=GRID.end();it++){
+     if(it->second.p==1) continue;
+     if(it->second.grid[0]==1 || it->second.grid[1]==1 || it->second.grid[2]==1){
+       if(it->second.grid[0]==1) g0++;
+       if(it->second.grid[1]==1) g1++;
+       if(it->second.grid[2]==1) g2++;
+       fprintf(fpwg, "%d %d %7.3f %7.3f %7.3f %d %d %d %d %d %d\n",it->first,it->second.id,it->second.x,it->second.y,it->second.z,it->second.p,it->second.bu,it->second.grid[0],it->second.grid[1],it->second.grid[2],it->second.grid[3]);
+     }
+   }
+   fclose(fpwg);
+   cout<<"g0 "<<g0<<" g1 "<<g1<<" g2 "<<g2<<endl;
+ }
+
+ int Grid::readGrid(){
+   string line;
+   string tmp;
+   ifstream infile(gridFile.c_str());
+   while(getline(infile,line)){
+     if(line.compare("")==0) continue;
+     string start = line.substr(0,2);
+     if(start.compare("#w")==0){
+       tmp=line.substr(3);
+       width=atoi(tmp.c_str());
+     }else if(start.compare("#h")==0){
+       tmp=line.substr(3);
+       height=atoi(tmp.c_str());
+     }else if(start.compare("#d")==0){
+       tmp=line.substr(3);
+       depth=atoi(tmp.c_str());
+     }else if(start.compare("#maxx")==0){
+       tmp=line.substr(6);
+       max_x=atof(tmp.c_str());
+     }else if(start.compare("#maxy")==0){
+       tmp=line.substr(6);
+       max_y=atof(tmp.c_str());
+     }else if(start.compare("#maxz")==0){
+       tmp=line.substr(6);
+       max_z=atof(tmp.c_str());
+     }else if(start.compare("#minx")==0){
+       tmp=line.substr(6);
+       min_x=atof(tmp.c_str());
+     }else if(start.compare("#miny")==0){
+       tmp=line.substr(6);
+       min_y=atof(tmp.c_str());
+     }else if(start.compare("#minz")==0){
+       tmp=line.substr(6);
+       min_z=atof(tmp.c_str());
+     }else{
+       stringstream test(line);
+       vertex vrtx;
+       // vrtx.ints=new int[nbOfProbes];
+       // if(vrtx.ints==NULL){
+       //   printf("\n\nCan't malloc int**\nGoodbye.\n");
+       //   return(24);
+       // }
+       // vrtx.nrgs=new float[nbOfProbes];
+       // if(vrtx.nrgs==NULL){
+       //   printf("\n\nCan't malloc int**\nGoodbye.\n");
+       //   return(24);
+       // }
+       // vrtx.angles=new float[nbOfProbes];
+       // if(vrtx.angles==NULL){
+       //   printf("\n\nCan't malloc int**\nGoodbye.\n");
+       //   return(24);
+       // }
+       int zi=0;
+       float zf=0.0;
+       for(int i=0; i<nbOfProbes; i++){
+         vrtx.ints.push_back(zi); vrtx.nrgs.push_back(zf); vrtx.angles.push_back(zf);
+       }
+       // for(int i=0; i<nbOfProbes; i++){  }
+       // for(int i=0; i<nbOfProbes; i++){  }
+       for(int i=0; i<4; i++){ vrtx.grid[i]=0; }
+       int gid;
+       test >> gid >> vrtx.id >> vrtx.x >> vrtx.y >> vrtx.z >> vrtx.p >> vrtx.bu >> vrtx.grid[0] >> vrtx.grid[1] >> vrtx.grid[2] >> vrtx.grid[3];
+       if(vrtx.grid[0]==1){
+         vrtx200++;
+       }else if(vrtx.grid[1]==1){
+         vrtx150++;
+       }else if(vrtx.grid[2]==1){
+         vrtx100++;
+       }else if(vrtx.grid[3]==1){
+         vrtx050++;
+       }
+       GRID.insert(pair<int,vertex>(gid,vrtx));
+       vrtxIdList.push_back(gid);
+     }
+   }
+   cout<<"Grid points [2.0] "<<vrtx200<<" [1.5] "<<vrtx150<<" [1.0] "<<vrtx100<<" [0.5] "<<vrtx050<<"."<<endl;
+   return(0);
+ }
+*/
 
 int Grid::getDiag(int tx, int ty, int tz, int& flag){
   int id=generateID(width,height,tx,ty,tz);
@@ -1820,17 +2009,18 @@ int is_coord_in_cube(float x, float y, float z, float center_x, float center_y, 
   }else{return(0);}
 }
 
-void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
-  map<int,vertex>::iterator it;
+void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){ //Write the .mif output file
 
+  map<int,vertex>::iterator it;
   FILE* fpNew;
   int probe;
   float d=0.0;
   int bsFlag=0;
   int i,j;
+
+  //Print header of output file
   string na="NA";
   string mifFileNew=outBase + tag + ".mif";
-
   fpNew = fopen(mifFileNew.c_str(),"w");
   fprintf(fpNew,"#cmd %s\n",cmdLine.c_str());
   fprintf(fpNew,"#proteinFile %s\n",proteinFile.c_str());
@@ -1860,10 +2050,9 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
 
   cout<<endl<< "Writing Mif File"<<endl;
   for(it=GRID.begin();it!=GRID.end();it++){
-
     if(it->second.p==1){
-      if(it->second.grid[2]==1){
-        fprintf(fpNew, "#PG %7.2f %7.2f %7.2f\n",it->second.x,it->second.y,it->second.z);  
+      if(it->second.grid[1]==1){
+        fprintf(fpNew, "#PG %7.2f %7.2f %7.2f\n",it->second.x,it->second.y,it->second.z);
       }
     }else{
       if((zip!=-1 && it->second.grid[zip]==1) || zip==-1){
@@ -1887,7 +2076,7 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
         //     fprintf(fpNew, " %d",(int)round(it->second.env[aa[i]]));
         //   }
         // }
-        fprintf(fpNew, " %d\n",it->second.bu);        
+        fprintf(fpNew, " %d\n",it->second.bu);
       }
     }
   }
