@@ -201,6 +201,7 @@ for(my $i=0; $i<$nbpb; $i++){ #Loop each probe
   }
 }
 # print "grids $grids gride $gride\n";
+
 #print grid points
 for(my $i=$grids; $i<=$gride; $i++){
   my $it=0;
@@ -214,17 +215,19 @@ for(my $i=$grids; $i<=$gride; $i++){
   }
 }
 print NPML "\n";
+
 #print protein grid points
-if(scalar @protgrid){
-  print NPML "cmd.read_pdbstr(\"\"\"";
-  for(my $i=0; $i<@protgrid; $i++){
-    my @s=split(/\s+/,$protgrid[$i]);
-    printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",0,"PGD",$s[0],$s[1],$s[2];
-  }
-  print NPML "TER \\\n\"\"\",\"".$mifName."_grid\")\n";
-}
+# if(scalar @protgrid){
+#   print NPML "cmd.read_pdbstr(\"\"\"";
+#   for(my $i=0; $i<@protgrid; $i++){
+#     my @s=split(/\s+/,$protgrid[$i]);
+#     printf NPML "HETATM%5d  N   %3s A0000    %8.3f%8.3f%8.3f  0.00 10.00           N\\\n",0,"PGD",$s[0],$s[1],$s[2];
+#   }
+#   print NPML "TER \\\n\"\"\",\"".$mifName."_protGrid\")\n";
+# }
+
 print NPML "\n";
-print NPML "feedback enable,all,output\norient\nshow cartoon, ".$mifName."\nremove (resn HOH)\nshow sticks, HET & ".$mifName."\ncolor white,".$mifName."_grid\nshow nonbonded,".$mifName."_grid\n";
+print NPML "feedback enable,all,output\norient\nshow cartoon, ".$mifName."\nremove (resn HOH)\nshow sticks, HET & ".$mifName."\ncolor white,".$mifName."_protGrid\nshow nonbonded,".$mifName."_protGrid\n";
 print NPML "\n";
 for(my $i=0; $i<$nbpb; $i++){
   if(@{$probes[$i]}){
