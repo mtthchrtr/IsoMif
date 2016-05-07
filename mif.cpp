@@ -894,19 +894,19 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
       chipped++;
       tooFar++;
     }
-    // else
-    // if(it->second.grid[zip]==0 && zip!=-1){
-    //   GRID.erase(it++);
-    //   chipped++;
-    //   badRes++;
-    // }
+    else
+    if(it->second.grid[zip]==0 && zip!=-1){
+      GRID.erase(it++);
+      chipped++;
+      badRes++;
+    }
     else{
-      vrtxIdList.push_back(it->second.modulo);
-      ++it;
       if(inGridRes(it->second,2.0)==1) vrtx200++;
       if(inGridRes(it->second,1.5)==1) vrtx150++;
       if(inGridRes(it->second,1.0)==1) vrtx100++;
       if(inGridRes(it->second,0.5)==1) vrtx050++;
+      vrtxIdList.push_back(it->second.modulo);
+      ++it;
     }
   }
 
