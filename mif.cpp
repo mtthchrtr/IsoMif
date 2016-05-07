@@ -28,20 +28,22 @@ int main(int argc, char **argv)
   size_t end;
   int i;
 
+  //Reading command line arguments to store parameters, input files and output files
   if(readCmdLine(argc, argv)==24){ return(0); }
 
-  if(pairwiseF.compare("")!=0){
-    getPairwise();
-  }else{
+  //On vérifie s'il faut calculer les Mifs pour plusieurs protéines (-pp mon_fichier_texte)
+  if(pairwiseF.compare("")!=0){ //Si un fichier contenant des paires protéine - cavité (getcleft) est défini
+    getPairwise(); //on store les paires dans le vecteur px
+  }else{ //S'il n'y a pas de fichier défini avec -pp
     pwRun npw;
     npw.pdbF= proteinFile;
     npw.cleftF= cleftFile;
-    npw.gridF= gridFile;
     npw.rnc= resnumc;
     npw.ligF= ligFile;
     pw.push_back(npw);
   }
 
+  //Reading reference files
   getAtomRef();
   getPseudoC();
   getEpsilons();
@@ -50,18 +52,17 @@ int main(int argc, char **argv)
   getaa();
   readLigFile();
 
-
+  //Do all the Mif calculations run for all pairs (one or more depending on -pp)
+  //On run refers to one protein PDB file and on cavity file, but we could adapt it to surface mode
   for(int pwr=0; pwr<pw.size(); pwr++){
 
+    //Set initial values of this pair run
     proteinFile=pw[pwr].pdbF;
     cleftFile=pw[pwr].cleftF;
-    gridFile=pw[pwr].gridF;
     resnumc=pw[pwr].rnc;
     ligFile=pw[pwr].ligF;
 
-    // cout <<"pdbF "<<proteinFile<<" cleftF "<<cleftFile<<" gridF "<<gridFile<<endl;
-
-    //Get prefix
+    //Get prefix if tag is empty (tag is the -t argument that defines an output filename base)
     if(tag.compare("")==0){
       end=proteinFile.find(".pdb");
       for(i=end-1; i>=0; i--){
@@ -75,22 +76,35 @@ int main(int argc, char **argv)
       }
     }
 
+    //Read protein PDB file and store atoms in PROTEIN vector and width,height,depth of grid
     Protein protein=Protein(proteinFile);
 
+    //Build the grid vertices
     Grid grid=Grid(cleftFile,protein);
 
+    //Calculate the MIFs at the vertices built
     getMif(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
 
+    //Create output files containing mif information (nrg of the probes, etc) in different format than the .mif file
     // getStats(grid.GRID,protein.LIGATOMS,grid.vrtxIdList);
 
+    //A function that finds the closest distance to each of the 20 amino acids at each vertex and stores this distance
+    //These like other descriptors can be used in the graph matching (Env is for environment)
     // getEnv(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
 
+    //Smooth is a function that looks if the potential of surrounding probes is passed the threshold and assigns this probe to the reference vrtx.
+    //There is a smooth distance
     // if(smoothDist!=0) grid.smooth();
 
-    // getPseudo(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
+    //This function creates a vector of pseudocenters (defined in reference file).
+    //A pseudocenter is a functional atom of the residues that could be important for certain interactions
+    //The pseudocenters can be used in a first search step of the similarity algorithm
+    //getPseudo(grid.GRID,protein.PROTEIN,grid.vrtxIdList);
 
+    //Write the MIF and other information in the .mif output file
     grid.writeMif(protein.PROTEIN,protein.LIGATOMS);
 
+    //Clear all vectors and maps to get ready for the next round
     tag="";
     for(int gi=0; gi<4; gi++){ ss[gi]=0; }
     for(int gi=0; gi<4; gi++){ ssm[gi]=0; }
@@ -116,6 +130,8 @@ int readCmdLine(int argc, char **argv){
   stringstream usage;
   int nb_arg;
 
+  cout<<"Reading command line..."<<endl;
+
   for(nb_arg=0; nb_arg<argc; nb_arg++){
     cmdLine = cmdLine + argv[nb_arg];
     if(nb_arg<argc-1){
@@ -126,11 +142,11 @@ int readCmdLine(int argc, char **argv){
   usage << "\n!---   IsoMIF   ---!\nWelcome.Bienvenue\n";
   usage << "-p <filename>        : \t Protein (PDB format)\n";
   usage << "-g <filename>        : \t Cleft of protein (GetCleft sphere format)\n";
+  usage << "-surf                : \t surface mode to create the grid on the whole surface\n";
   usage << "-pp <filename>       : \t File with highthroughput mif calculations\n";
-  usage << "-grid <filename>     : \t Grid of protein\n";
-  usage << "-s                   : \t grid spacing 0.25, 0.5, 1.0 or 2.0 (default: 0.25Angstrom)\n";
+  usage << "-s                   : \t Which grid resolution to consider [0.25, 0.5, 1.0 or 2.0] default is 0.5 Angstrom\n";
   usage << "-d <distance in Ang.>: \t atom-probe distance threshold. (default: "<< atmPbMaxDist <<" Angstrom)\n";
-  usage << "-c <chain>           : \t which Chain to consider for energy calculations\n";
+  usage << "-c <chain>           : \t PDB chains to consider for grid and energy calculations\n";
   usage << "-w <distance in Ang.>: \t minimum distance of the probes to the atoms (default: "<< minGridDist <<" Angstrom)\n";
   usage << "-v <distance in Ang.>: \t maximum distance of the probes to the atoms (default: "<< maxGridDist <<" Angstrom)\n";
   usage << "-pr                  : \t print details of energy calculations for each probe-atom pair\n";
@@ -146,10 +162,9 @@ int readCmdLine(int argc, char **argv){
   usage << "-dpv                 : \t distance probe-Vrtx to consider a vrtx to be true-positive\n";
   usage << "-sf                  : \t stats output file\n";
   usage << "-l                   : \t RESNUMC of the ligand from which to crop the grid\n";
-  usage << "-r                   : \t maximum distance between the grid and the ligand\n";
+  usage << "-r                   : \t maximum distance between the grid and the ligand or residues atoms\n";
   usage << "-x                   : \t do not write atoms in mif file\n";
   usage << "-og                  : \t dir for grid file\n";
-  usage << "-z                   : \t output with only vertices from the resolution specified [0-3] and lig atoms\n";
   usage << "-h                   : \t help menu\n";
 
   if(argc<5){
@@ -168,9 +183,6 @@ int readCmdLine(int argc, char **argv){
     }
     if(strcmp(argv[nb_arg],"-p")==0){
       proteinFile=string(argv[nb_arg+1]);
-    }
-    if(strcmp(argv[nb_arg],"-grid")==0){
-      gridFile=string(argv[nb_arg+1]);
     }
     if(strcmp(argv[nb_arg],"-g")==0){
       cleftFile=string(argv[nb_arg+1]);
@@ -225,13 +237,21 @@ int readCmdLine(int argc, char **argv){
     }
     if(strcmp(argv[nb_arg],"-s")==0){
       sscanf(argv[nb_arg+1], "%f", &stepsize);
+
+      if(stepsize == 0.5){
+        zip=3;
+      }else if(stepsize == 1.0){
+        zip=2;
+      }else if(stepsize == 1.5){
+        zip=1;
+      }else if(stepsize == 2.0){
+        zip=0;
+      }
     }
     if(strcmp(argv[nb_arg],"-b")==0){
       sscanf(argv[nb_arg+1], "%d", &bul);
     }
-    if(strcmp(argv[nb_arg],"-z")==0){
-      sscanf(argv[nb_arg+1], "%d", &zip);
-    }
+
     if(strcmp(argv[nb_arg],"-og")==0){
       outGridBase=string(argv[nb_arg+1]);
     }
@@ -244,6 +264,9 @@ int readCmdLine(int argc, char **argv){
     if(strcmp(argv[nb_arg],"-pp")==0){
       pairwiseF=argv[nb_arg+1];
     }
+    if(strcmp(argv[nb_arg],"-surf")==0){
+      surf =1;
+    }
   }
 
   if(chain.compare("")==0){
@@ -255,23 +278,26 @@ int readCmdLine(int argc, char **argv){
     outBase = outBase + "/";
   }
 
+  //Remove the alternate location
   resnumcShort=resnumc.substr(0,resnumc.length()-1);
 
   cout<<endl;
-  cout<< "ProteinFile: "<< proteinFile <<endl;
-  cout<< "CleftFile: "<< cleftFile <<endl;
-  cout<< "Outbase: "<< outBase <<endl;
-  cout<< "OutGridBase: "<< outBase <<endl;
+  cout<< "Protein file: "<< proteinFile <<endl;
+  cout<< "GetCleft file: "<< cleftFile <<endl;
+  cout<< "Output file base: "<< outBase <<endl;
   cout<< "Chain: "<< chain <<endl;
   cout<< "Tag: " << tag << endl;
   cout<< "Burriedness level: " << bul << endl;
   cout<< "Stepsize: "<<stepsize<<endl;
+  cout<< "Gridstep: "<<gridStep<<endl;
   cout<< "MinGridDist: "<< minGridDist <<endl;
   cout<< "MaxGridDist: "<< maxGridDist <<endl;
   cout<< "AtmPbMaxDist: "<< atmPbMaxDist <<endl;
   cout<< "RESNUMC: "<< resnumc <<endl;
   cout<< "RESNUMC short: "<< resnumcShort <<endl;
   cout<< "gridLigDist: "<< gridLigDist <<endl;
+
+  //Square some distances so we don't need to do the square root in distance calculations
   gridLigDist=gridLigDist*gridLigDist;
   maxGridDist=maxGridDist*maxGridDist;
   minGridDist=minGridDist*minGridDist;
@@ -290,7 +316,11 @@ Protein::Protein(string filename){
   max_x=-1000.00;
   max_y=-1000.00;
   max_z=-1000.00;
+
+  //Read PDB file of the protein and store atoms
   readPDB(filename);
+
+  //Get reference atom for each atom that will be used to calculate angles
   getAtomDir();
 }
 
@@ -307,15 +337,18 @@ void Protein::readPDB(string filename){
   atom* atm=NULL;
   string outFileName=outBase + tag + "_cpy.pdb";
   size_t found;
-  ifs.open(filename.c_str());
-  ofs.open(outFileName.c_str());
   float minx,miny,minz,maxx,maxy,maxz;
 
-  if(!ifs.is_open()){ 
-    cout << "could not read "<< filename << endl;
-  }
-  cout<<"Reading PDB file..."<<endl;
+  cout<<endl<<"Reading PDB file..."<<endl;
+
+  //Opening PDB output file that will contain a copy of the PDB structure
+  //This file is always in the same directory as the .mif file and is used in mifView.pl to create a object of the structure in PyMOL
+  ofs.open(outFileName.c_str());
+
+  ifs.open(filename.c_str());
+  if(!ifs.is_open()){ cout << "could not read "<< filename << endl; }
   while(ifs.good()){
+
     getline(ifs,line);
 
     if(line.compare(0,3,"END") == 0){ break; }
@@ -349,7 +382,7 @@ void Protein::readPDB(string filename){
       y=atof(fields[9].c_str());
       z=atof(fields[10].c_str());
 
-      if(fields[4].compare("HOH")==0){ continue; }
+      if(fields[4].compare("HOH")==0){ continue; } //Continue if its a water molecule line
 
       atom atm;
       atm.x=x;
@@ -365,72 +398,82 @@ void Protein::readPDB(string filename){
       atm.mif=1;
       atm.h=0;
 
-      if(atm.alt.compare("")==0){ atm.alt="-"; }
-      if(atm.chain.compare("")==0){ atm.chain="-"; }
+      if(atm.alt.compare("")==0){ atm.alt="-"; } //If there is no alterante location for this atom set alt to '-'
+      if(atm.chain.compare("")==0){ atm.chain="-"; } //If there is no chain for this atom set chain to '-'
 
+      //See if the atom in this line is a hydrogen (atm.h = 1)
       try{
-        fields[11] = line.substr(76,2); // atom symbol
+        fields[11] = line.substr(76,2); //Get atom symbol of this atom
         stripSpace(fields[11]);
-        found = fields[11].find("H");
-        if(found!=string::npos) atm.h=1;
+        found = fields[11].find("H"); //If this atom symbol contains an H
+        if(found!=string::npos) atm.h=1; //Tag this atom as a hydrogen atom
       }catch(...){
         // cout<<"No atom symbol"<<endl;
       }
       
-      if(atomTypes.find(atm.resn+"_"+atm.atomn) == atomTypes.end()){ atm.mif=0; }
-      if(fields[5].compare(chain)!=0 && chain.compare("none")!=0){ atm.mif=0; }
-      if(line.compare(0,6,"HETATM") == 0){ atm.mif=0; }
-      if((fields[3].compare("A")!=0) && (fields[3].compare("")!=0)){ atm.mif=0; } //Keep only alternate atoms A for the protein
+      //Check conditions and set atm.mif to 0 if necessary
+      //atm.mif == 0 when the atom must not be considered to build the grid or calculate the Mif
+      if(atomTypes.find(atm.resn+"_"+atm.atomn) == atomTypes.end()){ atm.mif=0; } //If theres no atom type in our files
+      if(fields[5].compare(chain)!=0 && chain.compare("none")!=0){ atm.mif=0; } //If its not in the PDB chain we want
+      if(line.compare(0,6,"HETATM") == 0){ atm.mif=0; } //If its an HETATM atom (bound ligand, ions, water molecules)
+      if((fields[3].compare("A")!=0) && (fields[3].compare("")!=0)){ atm.mif=0; } //If it has an alternate location and its not A
 
+      //If we defined an anchor amino acid or residue (-l resnumc) used to crop the grid around it
+      //we must store the anchor atoms in LIGAND
       if(resnumc.compare("")!=0){
+
+        //Get long and short resnumc (with and without alt location)
         stringstream sss;
-        sss << atm.resnb;
-        thisresnumc = atm.resn + sss.str() + atm.chain + atm.alt;
-        thisresnumcShort = atm.resn + sss.str() + atm.chain;
+        sss << atm.resnb; //We put the number in a stringstream to convert it to a string easily
+        thisresnumc = atm.resn + sss.str() + atm.chain + atm.alt; //long resnumc
+        thisresnumcShort = atm.resn + sss.str() + atm.chain; //short resnumc
         stripSpace(thisresnumc);
 
-        // cout<< resnumc<< " to "<< thisresnumc <<" "<<fields[2]<< " "<< atof((line.substr(30,8).c_str()))<<" "<< atof((line.substr(38,8).c_str()))<<" "<<atof((line.substr(46,8).c_str()))<<endl;
+        //If its not a hydrogen atom and the resnumc defined in the cmd line (with -l argument) is the same as this atom, push as LIGAND atom
         if(atm.h==0 && (resnumc.compare(thisresnumc)==0 || (resnumcShort.compare(thisresnumcShort)==0 && atm.alt.compare("-")==0))){
-          // cout<<line<<endl;
           LIGAND.push_back(atof((line.substr(30,8).c_str())));
           LIGAND.push_back(atof((line.substr(38,8).c_str())));
           LIGAND.push_back(atof((line.substr(46,8).c_str())));
           atm.at=ligAt[atm.atomn];
-          // cout<<"LIGAND ATOM "<<atm.atomn<<" "<<atm.at<<endl;
           LIGATOMS.push_back(atm);
         }
       }
 
-      // if(atm.mif==1){
-        minx=roundCoord(x-0.5,0);
-        miny=roundCoord(y-0.5,0);
-        minz=roundCoord(z-0.5,0);
-        maxx=roundCoord(x+0.5,1);
-        maxy=roundCoord(y+0.5,1);
-        maxz=roundCoord(z+0.5,1);
-        //Set GRID min/max X,Y and Z
-        if(minx<min_x){ min_x=minx; }
-        if(miny<min_y){ min_y=miny; }
-        if(minz<min_z){ min_z=minz; }
-        if(maxx>max_x){ max_x=maxx; }
-        if(maxy>max_y){ max_y=maxy; }
-        if(maxz>max_z){ max_z=maxz; }
-      // }
+      //Round min/max X,Y and Z coords
+      minx=roundCoord(x-0.5,0);
+      miny=roundCoord(y-0.5,0);
+      minz=roundCoord(z-0.5,0);
+      maxx=roundCoord(x+0.5,1);
+      maxy=roundCoord(y+0.5,1);
+      maxz=roundCoord(z+0.5,1);
 
+      //Update min/max X,Y and Z intervals
+      if(minx<min_x){ min_x=minx; }
+      if(miny<min_y){ min_y=miny; }
+      if(minz<min_z){ min_z=minz; }
+      if(maxx>max_x){ max_x=maxx; }
+      if(maxy>max_y){ max_y=maxy; }
+      if(maxz>max_z){ max_z=maxz; }
+
+      //Push the atom in the protein vector
       PROTEIN.push_back(atm);
     }
   }
   ifs.close();
   ofs.close();
-  min_x-=5.0; min_y-=5.0; min_z-=5.0; max_x+=5.0; max_y+=5.0; max_z+=5.0;
 
-  width=(int)(((max_x-min_x)/stepsize)+1.0);
-  height=(int)(((max_y-min_y)/stepsize)+1.0);
-  depth=(int)(((max_z-min_z)/stepsize)+1.0);
+  //Add buffer layer (maximum distance allowed between an atom and a grid point + stepsize) to the min/max X,Y and Z
+  min_x-=maxGridDist+gridStep; min_y-=maxGridDist+gridStep; min_z-=maxGridDist+gridStep; max_x+=maxGridDist+gridStep; max_y+=maxGridDist+gridStep; max_z+=maxGridDist+gridStep;
+  
+  //Calculate width, height and depth of the mother grid
+  width=(int)(((max_x-min_x)/gridStep)+1.0);
+  height=(int)(((max_y-min_y)/gridStep)+1.0);
+  depth=(int)(((max_z-min_z)/gridStep)+1.0);
 
+  //Print values to the terminal
   cout<<"PROTEIN min/max values: minx: "<< min_x<< " miny: "<< min_y<< " minz: "<<min_z<<" maxx: "<<max_x<<" maxy: "<<max_y<<" maxz: "<<max_z<<endl;
   cout<<"PROTEIN Width "<<width<<" Height "<< height << endl;
-  cout<<"ligand size: "<<LIGAND.size()<<endl;
+  cout<<"Number of anchor atoms: "<<LIGAND.size()<<endl;
 
 }
 
@@ -440,12 +483,12 @@ void Protein::getAtomDir(){
   string tatomn;
   string tatomn2;
 
-  for(i=0; i<PROTEIN.size(); i++){
-    if(PROTEIN[i].mif==1){
+  for(i=0; i<PROTEIN.size(); i++){ //For each atom of the protein
+    if(PROTEIN[i].mif==1){ //If its an atom we want to consider for the Mif calculations
       ring=0;
       found=0;
       needRef=0;
-      if(atomRef[PROTEIN[i].resn+"_"+PROTEIN[i].atomn].r1.compare("")!=0){ // If there is a reference atom
+      if(atomRef[PROTEIN[i].resn+"_"+PROTEIN[i].atomn].r1.compare("")!=0){ // If there is a reference atom based on our input files
         needRef=1;
         tatomn=atomRef[PROTEIN[i].resn+"_"+PROTEIN[i].atomn].r1;
         rDir=atomRef[PROTEIN[i].resn+"_"+PROTEIN[i].atomn].rDir;
@@ -454,237 +497,6 @@ void Protein::getAtomDir(){
           ring=atomRef[PROTEIN[i].resn+"_"+PROTEIN[i].atomn].ring;
         }
       }
-      // if(PROTEIN[i].resn.compare("ALA")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("ALA")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("ARG")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("ARG")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("ARG")==0 && PROTEIN[i].atomn.compare("NE")==0){
-      //   tatomn="HE";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("ARG")==0 && PROTEIN[i].atomn.compare("NH1")==0){
-      //   tatomn="CZ";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("ARG")==0 && PROTEIN[i].atomn.compare("NH2")==0){
-      //   tatomn="CZ";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("ASN")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("ASN")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("ASN")==0 && PROTEIN[i].atomn.compare("OD1")==0){
-      //   tatomn="CG";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("ASN")==0 && PROTEIN[i].atomn.compare("ND2")==0){
-      //   tatomn="CG";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("ASP")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("ASP")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("ASP")==0 && PROTEIN[i].atomn.compare("OD1")==0){
-      //   tatomn="CG";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("ASP")==0 && PROTEIN[i].atomn.compare("OD2")==0){
-      //   tatomn="CG";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("CYS")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("CYS")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("GLN")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("GLN")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("GLN")==0 && PROTEIN[i].atomn.compare("OE1")==0){
-      //   tatomn="CD";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("GLN")==0 && PROTEIN[i].atomn.compare("NE2")==0){
-      //   tatomn="CD";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("GLU")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("GLU")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("GLU")==0 && PROTEIN[i].atomn.compare("OE1")==0){
-      //   tatomn="CD";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("GLU")==0 && PROTEIN[i].atomn.compare("OE2")==0){
-      //   tatomn="CD";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("GLY")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("GLY")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("HIS")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("HIS")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("HIS")==0 && PROTEIN[i].atomn.compare("ND1")==0){
-      //   tatomn="CG";
-      //   tatomn2="CE1";
-      //   ring=2;
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("HIS")==0 && PROTEIN[i].atomn.compare("NE2")==0){
-      //   tatomn="CE1";
-      //   tatomn2="CD2";
-      //   ring=2;
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("HIS")==0 && (PROTEIN[i].atomn.compare("CD2")==0 || PROTEIN[i].atomn.compare("CE1")==0 || PROTEIN[i].atomn.compare("CG")==0)){
-      //   tatomn="ND1";
-      //   tatomn2="NE2";
-      //   ring=1;
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("ILE")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("ILE")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("LEU")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("LEU")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("LYS")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("LYS")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("LYS")==0 && PROTEIN[i].atomn.compare("NZ")==0){
-      //   tatomn="CE";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("MET")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("MET")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("PHE")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("PHE")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("PHE")==0 && PROTEIN[i].atomn.compare("CG")==0){
-      //   tatomn="CD1";
-      //   tatomn2="CD2";
-      //   ring=1;
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("PHE")==0 && PROTEIN[i].atomn.compare("CD1")==0){
-      //   tatomn="CG";
-      //   tatomn2="CD2";
-      //   ring=1;
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("PHE")==0 && (PROTEIN[i].atomn.compare("CD2")==0 || PROTEIN[i].atomn.compare("CE1")==0 || PROTEIN[i].atomn.compare("CE2")==0 || PROTEIN[i].atomn.compare("CZ")==0)){
-      //   tatomn="CG";
-      //   tatomn2="CD1";
-      //   ring=1;
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("PRO")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("SER")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("SER")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("SER")==0 && PROTEIN[i].atomn.compare("OG")==0){
-      //   tatomn="CB";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("THR")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("THR")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("THR")==0 && PROTEIN[i].atomn.compare("OG1")==0){
-      //   tatomn="CB";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("TRP")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("TRP")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("TRP")==0 && PROTEIN[i].atomn.compare("CG")==0){
-      //   tatomn="CD1";
-      //   tatomn2="CD2";
-      //   ring=1;
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("TRP")==0 && PROTEIN[i].atomn.compare("CD1")==0){
-      //   tatomn="CG";
-      //   tatomn2="CD2";
-      //   ring=1;
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("TRP")==0 && (PROTEIN[i].atomn.compare("CD2")==0 || PROTEIN[i].atomn.compare("CE2")==0 || PROTEIN[i].atomn.compare("CE3")==0 || PROTEIN[i].atomn.compare("CZ2")==0 || PROTEIN[i].atomn.compare("CZ3")==0 || PROTEIN[i].atomn.compare("CH2")==0)){
-      //   tatomn="CG";
-      //   tatomn2="CD1";
-      //   ring=1;
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("TRP")==0 && PROTEIN[i].atomn.compare("NE1")==0){
-      //   tatomn="CE2";
-      //   tatomn2="CD1";
-      //   ring=2;
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("TYR")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("TYR")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("TYR")==0 && PROTEIN[i].atomn.compare("CG")==0){
-      //   tatomn="CD1";
-      //   tatomn2="CD2";
-      //   ring=1;
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("TYR")==0 && PROTEIN[i].atomn.compare("CD1")==0){
-      //   tatomn="CG";
-      //   tatomn2="CD2";
-      //   ring=1;
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("TYR")==0 && (PROTEIN[i].atomn.compare("CD2")==0 || PROTEIN[i].atomn.compare("CE1")==0 || PROTEIN[i].atomn.compare("CE2")==0 || PROTEIN[i].atomn.compare("CZ")==0)){
-      //   tatomn="CG";
-      //   tatomn2="CD1";
-      //   ring=1;
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("TYR")==0 && PROTEIN[i].atomn.compare("OH")==0){
-      //   tatomn="CZ";
-      //   rDir=0;
-      // }else if(PROTEIN[i].resn.compare("VAL")==0 && PROTEIN[i].atomn.compare("N")==0){
-      //   tatomn="H";
-      //   rDir=1;
-      // }else if(PROTEIN[i].resn.compare("VAL")==0 && PROTEIN[i].atomn.compare("O")==0){
-      //   tatomn="C";
-      //   rDir=0;
-      // }else{
-      //   needRef=0;
-      // }
-
       if(needRef==1){
         if(getRefAtom(xr, yr, zr, PROTEIN[i].resn, PROTEIN[i].resnb, tatomn, tatomn2, ring, PROTEIN[i].x, PROTEIN[i].y, PROTEIN[i].z, PROTEIN[i].chain)==1){
           PROTEIN[i].xr=xr;
@@ -701,7 +513,7 @@ void Protein::getAtomDir(){
       }
     }
   }
-  cout<<endl<<"Protein has "<< PROTEIN.size()<<" atoms"<<endl;
+  cout<<"Protein has "<< PROTEIN.size()<<" atoms"<<endl<<endl;
 }
 
 int Protein::getRefAtom(float& xr, float& yr, float& zr, string tresn, int tresnb, string tatomn, string tatomn2, int ring, float x, float y, float z, string chain){
@@ -713,7 +525,7 @@ int Protein::getRefAtom(float& xr, float& yr, float& zr, string tresn, int tresn
   float ax,ay,az,bx,by,bz;
   float dist,rDist,rpDist,angle;
 
-  if(ring==0){
+  if(ring==0){ //This atom is not part of a ring
     for(i=0; i<PROTEIN.size(); i++){
       if(PROTEIN[i].resn.compare(tresn)==0 && PROTEIN[i].atomn.compare(tatomn)==0 && PROTEIN[i].resnb==tresnb && PROTEIN[i].chain.compare(chain)==0){
         found=1;
@@ -723,27 +535,34 @@ int Protein::getRefAtom(float& xr, float& yr, float& zr, string tresn, int tresn
       }
       if(found==1){ break; }
     }
-  }else{
+  }else{ //If its part of a ring
     for(i=0; i<PROTEIN.size(); i++){
+
+      //Loop to find reference atom 1
       if(PROTEIN[i].resn.compare(tresn)==0 && PROTEIN[i].atomn.compare(tatomn)==0 && PROTEIN[i].resnb==tresnb && PROTEIN[i].chain.compare(chain)==0){
         foundr1=1;
         xr1=PROTEIN[i].x;
         yr1=PROTEIN[i].y;
         zr1=PROTEIN[i].z;
       }
+      //Loop to find reference atom 2
       if(PROTEIN[i].resn.compare(tresn)==0 && PROTEIN[i].atomn.compare(tatomn2)==0 && PROTEIN[i].resnb==tresnb && PROTEIN[i].chain.compare(chain)==0){
         foundr2=1;
         xr2=PROTEIN[i].x;
         yr2=PROTEIN[i].y;
         zr2=PROTEIN[i].z;
       }
+
+      //If we found both reference atoms get out of the for loop
       if(foundr1==1 && foundr2==1){
         break;
       }
     }
+
+    //If we found both reference atom
     if(foundr1==1 && foundr2==1){
       found=1;
-      if(ring==1){
+      if(ring==1){ //Ring type 1 means we must find a reference atom to calculate angle with a vector equidistant from adjacent atoms (nitrogen of histidine)
         ax=x-xr1;
         ay=y-yr1;
         az=z-zr1;
@@ -758,7 +577,7 @@ int Protein::getRefAtom(float& xr, float& yr, float& zr, string tresn, int tresn
         // rpDist=dist_3d(xr1,yr1,zr1,xr,yr,zr);
         // angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
         // angle=acos(angle)* 180.0 / PI;
-      }else if(ring==2){
+      }else if(ring==2){ //Ring type 2 means we must find a reference atom to calculate angle between probe and plane of the ring
         xr=(xr1-x+xr2-x)+x;
         yr=(yr1-y+yr2-y)+y;
         zr=(zr1-z+zr2-z)+z;
@@ -778,33 +597,6 @@ int Protein::getRefAtom(float& xr, float& yr, float& zr, string tresn, int tresn
       }
     }
   }
-  
-  if(found==0){
-    // if(ring==1){
-    //   cout<<"Couldn't find ring vector of "<<tresn<<" "<<tresnb<<endl;
-    // }else{
-    //   cout<<"Couldn't find vector of "<<tresn<<" "<<tresnb<<" "<< tatomn<<endl;
-    // }
-  }else{
-    if(ring==1){
-      // cout<<endl<<"Looking for ring vector of "<<tresn<<" "<<tresnb<<endl;
-      // cout<<"found "<<tatomn<<" "<<xr1<<" "<<yr1<<" "<<zr1<<endl;
-      // cout<<"found "<<tatomn2<<" "<<xr2<<" "<<yr2<<" "<<zr2<<endl;
-      // cout<<"base "<<x<<" "<<y<<" "<<z<<endl;
-      // cout<<"ref "<< xr <<" "<< yr <<" "<< zr <<endl;
-      // cout<<"angle "<<angle<<endl;
-    }else if(ring==2){
-      // cout<<endl<<"Looking for histidine vector of "<<tresn<<" "<<tresnb<<endl;
-      // cout<<"found "<<tatomn<<" "<<xr1<<" "<<yr1<<" "<<zr1<<endl;
-      // cout<<"found "<<tatomn2<<" "<<xr2<<" "<<yr2<<" "<<zr2<<endl;
-      // cout<<"base "<<x<<" "<<y<<" "<<z<<endl;
-      // cout<<"ref "<< xr <<" "<< yr <<" "<< zr <<endl;
-      // cout<<"angle "<<angle<<endl;
-    }else{
-      // cout<<endl<<"Looking for atom vector of "<<tresn<<" "<<tresnb<<" "<< tatomn<<endl;
-      // cout<<"found it at " << xr << " "<< yr << " " << zr << endl;
-    }
-  }
 
   return(found);
 }
@@ -815,23 +607,24 @@ Grid::Grid(string filename, Protein& prot){
   vrtx150=0;
   vrtx200=0;
 
-  if(gridFile.compare("")==0){
-    // createProtVrtx(prot.PROTEIN);
-    if(filename.compare("")==0){
-      buildGrid(prot.PROTEIN);
-    }else{
-      // getMinMax(filename,prot);
-      readGetCleft(filename, prot.PROTEIN, prot.LIGAND);
-      // getProtVrtx(prot.PROTEIN);
-    }
-    // getBuriedness();
-    // if(outGridBase.compare("")!=0) writeGrid();
+  if(filename.compare("")==0){
+    //Build the grid everywhere around the protein and classify them as protein vertices (p=1) or probe vertices (p=0)
+    buildGrid(prot);
+
+    //Calculate burriedness of each vertex (value of 0 to 14), 0 being completely solvent exposed and 14 completely burried
+    getBuriedness();
   }else{
-    // readGrid();
+
+    //Create grid using the getcleft spheres
+    readGetCleft(filename, prot.PROTEIN, prot.LIGAND);
+
+    //If we want to filter for burriedness we must find the protein vertices (vrtx.p==1)
   }
 }
 
-Grid::~Grid(void){ }
+Grid::~Grid(void){
+
+}
 
 int Grid::generateID(int w, int h, int x, int y, int z){
   int id;
@@ -839,156 +632,113 @@ int Grid::generateID(int w, int h, int x, int y, int z){
   return(id);
 }
 
-void Grid::createProtVrtx(vector<atom>& prot){
-  map<int,vertex>::iterator it;
-  int id;
-  float minx,miny,minz,maxx,maxy,maxz;
-  float nmgd=sqrt(minGridDist)+stepsize;
-  cout<<"Getting prot vertexes..."<<endl;
-  for(int i=0; i<prot.size(); i++){
-    if(prot[i].mif==0) continue;
-    minx=roundCoord(prot[i].x-nmgd,0);
-    miny=roundCoord(prot[i].y-nmgd,0);
-    minz=roundCoord(prot[i].z-nmgd,0);
-    maxx=roundCoord(prot[i].x+nmgd,1);
-    maxy=roundCoord(prot[i].y+nmgd,1);
-    maxz=roundCoord(prot[i].z+nmgd,1);
-
-    for(float x=minx; x<=maxx; x+=stepsize){
-      for(float y=miny; y<=maxy; y+=stepsize){
-        for(float z=minz; z<=maxz; z+=stepsize){
-
-          float d=((abs(x-prot[i].x)*abs(x-prot[i].x))+(abs(y-prot[i].y)*abs(y-prot[i].y))+(abs(z-prot[i].z)*abs(z-prot[i].z)));
-
-          if(d<minGridDist){
-            //Generate grid vertex ID
-            id=generateID(width,height,(int)((x-min_x)/stepsize)+1,(int)((y-min_y)/stepsize)+1,(int)((z-min_z)/stepsize)+1);
-            it = GRID.find(id);
-
-            if(it == GRID.end()){ //If this grid point doesnt exist
-              vertex vrtx;
-              vrtx.x=x;
-              vrtx.y=y;
-              vrtx.z=z;
-              vrtx.p=1;
-              vrtx.id=uID;
-              // cout<<uID<<" "<<x<<" "<<y<<" "<<z<<" p"<<endl;
-              uID++;
-              if(inGridRes(vrtx,2.0)==1){
-                vrtx.grid[0]=1;
-              }else{ vrtx.grid[0]=0; }
-              if(inGridRes(vrtx,1.5)==1){
-                vrtx.grid[1]=1;
-              }else{ vrtx.grid[1]=0; }
-              if(inGridRes(vrtx,1.0)==1){
-                vrtx.grid[2]=1;
-              }else{ vrtx.grid[2]=0; }
-              if(inGridRes(vrtx,0.5)==1){
-                vrtx.grid[3]=1;          
-              }else{ vrtx.grid[3]=0; }
-              GRID.insert(pair<int,vertex>(id,vrtx));
-            }
-          }
-        }
-      }
-    }
-  }
-  // cout<<"Protein grid points: "<<GRID.size()<<endl;
-}
-
-int Grid::buildGrid(vector<atom>& prot){
+int Grid::buildGrid(Protein& prot){ //Building the grid using the whole protein
   int i=0;
+  int pggrid2=0;
 
+  cout<< "Building Grid..."<<endl;
+
+  //Go through our min/max X,Y and Z intervals to build the mother GRID
   map<int,vertex>::iterator it;
   int id;
   for(float x=min_x; x<=max_x; x+=stepsize){
     for(float y=min_y; y<=max_y; y+=stepsize){
       for(float z=min_z; z<=max_z; z+=stepsize){
 
+        //Check distance to closest protein atom
         int pg=0;
         float minDist=10000.0;
-        for(i=0; i<prot.size(); i++){
-          if(prot[i].mif==0) continue;
-          float d=((abs(x-prot[i].x)*abs(x-prot[i].x))+(abs(y-prot[i].y)*abs(y-prot[i].y))+(abs(z-prot[i].z)*abs(z-prot[i].z)));
+        for(i=0; i<prot.PROTEIN.size(); i++){
+          if(prot.PROTEIN[i].mif==0) continue; //Skip if its not an atom that we consider (respects the filters in readPDB)
+          float d=((abs(x-prot.PROTEIN[i].x)*abs(x-prot.PROTEIN[i].x))+(abs(y-prot.PROTEIN[i].y)*abs(y-prot.PROTEIN[i].y))+(abs(z-prot.PROTEIN[i].z)*abs(z-prot.PROTEIN[i].z)));
           if(d<minDist){ minDist=d; }
         }
-        if(minDist<minGridDist){
+
+        if(minDist<minGridDist){ //Its too close to the protein atoms so its a protein vertex
           pg=1;
-        }else if(minDist > maxGridDist){
+        }else if(minDist > maxGridDist){ //Its too far from the protein so its skipped
           continue;
         }
 
         //Generate grid vertex ID
-        id=generateID(width,height,(int)((x-min_x)/stepsize)+1,(int)((y-min_y)/stepsize)+1,(int)((z-min_z)/stepsize)+1);
+        id=generateID(width,height,(int)((x-min_x)/gridStep)+1,(int)((y-min_y)/gridStep)+1,(int)((z-min_z)/gridStep)+1);
         it = GRID.find(id);
 
-        if(it == GRID.end()){ //If this grid point doesnt exist
+        if(it == GRID.end()){ //If we never added this point to the vector
           vertex vrtx;
           vrtx.x=x;
           vrtx.y=y;
           vrtx.z=z;
 
-          if(pg==1){
+          if(pg==1){ //If its a grid vertex that represents a protein vertex
             vrtx.p=1;
             vrtx.id=uID;
             uID++;
-          }else{
+          }else{ //If its a grid vertex where we'll calculate a MIF
             vrtx.p=0;
-            // vrtx.ints=new int[nbOfProbes];              
-            // if(vrtx.ints==NULL){
-            //   printf("\n\nCan't malloc int**\nGoodbye.\n");
-            //   return(24);
-            // }
-            // vrtx.nrgs=new float[nbOfProbes];              
-            // if(vrtx.nrgs==NULL){
-            //   printf("\n\nCan't malloc int**\nGoodbye.\n");
-            //   return(24);
-            // }
-            // vrtx.angles=new float[nbOfProbes];              
-            // if(vrtx.angles==NULL){
-            //   printf("\n\nCan't malloc int**\nGoodbye.\n");
-            //   return(24);
-            // }
-            
+
+            //Calculate in which grid resolution this vertex is
+            if(inGridRes(vrtx,2.0)==1){
+                vrtx.grid[0]=1;
+            }else{ vrtx.grid[0]=0; }
+
+            if(inGridRes(vrtx,1.5)==1){
+              vrtx.grid[1]=1;
+            }else{ vrtx.grid[1]=0; }
+
+            if(inGridRes(vrtx,1.0)==1){
+              vrtx.grid[2]=1;
+            }else{ vrtx.grid[2]=0; }
+
+            if(inGridRes(vrtx,0.5)==1){
+              vrtx.grid[3]=1;
+            }else{ vrtx.grid[3]=0; }
+
+            //Skip this vertex if its not in the grid resolution we want (defined by argument -s)
+            if(vrtx.grid[zip]!=1 && zip!=-1) continue;
+
+            //We must remove grid vertex that are too far from the anchor atoms
+            if(resnumc.compare("")!=0){
+              float minDist=10000.0;
+
+              //Loop to find the distance to the closest anchor atom and store it in minDist
+              for(int p=0; p < prot.LIGAND.size(); p+=3){
+                float d=((abs(x-prot.LIGAND[p])*abs(x-prot.LIGAND[p]))+(abs(y-prot.LIGAND[p+1])*abs(y-prot.LIGAND[p+1]))+(abs(z-prot.LIGAND[p+2])*abs(z-prot.LIGAND[p+2])));
+                if(d < minDist){minDist = d;}
+              }
+              //If minDist is bigger than the threshold distance (-r argument)
+              if(minDist > gridLigDist) continue; //Skip to next vertex
+            }
+
+            //Initialize probe interactions, nrg potential and angle values of this vertex
             int zi=0;
             float zf=0.0;
             for(int i=0; i<nbOfProbes; i++){
               vrtx.ints.push_back(zi); vrtx.nrgs.push_back(zf); vrtx.angles.push_back(zf);
             }
 
+            //Initialize the environment vector for each amino acid
             // for(int i=0; i<aa.size(); i++){ vrtx.env[aa[i]]=1000.0; }
 
-            if(inGridRes(vrtx,2.0)==1){
-              vrtx.grid[0]=1;
-              vrtx200++;
-            }else{ vrtx.grid[0]=0; }
-
-            if(inGridRes(vrtx,1.5)==1){
-              vrtx.grid[1]=1;
-              vrtx150++;
-            }else{ vrtx.grid[1]=0; }
-            
-            if(inGridRes(vrtx,1.0)==1){
-              vrtx.grid[2]=1;
-              vrtx100++;
-            }else{ vrtx.grid[2]=0; }
-            
-            if(inGridRes(vrtx,0.5)==1){
-              vrtx.grid[3]=1;
-              vrtx050++;               
-            }else{ vrtx.grid[3]=0; }
-
-            if(vrtx.grid[zip]!=1 && zip!=-1) continue;
+            if(vrtx.grid[0]==1){ vrtx200++; }
+            if(vrtx.grid[1]==1){ vrtx150++; }
+            if(vrtx.grid[2]==1){ vrtx100++; }
+            if(vrtx.grid[3]==1){ vrtx050++; }
 
             vrtx.id=uID;
             uID++;
           }
+
+          //Insert the vertex in the grid
           GRID.insert(pair<int,vertex>(id,vrtx));
           vrtxIdList.push_back(id);
         }
       }
     }
   }
+
+  cout<<"Grid points [2.0] "<<vrtx200<<" [1.5] "<<vrtx150<<" [1.0] "<<vrtx100<<" [0.5] "<<vrtx050<<"."<<endl;
+
   return(0);
 }
 
@@ -1034,22 +784,12 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
       maxy=roundCoord(y+rad,1);
       maxz=roundCoord(z+rad,1);
 
-      for(nx=minx; nx<=maxx; nx+=stepsize){
-        for(ny=miny; ny<=maxy; ny+=stepsize){
-          for(nz=minz; nz<=maxz; nz+=stepsize){
-
-            int flagg=0;
-            // for(int i=0; i<lig.size(); i++){
-            //   if(lig[i].atomn.compare("O3B")!=0) continue;
-            //   dist=sqrt(((abs(nx-lig[i].x)*abs(nx-lig[i].x))+(abs(ny-lig[i].y)*abs(ny-lig[i].y))+(abs(nz-lig[i].z)*abs(nz-lig[i].z))));
-            //   if(dist<0.3){
-            //     cout<<nx<<" "<<ny<<" "<<nz<<"("<<x<<" "<<y<<" "<<z<<" "<<rad<<") "<<id<<" "<<lig[i].resn<<" "<<lig[i].atomn.c_str()<<" "<<dist<<endl;
-            //     flagg=1;
-            //   }
-            // }
+      for(nx=minx; nx<=maxx; nx+=gridStep){
+        for(ny=miny; ny<=maxy; ny+=gridStep){
+          for(nz=minz; nz<=maxz; nz+=gridStep){
 
             //Generate grid vertex ID
-            id=generateID(width,height,(int)((nx-min_x)/stepsize)+1,(int)((ny-min_y)/stepsize)+1,(int)((nz-min_z)/stepsize)+1);
+            id=generateID(width,height,(int)((nx-min_x)/gridStep)+1,(int)((ny-min_y)/gridStep)+1,(int)((nz-min_z)/gridStep)+1);
             it = GRID.find(id);
 
             //Skip if already exists
@@ -1058,22 +798,17 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
             //Skip if not within the sphere
             if(((abs(nx-x)*abs(nx-x))+(abs(ny-y)*abs(ny-y))+(abs(nz-z)*abs(nz-z)))>(rad*rad)) continue;
 
-            if(resnumc.compare("")!=0){
+            if(resnumc.compare("")!=0){ //If we must remove grid points too far from the anchor atoms
               minDist=10000.0;
               for(i=0; i<ligVec.size(); i+=3){
                 dist=((abs(nx-ligVec.at(i))*abs(nx-ligVec.at(i)))+(abs(ny-ligVec.at(i+1))*abs(ny-ligVec.at(i+1)))+(abs(nz-ligVec.at(i+2))*abs(nz-ligVec.at(i+2))));
                 // cout<< ligVec.at(i) << " "<< ligVec.at(i+1) << " "<< ligVec.at(i+2) << " grid: "<<nx<<" "<<ny<<" "<<nz<< " dist:"<< dist<< endl;
-                if(dist<minDist){
-                  minDist=dist;
-                  // cout<< "New mindist: "<< minDist<<endl;
-                }
+                if(dist<minDist) minDist=dist;
               }
               //Skip to next grid intersection if too far from the ligand
               if(minDist>gridLigDist){
                 // cout<<nx<<" "<<ny<<" "<<nz<<"to far "<<minDist<<endl;
                 continue;
-              }else{
-
               }
             }
 
@@ -1085,12 +820,31 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
             vrtx.p=0;
             vrtx.modulo=id;
 
+            for(int i=0; i<4; i++){ vrtx.grid[i]=0; }
+
             int zi=0;
             float zf=0.0;
             for(int i=0; i<nbOfProbes; i++){
               vrtx.ints.push_back(zi); vrtx.nrgs.push_back(zf); vrtx.angles.push_back(zf);
             }
-            for(int i=0; i<4; i++){ vrtx.grid[i]=0; }
+
+            //Calculate in which grid resolution this vertex is
+            if(inGridRes(vrtx,2.0)==1){
+                vrtx.grid[0]=1;
+            }else{ vrtx.grid[0]=0; }
+
+            if(inGridRes(vrtx,1.5)==1){
+              vrtx.grid[1]=1;
+            }else{ vrtx.grid[1]=0; }
+
+            if(inGridRes(vrtx,1.0)==1){
+              vrtx.grid[2]=1;
+            }else{ vrtx.grid[2]=0; }
+
+            if(inGridRes(vrtx,0.5)==1){
+              vrtx.grid[3]=1;
+            }else{ vrtx.grid[3]=0; }
+
             vrtx.id=uID;
             uID++;
             newv++;
@@ -1104,16 +858,21 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
   ifs.close();
   cout<<"Grid points added: "<<newv<<endl;
 
+  int tooClose=0;
+  int tooFar=0;
+  int badRes=0;
+  //Remove points too close or too far for the protein
+  cout<<endl<<"Chipping grid..."<<endl;
   int chipped=0;
-  int erase200=0;
-  int keep200=0;
-  cout<<"Chipping grid..."<<endl;
   it=GRID.begin();
   while(it!=GRID.end()){
-    if(it->second.p==1){
+
+    if(it->second.p==1){ //If its a protein vertex
       ++it;
       continue;
     }
+
+    //Get distance to the closest protein atom
     minDist=10000.0;
     for(pit=protVec.begin(); pit!=protVec.end(); ++pit){
       if((*pit).h==1) continue;
@@ -1122,39 +881,26 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
       if(dist<minDist) minDist=dist;
     }
 
-    if(inGridRes(it->second,2.0)==1){
-      it->second.grid[0]=1;
-      // cout<<vrtx200<<" "<<it->second.grid[zip]<<" "<<zip<<" "<<minDist<<" "<<minGridDist<<" "<<maxGridDist;
-      vrtx200++;
-    }
+    // cout<<minDist<<" "<<it->second.grid[0]<<" "<<it->second.grid[1]<<" "<<it->second.grid[2]<<" "<<it->second.grid[3]<<endl;
 
-    if(inGridRes(it->second,1.5)==1){
-      it->second.grid[1]=1;
-      vrtx150++;
-    }
-    
-    if(inGridRes(it->second,1.0)==1){
-      it->second.grid[2]=1;
-      vrtx100++;
-    }
-    
-    if(inGridRes(it->second,0.5)==1){
-      it->second.grid[3]=1;
-      vrtx050++;
-    }
-
-    if(minDist<minGridDist || minDist > maxGridDist || (it->second.grid[zip]==0 && zip!=-1)){
-      // if(inGridRes(it->second,2.0)==1){
-      //   cout<<"erase"<<endl;
-      //   erase200++;
-      // }
+    if(minDist<minGridDist){
       GRID.erase(it++);
       chipped++;
-    }else{
-      // if(inGridRes(it->second,2.0)==1){
-      //   cout<<"keep"<<endl;
-      //   keep200++;
-      // }
+      tooClose++;
+    }
+    else
+    if(minDist > maxGridDist){
+      GRID.erase(it++);
+      chipped++;
+      tooFar++;
+    }
+    // else
+    // if(it->second.grid[zip]==0 && zip!=-1){
+    //   GRID.erase(it++);
+    //   chipped++;
+    //   badRes++;
+    // }
+    else{
       vrtxIdList.push_back(it->second.modulo);
       ++it;
       if(inGridRes(it->second,2.0)==1) vrtx200++;
@@ -1165,350 +911,259 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
   }
 
   cout<<"Chipped "<<chipped<<" grid points."<<endl;
+  cout<<"Too close "<<tooClose<<" too far "<<tooFar<<" bad res "<<badRes<<endl;
   cout<<"Grid points [2.0] "<<vrtx200<<" [1.5] "<<vrtx150<<" [1.0] "<<vrtx100<<" [0.5] "<<vrtx050<<"."<<endl;
   return(0);
 }
 
-// void Grid::getBuriedness(){
-//   map<int,vertex>::iterator it;
-//   int id;
-//   int nbu=0;
-//   //Get buriedness of each grid point
-//   cout<<"Getting buriedness..."<<endl;
-//   map<int,vertex>::iterator m=GRID.begin();
-//   while(m!=GRID.end()){
-//     if(m->second.p==1){
-//       m->second.bu=0;
-//       ++m;
-//       continue;
-//     }
-//     int bu=0;
-//     int xi=(int)((m->second.x-min_x)/stepsize)+1;
-//     int yi=(int)((m->second.y-min_y)/stepsize)+1;
-//     int zi=(int)((m->second.z-min_z)/stepsize)+1;
-//     int xl=(int)((m->second.x-min_x)/stepsize);
-//     int xr=(int)((max_x-m->second.x)/stepsize);
-//     int yd=(int)((m->second.y-min_y)/stepsize);
-//     int yu=(int)((max_y-m->second.y)/stepsize);
-//     int zb=(int)((m->second.z-min_z)/stepsize);
-//     int zf=(int)((max_z-m->second.z)/stepsize);
-//     // cout<<xi<<" "<<yi<<" "<<zi<<endl;
-//     // cout<<min_x<<" | "<<xl<<" "<<m.x<<" "<<xr<<" | "<<max_x<<" || "<<width<<endl;
-//     // cout<<min_y<<" | "<<yd<<" "<<m.y<<" "<<yu<<" | "<<max_y<<" || "<<height<<endl;
-//     // cout<<min_z<<" | "<<zb<<" "<<m.z<<" "<<zf<<" | "<<max_z<<" || "<<depth<<endl;
+ void Grid::getBuriedness(){
+   map<int,vertex>::iterator it;
+   int id;
+   int nbu=0;
 
-//     // cout<<endl<<"going xl"<<endl;
-//     int move=0;
-//     for(int tx=xi-1; tx>=1; tx--){
-//       move++;
-//       if(move>buD) break;
-//       id=generateID(width,height,tx,yi,zi);
-//       it = GRID.find(id);
-//       if(it != GRID.end()){
-//         if(GRID[id].p==1){
-//           bu++;
-//           break;
-//         }
-//       }
-//     }
+   //Get buriedness of each grid point
+   cout<<endl<<"Getting buriedness..."<<endl;
+   map<int,vertex>::iterator m=GRID.begin();
+   while(m!=GRID.end()){
+     if(m->second.p==1){ //If its a protein vertex, put its burriedness to 0, meaning completely burried.
+       m->second.bu=0;
+       ++m;
+       continue;
+     }
+     int bu=0;
 
-//     // cout<<endl<<"going xr"<<endl;
-//     move=0;
-//     for(int tx=xi+1; tx<=width; tx++){
-//       move++;
-//       if(move>buD) break;
-//       id=generateID(width,height,tx,yi,zi);
-//       it = GRID.find(id);
-//       if(it != GRID.end()){
-//         if(GRID[id].p==1){
-//           bu++;
-//           break;
-//         }
-//       }
-//     }
+     //position of vertex in modulo
+     int xi=(int)((m->second.x-min_x)/gridStep)+1;
+     int yi=(int)((m->second.y-min_y)/gridStep)+1;
+     int zi=(int)((m->second.z-min_z)/gridStep)+1;
 
-//     // cout<<endl<<"going yd"<<endl;
-//     move=0;
-//     for(int ty=yi-1; ty>=1; ty--){
-//       move++;
-//       if(move>buD) break;
-//       id=generateID(width,height,xi,ty,zi);
-//       // cout<<xi<<" "<<ty<<" "<<zi<<endl;
-//       it = GRID.find(id);
-//       if(it != GRID.end()){
-//         if(GRID[id].p==1){
-//           bu++;
-//           break;
-//         }
-//       }
-//     }
-//     // cout<<endl<<"going yu"<<endl;
-//     move=0;
-//     for(int ty=yi+1; ty<=height; ty++){
-//       move++;
-//       if(move>buD) break;
-//       id=generateID(width,height,xi,ty,zi);
-//       // cout<<xi<<" "<<ty<<" "<<zi<<endl;
-//       it = GRID.find(id);
-//       if(it != GRID.end()){
-//         if(GRID[id].p==1){
-//           bu++;
-//           break;
-//         }
-//       }
-//     }
-//     // cout<<endl<<"going zb"<<endl;
-//     move=0;
-//     for(int tz=zi-1; tz>=1; tz--){
-//       move++;
-//       if(move>buD) break;
-//       // cout<<xi<<" "<<yi<<" "<<tz<<endl;
-//       id=generateID(width,height,xi,yi,tz);
-//       it = GRID.find(id);
-//       if(it != GRID.end()){
-//         if(GRID[id].p==1){
-//           bu++;
-//           break;
-//         }
-//       }
-//     }
-//     // cout<<endl<<"going zf"<<endl;
-//     move=0;
-//     for(int tz=zi+1; tz<=depth; tz++){
-//       move++;
-//       if(move>buD) break;
-//       // cout<<xi<<" "<<yi<<" "<<tz<<endl;
-//       id=generateID(width,height,xi,yi,tz);
-//       it = GRID.find(id);
-//       if(it != GRID.end()){
-//         if(GRID[id].p==1){
-//           bu++;
-//           break;
-//         }
-//       }
-//     }
+     //modulo limits in the 6 directions: xl (x-left), xr (x-right), yd (y-down), yu (y-up), zb (z-back), zf (z-front)
+     int xl=(int)((m->second.x-min_x)/gridStep);
+     int xr=(int)((max_x-m->second.x)/gridStep);
+     int yd=(int)((m->second.y-min_y)/gridStep);
+     int yu=(int)((max_y-m->second.y)/gridStep);
+     int zb=(int)((m->second.z-min_z)/gridStep);
+     int zf=(int)((max_z-m->second.z)/gridStep);
 
-//     //Diagonals
-//     int tx=xi;
-//     int ty=yi;
-//     int tz=zi;
-//     int flag=0;
-//     move=0;
-//     while(flag==0){
-//       move++;
-//       if(move>buD) break;
-//       tx--; ty++; tz++;
-//       int diag=getDiag(tx,ty,tz,flag);
-//       if(diag){
-//         bu++;
-//       }
-//     }
+     // cout<<xi<<" "<<yi<<" "<<zi<<endl;
+     // cout<<min_x<<" | "<<xl<<" "<<m.x<<" "<<xr<<" | "<<max_x<<" || "<<width<<endl;
+     // cout<<min_y<<" | "<<yd<<" "<<m.y<<" "<<yu<<" | "<<max_y<<" || "<<height<<endl;
+     // cout<<min_z<<" | "<<zb<<" "<<m.z<<" "<<zf<<" | "<<max_z<<" || "<<depth<<endl;
 
-//     flag=0;
-//     tx=xi; ty=yi; tz=zi;
-//     move=0;
-//     while(flag==0){
-//       move++;
-//       if(move>buD) break;
-//       tx--; ty++; tz--; 
-//       int diag=getDiag(tx,ty,tz,flag);
-//       if(diag){
-//         bu++;
-//       }
-//     }
+     //Going through the 6 directions to see if a protein vertex is in the way
+     // cout<<endl<<"going xl"<<endl;
+     int move=0;
+     for(int tx=xi-1; tx>=1; tx--){
+       move++;
+       if(move>buD) break;
+       id=generateID(width,height,tx,yi,zi);
+       it = GRID.find(id);
+       if(it != GRID.end()){
+         if(GRID[id].p==1){
+           bu++;
+           break;
+         }
+       }
+     }
 
-//     flag=0;
-//     tx=xi; ty=yi; tz=zi;
-//     move=0;
-//     while(flag==0){
-//       move++;
-//       if(move>buD) break;
-//       tx++; ty++; tz--; 
-//       int diag=getDiag(tx,ty,tz,flag);
-//       if(diag){
-//         bu++;
-//       }
-//     }
+     // cout<<endl<<"going xr"<<endl;
+     move=0;
+     for(int tx=xi+1; tx<=width; tx++){
+       move++;
+       if(move>buD) break;
+       id=generateID(width,height,tx,yi,zi);
+       it = GRID.find(id);
+       if(it != GRID.end()){
+         if(GRID[id].p==1){
+           bu++;
+           break;
+         }
+       }
+     }
 
-//     flag=0;
-//     tx=xi; ty=yi; tz=zi;
-//     move=0;
-//     while(flag==0){
-//       move++;
-//       if(move>buD) break;
-//       tx++; ty++; tz++; 
-//       int diag=getDiag(tx,ty,tz,flag);
-//       if(diag){
-//         bu++;
-//       }
-//     }
+     // cout<<endl<<"going yd"<<endl;
+     move=0;
+     for(int ty=yi-1; ty>=1; ty--){
+       move++;
+       if(move>buD) break;
+       id=generateID(width,height,xi,ty,zi);
+       // cout<<xi<<" "<<ty<<" "<<zi<<endl;
+       it = GRID.find(id);
+       if(it != GRID.end()){
+         if(GRID[id].p==1){
+           bu++;
+           break;
+         }
+       }
+     }
+     // cout<<endl<<"going yu"<<endl;
+     move=0;
+     for(int ty=yi+1; ty<=height; ty++){
+       move++;
+       if(move>buD) break;
+       id=generateID(width,height,xi,ty,zi);
+       // cout<<xi<<" "<<ty<<" "<<zi<<endl;
+       it = GRID.find(id);
+       if(it != GRID.end()){
+         if(GRID[id].p==1){
+           bu++;
+           break;
+         }
+       }
+     }
+     // cout<<endl<<"going zb"<<endl;
+     move=0;
+     for(int tz=zi-1; tz>=1; tz--){
+       move++;
+       if(move>buD) break;
+       // cout<<xi<<" "<<yi<<" "<<tz<<endl;
+       id=generateID(width,height,xi,yi,tz);
+       it = GRID.find(id);
+       if(it != GRID.end()){
+         if(GRID[id].p==1){
+           bu++;
+           break;
+         }
+       }
+     }
+     // cout<<endl<<"going zf"<<endl;
+     move=0;
+     for(int tz=zi+1; tz<=depth; tz++){
+       move++;
+       if(move>buD) break;
+       // cout<<xi<<" "<<yi<<" "<<tz<<endl;
+       id=generateID(width,height,xi,yi,tz);
+       it = GRID.find(id);
+       if(it != GRID.end()){
+         if(GRID[id].p==1){
+           bu++;
+           break;
+         }
+       }
+     }
 
-//     flag=0;
-//     tx=xi; ty=yi; tz=zi;
-//     move=0;
-//     while(flag==0){
-//       move++;
-//       if(move>buD) break;
-//       tx--; ty--; tz++; 
-//       int diag=getDiag(tx,ty,tz,flag);
-//       if(diag){
-//         bu++;
-//       }
-//     }
+     //Going through the 8 diagonals to see if a protein vertex is in the way
+     int tx=xi;
+     int ty=yi;
+     int tz=zi;
+     int flag=0;
+     move=0;
+     while(flag==0){
+       move++;
+       if(move>buD) break;
+       tx--; ty++; tz++;
+       int diag=getDiag(tx,ty,tz,flag);
+       if(diag){
+         bu++;
+       }
+     }
 
-//     flag=0;
-//     tx=xi; ty=yi; tz=zi;
-//     move=0;
-//     while(flag==0){
-//       move++;
-//       if(move>buD) break;
-//       tx--; ty--; tz--; 
-//       int diag=getDiag(tx,ty,tz,flag);
-//       if(diag){
-//         bu++;
-//       }
-//     }
+     flag=0;
+     tx=xi; ty=yi; tz=zi;
+     move=0;
+     while(flag==0){
+       move++;
+       if(move>buD) break;
+       tx--; ty++; tz--;
+       int diag=getDiag(tx,ty,tz,flag);
+       if(diag){
+         bu++;
+       }
+     }
 
-//     flag=0;
-//     tx=xi; ty=yi; tz=zi;
-//     move=0;
-//     while(flag==0){
-//       move++;
-//       if(move>buD) break;
-//       tx++; ty--; tz--; 
-//       int diag=getDiag(tx,ty,tz,flag);
-//       if(diag){
-//         bu++;
-//       }
-//     }
+     flag=0;
+     tx=xi; ty=yi; tz=zi;
+     move=0;
+     while(flag==0){
+       move++;
+       if(move>buD) break;
+       tx++; ty++; tz--;
+       int diag=getDiag(tx,ty,tz,flag);
+       if(diag){
+         bu++;
+       }
+     }
 
-//     flag=0;
-//     tx=xi; ty=yi; tz=zi;
-//     move=0;
-//     while(flag==0){
-//       move++;
-//       if(move>buD) break;
-//       tx++; ty--; tz++;
-//       int diag=getDiag(tx,ty,tz,flag);
-//       if(diag){
-//         bu++;
-//       }
-//     }
+     flag=0;
+     tx=xi; ty=yi; tz=zi;
+     move=0;
+     while(flag==0){
+       move++;
+       if(move>buD) break;
+       tx++; ty++; tz++;
+       int diag=getDiag(tx,ty,tz,flag);
+       if(diag){
+         bu++;
+       }
+     }
 
-//     if(bu>=bul){
-//       m->second.bu=bu;
-//       id=generateID(width,height,xi,yi,zi);
-//       vrtxIdList.push_back(id);
-//       ++m;
-//     }else{
-//       GRID.erase(m++);
-//       nbu++;
-//     }
-//   }
-//   cout<<"Removed "<<nbu<<" not burried grid points."<<endl;
-// }
+     flag=0;
+     tx=xi; ty=yi; tz=zi;
+     move=0;
+     while(flag==0){
+       move++;
+       if(move>buD) break;
+       tx--; ty--; tz++;
+       int diag=getDiag(tx,ty,tz,flag);
+       if(diag){
+         bu++;
+       }
+     }
 
-// void Grid::writeGrid(){
-//   string outg=outGridBase + tag + ".grid";
-//   map<int,vertex>::iterator it;
-//   FILE* fpwg;
-//   int g0=0;
-//   int g1=0;
-//   int g2=0;
-//   int g3=0;
-//   fpwg = fopen(outg.c_str(),"w");
-//   fprintf(fpwg,"#w %d\n#h %d\n#d %d\n#maxx %7.3f\n#maxy %7.3f\n#maxz %7.3f\n#minx %7.3f\n#miny %7.3f\n#minz %7.3f\n",width,height,depth,max_x,max_y,max_z,min_x,min_y,min_z);
-//   for(it=GRID.begin();it!=GRID.end();it++){
-//     if(it->second.p==1) continue;
-//     if(it->second.grid[0]==1 || it->second.grid[1]==1 || it->second.grid[2]==1){
-//       if(it->second.grid[0]==1) g0++;
-//       if(it->second.grid[1]==1) g1++;
-//       if(it->second.grid[2]==1) g2++;
-//       fprintf(fpwg, "%d %d %7.3f %7.3f %7.3f %d %d %d %d %d %d\n",it->first,it->second.id,it->second.x,it->second.y,it->second.z,it->second.p,it->second.bu,it->second.grid[0],it->second.grid[1],it->second.grid[2],it->second.grid[3]);
-//     }
-//   }
-//   fclose(fpwg);
-//   cout<<"g0 "<<g0<<" g1 "<<g1<<" g2 "<<g2<<endl;
-// }
+     flag=0;
+     tx=xi; ty=yi; tz=zi;
+     move=0;
+     while(flag==0){
+       move++;
+       if(move>buD) break;
+       tx--; ty--; tz--;
+       int diag=getDiag(tx,ty,tz,flag);
+       if(diag){
+         bu++;
+       }
+     }
 
-// int Grid::readGrid(){
-//   string line;
-//   string tmp;
-//   ifstream infile(gridFile.c_str());
-//   while(getline(infile,line)){
-//     if(line.compare("")==0) continue;
-//     string start = line.substr(0,2);
-//     if(start.compare("#w")==0){
-//       tmp=line.substr(3);
-//       width=atoi(tmp.c_str());
-//     }else if(start.compare("#h")==0){
-//       tmp=line.substr(3);
-//       height=atoi(tmp.c_str());
-//     }else if(start.compare("#d")==0){
-//       tmp=line.substr(3);
-//       depth=atoi(tmp.c_str());
-//     }else if(start.compare("#maxx")==0){
-//       tmp=line.substr(6);
-//       max_x=atof(tmp.c_str());
-//     }else if(start.compare("#maxy")==0){
-//       tmp=line.substr(6);
-//       max_y=atof(tmp.c_str());
-//     }else if(start.compare("#maxz")==0){
-//       tmp=line.substr(6);
-//       max_z=atof(tmp.c_str());
-//     }else if(start.compare("#minx")==0){
-//       tmp=line.substr(6);
-//       min_x=atof(tmp.c_str());
-//     }else if(start.compare("#miny")==0){
-//       tmp=line.substr(6);
-//       min_y=atof(tmp.c_str());
-//     }else if(start.compare("#minz")==0){
-//       tmp=line.substr(6);
-//       min_z=atof(tmp.c_str());
-//     }else{
-//       stringstream test(line);
-//       vertex vrtx;
-//       // vrtx.ints=new int[nbOfProbes];              
-//       // if(vrtx.ints==NULL){
-//       //   printf("\n\nCan't malloc int**\nGoodbye.\n");
-//       //   return(24);
-//       // }
-//       // vrtx.nrgs=new float[nbOfProbes];              
-//       // if(vrtx.nrgs==NULL){
-//       //   printf("\n\nCan't malloc int**\nGoodbye.\n");
-//       //   return(24);
-//       // }
-//       // vrtx.angles=new float[nbOfProbes];              
-//       // if(vrtx.angles==NULL){
-//       //   printf("\n\nCan't malloc int**\nGoodbye.\n");
-//       //   return(24);
-//       // }
-//       int zi=0;
-//       float zf=0.0;
-//       for(int i=0; i<nbOfProbes; i++){
-//         vrtx.ints.push_back(zi); vrtx.nrgs.push_back(zf); vrtx.angles.push_back(zf);
-//       }
-//       // for(int i=0; i<nbOfProbes; i++){  }
-//       // for(int i=0; i<nbOfProbes; i++){  }
-//       for(int i=0; i<4; i++){ vrtx.grid[i]=0; }
-//       int gid;
-//       test >> gid >> vrtx.id >> vrtx.x >> vrtx.y >> vrtx.z >> vrtx.p >> vrtx.bu >> vrtx.grid[0] >> vrtx.grid[1] >> vrtx.grid[2] >> vrtx.grid[3];
-//       if(vrtx.grid[0]==1){
-//         vrtx200++;
-//       }else if(vrtx.grid[1]==1){
-//         vrtx150++;
-//       }else if(vrtx.grid[2]==1){
-//         vrtx100++;
-//       }else if(vrtx.grid[3]==1){
-//         vrtx050++;
-//       }
-//       GRID.insert(pair<int,vertex>(gid,vrtx));
-//       vrtxIdList.push_back(gid);
-//     }
-//   }
-//   cout<<"Grid points [2.0] "<<vrtx200<<" [1.5] "<<vrtx150<<" [1.0] "<<vrtx100<<" [0.5] "<<vrtx050<<"."<<endl;
-//   return(0);
-// }
+     flag=0;
+     tx=xi; ty=yi; tz=zi;
+     move=0;
+     while(flag==0){
+       move++;
+       if(move>buD) break;
+       tx++; ty--; tz--;
+       int diag=getDiag(tx,ty,tz,flag);
+       if(diag){
+         bu++;
+       }
+     }
+
+     flag=0;
+     tx=xi; ty=yi; tz=zi;
+     move=0;
+     while(flag==0){
+       move++;
+       if(move>buD) break;
+       tx++; ty--; tz++;
+       int diag=getDiag(tx,ty,tz,flag);
+       if(diag){
+         bu++;
+       }
+     }
+      if(bu>bul){
+        nbu++;
+      }
+
+     if(bu<=bul){
+       m->second.bu=bu;
+       id=generateID(width,height,xi,yi,zi);
+       vrtxIdList.push_back(id);
+       ++m;
+     }else{
+       GRID.erase(m++);
+       nbu++;
+     }
+   }
+   cout<<"Removed "<<nbu<<" vertex with a burriedness threshold <=" << bul <<endl;
+ }
 
 int Grid::getDiag(int tx, int ty, int tz, int& flag){
   int id=generateID(width,height,tx,ty,tz);
@@ -1527,138 +1182,24 @@ int Grid::getDiag(int tx, int ty, int tz, int& flag){
   }
 }
 
-void Grid::getMinMax(string filename){
-  ifstream ifs;
-  string line;
-  string fields[4];
-  float x,y,z,rad;
-  float minx,miny,minz,maxx,maxy,maxz;
-
-  ifs.open(filename.c_str());
-  if(!ifs.is_open()){ 
-    cout <<"could not read PDB file " << filename << endl;
-  }
-
-  while(ifs.good()){
-    getline(ifs,line);
-        
-    if(line.compare(0,6,"ATOM  ") == 0){
-      fields[0] = line.substr(30,8);   // x-coord
-      fields[1] = line.substr(38,8);   // y-coord
-      fields[2] = line.substr(46,8);   // z-coord
-      fields[3] = line.substr(60,6);   // bfactor
-      x=atof(fields[0].c_str());
-      y=atof(fields[1].c_str());
-      z=atof(fields[2].c_str());
-      rad=atof(fields[3].c_str());
-      rad+=1.0;
-
-      minx=roundCoord(x-rad,0);
-      miny=roundCoord(y-rad,0);
-      minz=roundCoord(z-rad,0);
-      maxx=roundCoord(x+rad,1);
-      maxy=roundCoord(y+rad,1);
-      maxz=roundCoord(z+rad,1);
-
-
-      //Set GRID min/max X,Y and Z
-      if(minx<min_x){ min_x=minx; }
-      if(miny<min_y){ min_y=miny; }
-      if(minz<min_z){ min_z=minz; }
-      if(maxx>max_x){ max_x=maxx; }
-      if(maxy>max_y){ max_y=maxy; }
-      if(maxz>max_z){ max_z=maxz; }
-    }
-  }
-
-  //Set GRID width and height
-  width=(int)(((max_x-min_x)/stepsize)+1.0);
-  height=(int)(((max_y-min_y)/stepsize)+1.0);
-
-  cout <<endl<< "GRID min/max values: minx: "<< min_x<< " miny: "<< min_y<< " minz: "<<min_z<<" maxx: "<<max_x<<" maxy: "<<max_y<<" maxz: "<<max_z<<endl;
-  cout<< "GRID Width "<<width<<" Height "<< height << endl;
-}  
-
-
-
-void Grid::getProtVrtx(vector<atom>& prot){
-  int i=0;
-  map<int,vertex>::iterator it;
-  int id;
-  int uID=0;
-  cout<<"Getting prot vertexes..."<<endl;
-  for(float x=min_x; x<=max_x; x+=stepsize){
-    for(float y=min_y; y<=max_y; y+=stepsize){
-      for(float z=min_z; z<=max_z; z+=stepsize){
-
-        int pg=0;
-        float minDist=10000.0;
-        for(i=0; i<prot.size(); i++){
-          if(prot[i].mif==0) continue;
-          float d=((abs(x-prot[i].x)*abs(x-prot[i].x))+(abs(y-prot[i].y)*abs(y-prot[i].y))+(abs(z-prot[i].z)*abs(z-prot[i].z)));
-          if(d<minDist){ minDist=d; }
-          
-        }
-        if(minDist<minGridDist){
-          //Generate grid vertex ID
-          id=generateID(width,height,(int)((x-min_x)/stepsize)+1,(int)((y-min_y)/stepsize)+1,(int)((z-min_z)/stepsize)+1);
-          it = GRID.find(id);
-
-          if(it == GRID.end()){ //If this grid point doesnt exist
-            vertex vrtx;
-            vrtx.x=x;
-            vrtx.y=y;
-            vrtx.z=z;
-            vrtx.p=1;
-            vrtx.id=uID;
-            uID++;
-            //Print grid in appropriate file
-            if(inGridRes(vrtx,2.0)==1){
-              vrtx.grid[0]=1;
-            }else{ vrtx.grid[0]=0; }
-
-            //Print grid in appropriate file
-            if(inGridRes(vrtx,1.5)==1){
-              vrtx.grid[1]=1;
-            }else{ vrtx.grid[1]=0; }
-            
-            if(inGridRes(vrtx,1.0)==1){
-              vrtx.grid[2]=1;
-            }else{ vrtx.grid[2]=0; }
-            
-            if(inGridRes(vrtx,0.5)==1){
-              vrtx.grid[3]=1;          
-            }else{ vrtx.grid[3]=0; }
-
-            cout<<x<<" "<<y<<" "<<z<<endl;
-            
-            GRID.insert(pair<int,vertex>(id,vrtx));
-            vrtxIdList.push_back(id);
-          }
-        }
-      }
-    }
-  }
-}
-
 float roundCoord(float number, int min_or_max){ 
   //min_or_max (1=max, 0=min)
   float quotient;
   int rounded;
   float new_coord;
-  quotient=number/stepsize;
+  quotient=number/gridStep;
   rounded=(int)quotient;
-  new_coord=rounded*stepsize;
+  new_coord=rounded*gridStep;
 
   if(min_or_max==1){ // max value
     if(new_coord<number || fabs(new_coord-number)<0.0001){
       rounded+=1;
-      new_coord=rounded*stepsize;
+      new_coord=rounded*gridStep;
     }
   }else if(min_or_max==0){ // min value
     if(new_coord>number || fabs(new_coord-number)<0.0001){
       rounded-=1;
-      new_coord=rounded*stepsize;
+      new_coord=rounded*gridStep;
     }
   }
   
@@ -1706,9 +1247,9 @@ void Grid::smooth(){
     vertex& m=git->second;
     if(m.p==1){ continue; }
     if(m.grid[0]!=1){ continue; }
-    int xi=(int)((m.x-min_x)/stepsize)+1;
-    int yi=(int)((m.y-min_y)/stepsize)+1;
-    int zi=(int)((m.z-min_z)/stepsize)+1;
+    int xi=(int)((m.x-min_x)/gridStep)+1;
+    int yi=(int)((m.y-min_y)/gridStep)+1;
+    int zi=(int)((m.z-min_z)/gridStep)+1;
 
 
     for(int tx=xi-smoothDist; tx<=xi+smoothDist; tx++){
@@ -1820,17 +1361,18 @@ int is_coord_in_cube(float x, float y, float z, float center_x, float center_y, 
   }else{return(0);}
 }
 
-void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
-  map<int,vertex>::iterator it;
+void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){ //Write the .mif output file
 
+  map<int,vertex>::iterator it;
   FILE* fpNew;
   int probe;
   float d=0.0;
   int bsFlag=0;
   int i,j;
+
+  //Print header of output file
   string na="NA";
   string mifFileNew=outBase + tag + ".mif";
-
   fpNew = fopen(mifFileNew.c_str(),"w");
   fprintf(fpNew,"#cmd %s\n",cmdLine.c_str());
   fprintf(fpNew,"#proteinFile %s\n",proteinFile.c_str());
@@ -1849,6 +1391,7 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
   }
   fprintf(fpNew,"#zip %d\n",zip);
   fprintf(fpNew,"#stepsize %4.2f\n",stepsize);
+  fprintf(fpNew,"#gridStep %4.2f\n",gridStep);
   fprintf(fpNew,"#angThreshold %6.2f\n",angThresh);
   fprintf(fpNew,"#atom_probe_distance_threshold %7.4f\n",atmPbMaxDist);
   fprintf(fpNew,"#protein_grid_distance %7.4f to %7.4f\n",sqrt(minGridDist),sqrt(maxGridDist));
@@ -1860,10 +1403,9 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
 
   cout<<endl<< "Writing Mif File"<<endl;
   for(it=GRID.begin();it!=GRID.end();it++){
-
     if(it->second.p==1){
       if(it->second.grid[2]==1){
-        fprintf(fpNew, "#PG %7.2f %7.2f %7.2f\n",it->second.x,it->second.y,it->second.z);  
+        fprintf(fpNew, "#PG %7.2f %7.2f %7.2f\n",it->second.x,it->second.y,it->second.z);
       }
     }else{
       if((zip!=-1 && it->second.grid[zip]==1) || zip==-1){
@@ -1887,7 +1429,7 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
         //     fprintf(fpNew, " %d",(int)round(it->second.env[aa[i]]));
         //   }
         // }
-        fprintf(fpNew, " %d\n",it->second.bu);        
+        fprintf(fpNew, " %d\n",it->second.bu);
       }
     }
   }
@@ -1904,12 +1446,12 @@ void Grid::writeMif(vector<atom>& prot, vector<atom>& lig){
         fprintf(fpNew,"#ATOM %3s %4d %4s %5d %s %s %8.3f %8.3f %8.3f %d %d\n",lig[i].resn.c_str(),lig[i].resnb,lig[i].atomn.c_str(),lig[i].atomnb,lig[i].chain.c_str(),lig[i].alt.c_str(),lig[i].x,lig[i].y,lig[i].z,lig[i].mif,lig[i].bs);
       }
     }else{
-      int step=(int)(caT/stepsize);
+      int step=(int)(caT/gridStep);
       for(i=0; i<prot.size(); i++){
         if(prot[i].mif!=1) continue;
-        int xi=(int)((prot[i].x-min_x)/stepsize)+1;
-        int yi=(int)((prot[i].y-min_y)/stepsize)+1;
-        int zi=(int)((prot[i].z-min_z)/stepsize)+1;
+        int xi=(int)((prot[i].x-min_x)/gridStep)+1;
+        int yi=(int)((prot[i].y-min_y)/gridStep)+1;
+        int zi=(int)((prot[i].z-min_z)/gridStep)+1;
 
         int flag=0;
         // cout<<prot[i].resn<<" "<<prot[i].resnb<<" "<<prot[i].chain<<" "<<prot[i].atomn<<" "<<prot[i].bs<<endl;
@@ -2128,28 +1670,34 @@ void getEnv(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
 
 void getMif(map<int,vertex>& grid, vector<atom>& prot, vector<int>& vrtxList){
   int j;
-  cout<<endl<< "Searching for potential interactions at each grid intersection"<< endl;
+  cout<<endl<< "Searching for potential interactions at each grid vertex"<< endl;
 
   for(int i=0; i<vrtxList.size(); i++){
     map<int,vertex>::iterator it=grid.find(vrtxList[i]);
     vertex& m=it->second;
-    if(m.p==1){ continue; }
-    // if(m.bu<bul){ continue; }
-    if(m.grid[0]==1 || m.grid[1]==1 || m.grid[2]==1 || m.grid[3]==1){
+
+    if(m.p==1){ continue; } //Skip if this vertex is a protein vertex
+
+    if(m.grid[0]==1 || m.grid[1]==1 || m.grid[2]==1 || m.grid[3]==1){ //If its in one of the grid resolution (not sure if this is useful anymore)
     
       if(printDetails==1){ cout<<endl<<"Vertex id: "<< m.id <<" "<<m.x<<" "<<m.y<<" "<<m.z<<endl; }
 
       int flag=0;
       for(int probe=0; probe<nbOfProbes; probe++){ //Iterate each probe
+
         float enrg_sum=0.00;
         int countAtms=0;
         float closest=10000;
 
         if(printDetails==1){ cout<<endl<<"### PROBE "<<probe<<" ###"<<endl; }
-        for(int j=0; j<prot.size(); j++){ //Iterate each atom for this probe at this grid intersection
+
+        //Iterate each atom for this probe and sum the potential energy
+        for(int j=0; j<prot.size(); j++){
           if(prot.at(j).mif!=1) continue;
+          //Calculate and sum the potential energy
           enrg_sum+=calcNrg(m,prot.at(j),probe,countAtms,closest);
         }
+
         if(countAtms>0){
           m.nrgs[probe]=enrg_sum;
           if(enrg_sum<nrgT[probes[probe]] || (fabs(enrg_sum-nrgT[probes[probe]]))<0.001){
@@ -2188,8 +1736,10 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms, float& close
   angle=1.0;
   float rDist,rpDist;
 
-  //Get distance between probe and atom
+  //Get distance between probe (vertex) and atom
   dist=dist_3d(atm.x,atm.y,atm.z,vrtx.x,vrtx.y,vrtx.z);
+
+  //If atom is too far or too close to the probe specific limits or the general atmPbMaxDist limit return 0
   if(dist > maxD[probes[pbId]] || dist < minD[probes[pbId]] || dist > atmPbMaxDist) return(energy);
 
   string at=atomTypes[atm.resn+"_"+atm.atomn];
@@ -2197,8 +1747,11 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms, float& close
   epsilon=eps[at+"_"+pat];
 
   if(printDetails==1){ cout<<atm.resn<<" "<<atm.resnb<<" "<<atm.atomn<<" "<<at<<" dist "<<dist<<endl; }
+
+  //If its an acceptor or donor probe-atom interaction (defined in the input file)
   if(((acc[at]==1 && don[pat]==1) || (acc[pat]==1 && don[at]==1)) && atm.dir==1){
 
+    //Calculate distances and angle using reference atoms
     rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
     rpDist=dist_3d(vrtx.x,vrtx.y,vrtx.z,atm.xr,atm.yr,atm.zr);
     angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
@@ -2206,29 +1759,38 @@ double calcNrg(vertex& vrtx, atom& atm, int pbId, int& count_atoms, float& close
 
     if(atm.rDir==0){ angle=180.00-angle; }
     if(printDetails==1){ cout<<"Hbond Angle "<< angle <<endl; }
-    if(angle>angThresh){
+
+    //Check if angle is above threshold
+    if(angle>angThresh){//The angle is too big
       if(printDetails==1){ cout<<"Angle over threshold"<<endl; }
       return(energy);
-    }else{
+    }else{ //The angle is good
       if(printDetails==1){ cout<<"Hbond Angle "<< angle <<" threshold "<<angThresh<<endl; }
     }
+
+    //If this is the closest donnor or acceptor atom to this probe store the hydrogen bond angle (that will be outputed in .mif file)
     if(dist<closest){
       closest=dist;
       vrtx.angles[pbId]=angle;
       if(printDetails==1){ cout<<" closest "<<dist<<" new angle "<<vrtx.angles[pbId]<<endl; }
     }
-  }else if(arm[at]==1 && arm[pat]==1 && atm.dir==1){ //aromatic interaction
+
+  }else if(arm[at]==1 && arm[pat]==1 && atm.dir==1){ //If its an aromatic interaction
+
+    //Calculate distances and angle using reference atoms
     if(atm.dir==1){
       rDist=dist_3d(atm.x,atm.y,atm.z,atm.xr,atm.yr,atm.zr);
       rpDist=dist_3d(vrtx.x,vrtx.y,vrtx.z,atm.xr,atm.yr,atm.zr);
       angle=(pow(dist,2.0)+pow(rDist,2.0)-pow(rpDist,2.0))/(2*dist*rDist);
       angle=acos(angle)* 180.0 / PI;
       if(printDetails==1){ cout<<"Aromatic Angle "<< angle<<endl; }
-      if(angle>90 || fabs(180.00-angle) < 0.001) angle=180-angle;
+      if(angle>90 || fabs(180.00-angle) < 0.001) angle=180-angle; //IF angle is above the threshold (which is 90 degrees by default, the equivalent of no angle threshold)
       // if(angle>25.00 && angle<65.00){
       //   if(printDetails==1){ cout <<"angle between 35 and 55"<<endl; }
         // return(energy);
       // }
+
+      //If this is the closest aromatic atom to this probe store the hydrogen bond angle (that will be outputed in .mif file)
       if(dist<closest){
         closest=dist;
         vrtx.angles[pbId]=angle;
@@ -2393,20 +1955,17 @@ void getPairwise(){
       vector<string> vec(begin, end);
       string pdbF="";
       string cleftF="";
-      string gridF="";
       string rnc="";
       string ligF="";
       for(int i=0; i<vec.size(); i+=2){
         if(vec[i].compare("-p")==0) pdbF=vec[i+1];
         if(vec[i].compare("-g")==0) cleftF=vec[i+1];
-        if(vec[i].compare("-grid")==0) gridF=vec[i+1];
         if(vec[i].compare("-l")==0) rnc=vec[i+1];
         if(vec[i].compare("-lf")==0) ligF=vec[i+1];
       }
       pwRun npw;
       npw.pdbF=pdbF;
       npw.cleftF=cleftF;
-      npw.gridF=gridF;
       npw.rnc=rnc;
       npw.ligF=ligF;
       pw.push_back(npw);

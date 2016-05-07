@@ -30,24 +30,22 @@ int main(int argc, char *argv[]){
   pNode agv=NULL;
 
   //Read command line arguments
-  if(read_commandline(argc, argv)==24){
-    printf("\nread cmd line not OK\n");
-    return(24);
-  }
+  if(read_commandline(argc, argv)==24){ return(0); }
 
-  //Set JTT matrix for C alpha stage to determine similar atoms;
+  //Set JTT matrix for C alpha stage to determine similar atoms
+  //The matrix shows the similarity level for each atom pairs
   setJTT(jttt);
 
-  if(pairwiseF.compare("")!=0){ //If the input file contains multiple comparisons to do
+  if(pairwiseF.compare("")!=0){ //If the input file contains multiple MIF comparisons to do
     getPairwise();
     // open_file_ptr(&fpout,out_file,1);
-  }else{ //If its just a single MIF comparison
+  }else{ //If its just a single MIF pair comparison
     pwRun npw;
     npw.mif1=nrg_file1;
     npw.mif2=nrg_file2;
     npw.rnc1=rnc1;
     npw.rnc2=rnc2;
-    npw.getrmsd=getrmsd;
+    npw.getrmsd=getrmsd; //Do we need to calculate the RMSD between the superimposed ligands during this run? 1 or 0
     pw.push_back(npw);
     pair<map<string,mif>::iterator,bool> mit;
 
@@ -66,25 +64,27 @@ int main(int argc, char *argv[]){
     }
   }
 
-  for(int pwr=0; pwr<pw.size(); pwr++){ //For each comparisons (one or more)
+  for(int pwr=0; pwr<pw.size(); pwr++){ //For each pairwise MIF comparisons (one or more)
 
+    //Store initial values
     nrg_file1=pw[pwr].mif1;
     nrg_file2=pw[pwr].mif2;
     rnc1=pw[pwr].rnc1;
     rnc2=pw[pwr].rnc2;
     getrmsd=pw[pwr].getrmsd;
-    topT=-1.0;
-    topN=-1;
+    topT=-1.0; //Set the top tanimoto score
+    topN=-1; //Set the top nodes score
 
+    //Fetch some information form the input Mif files
     if(get_info(nrg_file1,nrg_file2)==24){ return(24); }
 
-    char cmdLineJob[550];
+    char cmdLineJob[550]; //Cmd line is a copy of the command line
     strcpy(cmdLineJob,exePath);
     strcat(cmdLineJob," -p1 "); strcat(cmdLineJob,nrg_file1.c_str());
     strcat(cmdLineJob," -p2 "); strcat(cmdLineJob,nrg_file2.c_str());
     strcat(cmdLineJob," "); strcat(cmdLineJob,cmdArgs);
 
-    if(emptOut==1){ //If we want a short output file (AKA ''empty'')
+    if(emptOut==1){ //If we want a short output file (to reduce file size) we only print a few information
       sprintf(tmp,"REMARK command: %s\nREMARK commandJob: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK wsimfn: %d\nREMARK tag1: %s\nREMARK tag2: %s\nREMARK rnc1: %s\nREMARK rnc2: %s\n",cmdLine,cmdLineJob,nrg_file1.c_str(),nrg_file2.c_str(),wrfn,tag1.c_str(),tag2.c_str(),rnc1.c_str(),rnc2.c_str());  
     }else{ //Full output file
       sprintf(tmp,"REMARK command: %s\nREMARK commandJob: %s\nREMARK mif_file_1: %s\nREMARK mif_file_2: %s\nREMARK nb_of_probes: %d\nREMARK C-alpha_dDist: %5.2f\nREMARK pseudocenter_dDist: %5.2f\nREMARK dDist: %5.2f\nREMARK jtt_threshold: %d\nREMARK max_nodes: %d\nREMARK commont int : %d\nREMARK wsimfn: %d\nREMARK tag1: %s\nREMARK tag2: %s\nREMARK rnc1: %s\nREMARK rnc2: %s\n",cmdLine,cmdLineJob,nrg_file1.c_str(),nrg_file2.c_str(),nb_of_probes,ca_dDist,ps_dDist,dDist,jttt,maxNodes,commonInt,wrfn,tag1.c_str(),tag2.c_str(),rnc1.c_str(),rnc2.c_str());  
@@ -126,10 +126,10 @@ int main(int argc, char *argv[]){
     //   cout<<lig2[l].atomn<<endl;
     // }
     
-    //To be considered for the graph matching nodes.cg must be set to 1
-    if(cg_start>-1){
+    //To be considered for the graph matching, nodes.cg must be set to 1
+    if(cg_start>-1){ //If we define a specific grid resolution in the command line
       for(i=0; i<mif1.size(); ++i){
-        mif1.at(i).cg[cg_start]=1;
+        mif1.at(i).cg[cg_start]=1; //set all vertices of this resolution to 1 so we can consider them
       }
       for(i=0; i<mif2.size(); ++i){
         mif2.at(i).cg[cg_start]=1;
@@ -139,13 +139,15 @@ int main(int argc, char *argv[]){
     cout <<endl<< "--# Starting coarsegrain steps #--\n";
 
     //Start the coarse-grain steps (arguments -c of the command line)
-    //
+    //Steps vector contains the grid resolution we will do, one after the other (e.g. 0,2 means we'll do grid resolution 2.0 then 1.5)
     for(int cs=0; cs<steps.size(); cs++){
+
+      //Initialize the number of cliques we explored to 0
       nCliques=0;
       nCliquesExplored=0;
       cout<<endl<<"Coarse-Grain Step "<<steps[cs]<<endl;
 
-      //Step 2, superimpose mifs using rotation matrix derived from atom list superimposition
+      //If argument -c == 2, it means the user wants to superimpose mifs using rotation matrix derived from atom list superimposition
       if(steps[cs]==-2){
         vector<float> la;
         vector<float> lb;
@@ -154,7 +156,7 @@ int main(int argc, char *argv[]){
           cout<<"You must provide two lists of corresponding atom IDs to superimpose for stage -2 using argument -q. Ex: -q 0,1,2,3 38,46,47,53"<<endl;
         }
 
-        //Create coords lists
+        //Create a coordinate vector for atom list 1 and atom list 2 (la and lb)
         for(int i=0; i<list1.size(); i++){
           for(int j=0; j<prot1.size(); j++){
             if(prot1[j].atomnb==list1[i]){
@@ -183,9 +185,9 @@ int main(int argc, char *argv[]){
           nc.cen_a[i]=0.0;
           nc.cen_b[i]=0.0;
         }
-        gsl_matrix_set_zero(nc.mat_r);
+        gsl_matrix_set_zero(nc.mat_r); //set the rotation matrix to 0
 
-        nc.det=calcRot(la,lb,nc.cen_a,nc.cen_b,nc.mat_r,nc.detOri);
+        nc.det=calcRot(la,lb,nc.cen_a,nc.cen_b,nc.mat_r,nc.detOri); //Calculate the rotation matrix
 
         // for(int i=0; i<3; i++) {
         //   cout<<"cen_a "<<i<<" "<<nc.cen_a[i]<<endl;
@@ -245,10 +247,9 @@ int main(int argc, char *argv[]){
           }
         }
 
-        nc.nbNodes=nc.va.size()+nc.vb.size();
-        nc.tani=( ((float)nc.va.size()/(float)ss1[cg2]) + ((float)nc.vb.size()/(float)ss2[cg2]) ) / 2.0;
-        // cout<<"NEW CLIQUE CG "<<steps[cs]<<" NODES "<<nc.nbNodes<<" TANI "<<nc.tani<<endl;
-        cliques.push_back(nc);
+        nc.nbNodes=nc.va.size()+nc.vb.size(); //Calculate overlap score
+        nc.tani=( ((float)nc.va.size()/(float)ss1[cg2]) + ((float)nc.vb.size()/(float)ss2[cg2]) ) / 2.0; //Calculate other overlap score
+        cliques.push_back(nc); //push this clique in the cliques vector
       }else{
         bool* conn=NULL;
         vector<node> graph;
@@ -1457,21 +1458,20 @@ int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, vector<int
   string alt;
   string dump;
 
+  //Initialize the search spaces to 0
   for(int k=0; k<4; k++){
     ss.push_back(0);
     ssm.push_back(0);
   }
 
-  // cout<<"creating vrtx for "<<mifFile<<endl;
-
   ifstream infile(mifFile.c_str());
   while(getline(infile,line)){
     if(line.compare("")==0){
       continue;
-    }else if(line.compare(0,11,"#nbOfProbes")==0){
+    }else if(line.compare(0,11,"#nbOfProbes")==0){ //Store number of probes (should always be 6)
       stringstream test(line);
       test >> dump >> nb_of_probes;
-    }else if(line.compare(0,5,"#ATOM")==0){
+    }else if(line.compare(0,5,"#ATOM")==0){ //If its an atom line
 
       stringstream test(line);
       test >> dump >> resn >> resnb >> atomn >> atomnb >> chain >> alt >> x >> y >> z >> mif >> bs;
@@ -1491,20 +1491,14 @@ int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, vector<int
       stringstream sss;
       sss << resnb;
       thisresnumc = resn + sss.str() + chain + alt;
-      // cout<<line<<endl;
-      // cout<<rnc<<" "<<thisresnumc<<endl;
-      if(rnc.compare(thisresnumc)==0){
-        // size_t found;
-        // found = atomn.find("H");
-        // if(found==string::npos){
-        // cout<<"pushing "<<natom.atomn<<endl;
+
+      if(rnc.compare(thisresnumc)==0){ //If its one of the ligand atom
           llist.push_back(natom);
-        // }
       }
-      if(atomn.compare("CA")==0 && bs==1) caSize++;
+      if(atomn.compare("CA")==0 && bs==1) caSize++; //If this atom is a carbon alpha, increment the Calpha count
       a.push_back(natom);
       atmC++;
-    }else if(line.compare(0,7,"#PSEUDO")==0){
+    }else if(line.compare(0,7,"#PSEUDO")==0){ //If its a pseudo atom line
       stringstream test(line);
       test >> dump >> pseudo >> x >> y >> z;
       pseudoC npseudo;
@@ -1513,35 +1507,34 @@ int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, vector<int
       npseudo.coor[1]=y;
       npseudo.coor[2]=z;
       npseudo.id=pcC;
-      pl.push_back(npseudo);
+      pl.push_back(npseudo); //push back pseudo atom to vector
       pcC++;
-    }else if(line.compare(0,1,"#")!=0){
+    }else if(line.compare(0,1,"#")!=0){ //If its a MIF line describing a grid vertex
       istringstream iss(line);
       vector<string> tokens;
-      copy(istream_iterator<string>(iss), istream_iterator<string>(), back_inserter<vector<string> >(tokens));
+      copy(istream_iterator<string>(iss), istream_iterator<string>(), back_inserter<vector<string> >(tokens)); //Split the line by blank spaces
 
       vertex nvrtx;
-      nvrtx.coor[0]=atof(tokens[0].c_str());
-      nvrtx.coor[1]=atof(tokens[1].c_str());
-      nvrtx.coor[2]=atof(tokens[2].c_str());
-      nvrtx.grid[0]=atoi(tokens[tokens.size()-5].c_str());
-      nvrtx.grid[1]=atoi(tokens[tokens.size()-4].c_str());
-      nvrtx.grid[2]=atoi(tokens[tokens.size()-3].c_str());
-      nvrtx.grid[3]=atoi(tokens[tokens.size()-2].c_str());
+      nvrtx.coor[0]=atof(tokens[0].c_str()); //X coordinate
+      nvrtx.coor[1]=atof(tokens[1].c_str()); //Y coordinate
+      nvrtx.coor[2]=atof(tokens[2].c_str()); //Z coordinate
+      nvrtx.grid[0]=atoi(tokens[tokens.size()-5].c_str()); //If the grid is in resolution 2.0
+      nvrtx.grid[1]=atoi(tokens[tokens.size()-4].c_str()); //If the grid is in resolution 1.5
+      nvrtx.grid[2]=atoi(tokens[tokens.size()-3].c_str()); //If the grid is in resolution 1.0
+      nvrtx.grid[3]=atoi(tokens[tokens.size()-2].c_str()); //If the grid is in resolution 0.5
 
       int pb=0;
       int intf=0;
-      // cout<<line<<endl;
-      // cout<<"token size "<<tokens.size()<<endl;
-      while(pb<nb_of_probes){
+      while(pb<nb_of_probes){ //Iterate each probe of this vertex
         int pbi=(pb*3)+3;
-        // cout<<pb<<" "<<pbi<<" "<<atoi(tokens[pbi].c_str())<<" "<<atof(tokens[pbi+1].c_str())<<" "<<atof(tokens[pbi+2].c_str())<<endl;
         if(atoi(tokens[pbi].c_str())==1) intf=1; //flag for search space
-        for(int k=0; k<4; k++){
-          if(nvrtx.grid[k]==1){
-            if(atoi(tokens[pbi].c_str())==1) ssm[k]++; //increment probe search space
+        for(int k=0; k<4; k++){ //Iterate each grid resolution
+          if(nvrtx.grid[k]==1){ //If its in this grid resolution
+            if(atoi(tokens[pbi].c_str())==1) ssm[k]++; //increment the search space at grid resolution k
           }
         }
+
+        //Push the info of each probe in their vectors
         nvrtx.pb.push_back(atoi(tokens[pbi].c_str()));
         nvrtx.nrg.push_back(atof(tokens[pbi+1].c_str()));
         nvrtx.ang.push_back(atof(tokens[pbi+2].c_str()));
@@ -1550,17 +1543,19 @@ int createVrtxVec(string mifFile, vector<vertex>& p, vector<atom>& a, vector<int
         pb++;
       }
 
+      //cg value describes for each grid resolution if the vertex should be considered in the graph matching
+      //here we set the cg of each grid resolution to 0
       nvrtx.cg.push_back(0);
       nvrtx.cg.push_back(0);
       nvrtx.cg.push_back(0);
       nvrtx.cg.push_back(0);
-      nvrtx.id=totalVrtx; //Unique id for both clefts
+      nvrtx.id=totalVrtx; //Increment unique id for both clefts
 
       //Calculate search space
-      if(intf==1){
+      if(intf==1){ //If there was at least one interaction favorable (1) at this vertex
         for(int k=0; k<4; k++){
           if(nvrtx.grid[k]==1){
-            ss[k]++;
+            ss[k]++; //Increment search space
           }
         }
       }
@@ -1918,7 +1913,7 @@ int get_info(string str1, string str2){
   prefix2 = pre2.c_str();
   tag2=pre2;
 
-  //Create output file
+  //Create output file name int 'out_file'
   if(pairwiseF.compare("")==0){
     if(!strcmp(outbase,"")){ //If no outbase name is defined, create one
       sprintf(out_file,"./%s_match_%s",prefix1,prefix2);
