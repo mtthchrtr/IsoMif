@@ -784,9 +784,9 @@ int Grid::readGetCleft(string filename, vector<atom>& protVec, vector<float>& li
       maxy=roundCoord(y+rad,1);
       maxz=roundCoord(z+rad,1);
 
-      for(nx=minx; nx<=maxx; nx+=0.5){
-        for(ny=miny; ny<=maxy; ny+=0.5){
-          for(nz=minz; nz<=maxz; nz+=0.5){
+      for(nx=minx; nx<=maxx; nx+=gridStep){
+        for(ny=miny; ny<=maxy; ny+=gridStep){
+          for(nz=minz; nz<=maxz; nz+=gridStep){
 
             //Generate grid vertex ID
             id=generateID(width,height,(int)((nx-min_x)/gridStep)+1,(int)((ny-min_y)/gridStep)+1,(int)((nz-min_z)/gridStep)+1);
